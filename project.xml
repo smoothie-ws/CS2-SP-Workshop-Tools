@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project>
-    <meta title="Main" package="" version="1.0.0" company="" />
-    <app main="Main" file="Main" path="build" />
+<project
+    xmlns="http://lime.openfl.org/project/1.0.4"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://lime.openfl.org/project/1.0.4 http://lime.openfl.org/xsd/project-1.0.4.xsd">
 
-    <window background="#FFFFFF" fps="144" />
-    <window width="800" height="600" if="desktop" />
-    <window width="0" height="0" if="html5" />
+    <meta title="CS2 Workshop Tools plugin installer" version="0.0.1" />
+    <meta description="The CS2 Workshop Tools plugin enhances your workflow of creating custom CS2 weapon finishes by integrating some useful features and tools to the Adobe Substance Painter." />
+
+    <app main="Main" file="CS2-WT plugin installer" path="build" />
+
+    <window width="450" height="250" fps="120" resizable="false" if="desktop"/>
+    <window width="0" height="0" if="html"/>
 
     <!-- classpath, haxe libs -->
     <source path="src" />
