@@ -1,0 +1,6 @@
+<vbox>
+    <style source="style.css" />
+    <box>
+        <label text="Panel Content" horizontalAlign="center" verticalAlign="center"/>
+    </box>
+</vbox>
