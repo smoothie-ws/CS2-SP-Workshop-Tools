@@ -18,7 +18,7 @@
     <window width="450" 
         height="250" 
         fps="120" 
-        resizable="false" 
+        resizable="true" 
         if="desktop"/>
 
     <window width="0" 
