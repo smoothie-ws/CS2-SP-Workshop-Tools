@@ -4,12 +4,12 @@
     <hbox id="menuBar">
         <label text="Lorem Ipsum" />
         <spacer width="100%" />
-        <button id="minimizeButton" text="1" />
-        <button id="exitButton" text="2" />
+        <button id="minimizeButton" icon="assets/icons/icon_min.png" tooltip="minimize"/>
+        <button id="exitButton" icon="assets/icons/icon_close.png" tooltip="close"/>
     </hbox>
     
     <vbox id="mainContent">
-        <!-- <vbox id="optionsBox">
+        <vbox id="optionsBox">
             <hbox>
                 <label text="CS2 path:" verticalAlign="center" />
                 <textfield placeholder="Enter some text" verticalAlign="center" />
@@ -26,6 +26,6 @@
             <button id="installButton" text="Install" />
             <button id="deleteButton" text="Delete" />
             <spacer width="100%"/>
-        </hbox> -->
+        </hbox>
     </vbox>
 </vbox>
