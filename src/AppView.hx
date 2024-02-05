@@ -10,6 +10,7 @@ class AppView extends VBox {
 
 	public function new() {
 		super();
+
 		this.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDown);
 		this.addEventListener(MouseEvent.MOUSE_UP, onMouseUp);
 		this.addEventListener(MouseEvent.MOUSE_MOVE, onMouseMove);
@@ -28,16 +29,11 @@ class AppView extends VBox {
 	}
 
 	private function onMouseMove(event:MouseEvent):Void {
-		try {
-			if (oldPos == null) {
-				return;
-			}
-			var delta:openfl.geom.Point = new openfl.geom.Point(event.stageX, event.stageY).subtract(oldPos);
-			Lib.current.stage.window.x += Std.int(delta.x);
-			Lib.current.stage.window.y += Std.int(delta.y);
-			oldPos = new openfl.geom.Point(event.stageX, event.stageY);
-		} catch (error:Dynamic) {
-			trace(error);
+		if (oldPos == null) {
+			return;
+		} else {
+			Lib.current.stage.window.x += Std.int(event.stageX - oldPos.x);
+			Lib.current.stage.window.y += Std.int(event.stageY - oldPos.y);
 		}
 	}
 }
