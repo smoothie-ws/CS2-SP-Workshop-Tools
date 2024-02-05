@@ -1,5 +1,7 @@
 package;
 
+import haxe.ui.notifications.NotificationManager;
+import ui.AppView;
 import haxe.ui.HaxeUIApp;
 #if hl
 import hl.UI;

@@ -15,11 +15,12 @@
         file="CS2-WT plugin installer"
         path="build" />
 
-    <window width="450" 
-        height="250" 
-        fps="120"
+    <window width="575" 
+        height="350" 
+        fps="144"
+        background="#000000"
         borderless="true"
-        resizable="false" 
+        resizable="false"
         if="desktop"/>
 
     <window width="0" 
