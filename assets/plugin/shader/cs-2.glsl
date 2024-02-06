@@ -1,7 +1,7 @@
-// TODO
-// metadata {
-//   "custom-ui": "cs-2/custom-ui.qml"
-// }
+// aaфaaaaa
+//: metadata {
+//:   "custom-ui": "cs-2/custom-ui.qml"
+//: } 
 
 //: param auto channel_basecolor
 uniform SamplerSparse basecolor_tex;
@@ -306,6 +306,15 @@ uniform bool u_pt_ignore_weapon_size_scale;
 //:   "max": 10.0 
 //: }
 uniform float u_pt_texture_scale;
+
+//: param custom { 
+//:   "group": "Weapon Finish/Patina/Color",
+//:   "default": 0,
+//:   "visible": "input.u_finish_style == 6", 
+//:   "label": "Base Metal", 
+//:   "widget": "color" 
+//: }
+uniform vec3 u_pt_color_base_metal;
 
 import lib-pbr.glsl
 import lib-bent-normal.glsl

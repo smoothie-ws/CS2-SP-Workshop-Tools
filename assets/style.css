@@ -3,26 +3,24 @@
     width: 100%;
     height: 100%;
     background-color: #252525;
-    padding: 5;
+    spacing: 0;
 }
 
 #menuBar {
     width: 100%;
-    height: 10%;
-    margin-right: 5;
-    margin-left: 5;
-    spacing: 5;
+    height: 32;
+    spacing: 0;
 }
 
 #menuBar .label {
+    margin-left: 5;
     vertical-align: "center";
 }
 
 #menuBar .button {
     width: 50;
-    height: 100%;
+    height: 50;
     background: #252525;
-    border-radius: 10px;
     border-color: #252525;
     filter: drop-shadow(1, 45, #000000, 0.2, 0, 0, 0, 3, false);
 }
@@ -35,25 +33,6 @@
     background: #202020;
 }
 
-.styled-button {
-    background: #79bbff #378de5;
-    border: 3px solid #337bc4;
-    border-radius: 10px;
-    padding: 10px 25px;
-    font-size: 16px;
-    color: white;
-    filter: drop-shadow(1, 45, #000000, 0.2, 0, 0, 0, 3, false);
-}
-
-.styled-button:hover {
-    background: #add6ff #66a8eb;
-}
-
-.styled-button:down {
-    background: #47a3ff #1b75d0;
-    border-color: #28619a;
-}
-
 #mainContent {
     width: 100%;
     height: 90%;
@@ -61,8 +40,6 @@
     background-color: #313131;
     padding: 35px;
 }
-
-
 
 #titleBox {
     height: 10%;
