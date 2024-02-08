@@ -1,13 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <vbox id="root">
     <style source="style.css" />
-
-    <hbox id="menuBar">
-        <label text="Lorem Ipsum" />
-        <spacer width="100%" />
-        <button id="minimizeButton" icon="assets/icons/icon_min.png" tooltip="minimize"/>
-        <button id="exitButton" icon="assets/icons/icon_close.png" tooltip="close"/>
-    </hbox>
     
     <vbox id="mainContent">
         <vbox id="optionsBox">

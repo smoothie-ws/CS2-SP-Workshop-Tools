@@ -19,8 +19,8 @@
         height="350" 
         fps="144"
         background="#000000"
-        borderless="true"
-        resizable="false"
+        borderless="false"
+        resizable="true"
         if="desktop"/>
 
     <window width="0" 

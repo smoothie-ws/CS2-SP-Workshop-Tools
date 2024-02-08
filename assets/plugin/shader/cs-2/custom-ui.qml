@@ -18,7 +18,6 @@ Rectangle {
     property var parameterGroups: []
     property var parameters: []
 
-
     Component.onCompleted: {
         var textureSet = alg.texturesets.getActiveTextureSet();
         var channels = alg.mapexport.channelIdentifiers(textureSet);
@@ -42,21 +41,19 @@ Rectangle {
         id: mainLayout
         width: parent.width
         spacing: 15
-
-        RowLayout {
+        GridLayout {
+            columns: 2
+            columnSpacing: 15
             Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 10
-            Layout.alignment: Qt.AlignJustify
 
             AlgLabel {
-                text: "Finish style:"
+                text: "Finish style"
             }
 
             AlgComboBox {
-                id: f_style_box
+                id: styleBox
                 Layout.fillWidth: true
-                tooltip: "Finish Style"
+                tooltip: "Select a finish style"
                 model: [
                 { text: "Anodized Airbrushed", value: 0 },
                 { text: "Anodized Multicolored", value: 1 },
@@ -74,6 +71,82 @@ Rectangle {
                     // styleParamsGroup.setFinishStyle(model[index].text)
                 }
             }
+
+            AlgLabel {
+                text: "Weapon"
+            }
+
+            AlgComboBox {
+                id: weaponBox
+                Layout.fillWidth: true
+                tooltip: "Select a weapon"
+                model: [
+                { text: "AK-47", value: "ak47" },
+                { text: "AUG", value: "aug" },
+                { text: "AWP", value: "awp" },
+                { text: "CZ75-Auto", value: "cz75" },
+                { text: "Desert Eagle", value: "deagle" },
+                { text: "Dual Berettas", value: "duals" },
+                { text: "FAMAS", value: "famas" },
+                { text: "Five-SeveN", value: "fiveseven" },
+                { text: "G3SG1", value: "g3sg1" },
+                { text: "Galil AR", value: "galil" },
+                { text: "Glock-18", value: "g18" },
+                { text: "MAC-10", value: "mac10" },
+                { text: "MAG-7", value: "mag7" },
+                { text: "M4A1-S", value: "m4a1s" },
+                { text: "M4A4", value: "m4a4" },
+                { text: "MP5-SD", value: "mp5sd" },
+                { text: "MP7", value: "mp7" },
+                { text: "MP9", value: "mp9" },
+                { text: "Negev", value: "negev" },
+                { text: "Nova", value: "nova" },
+                { text: "P2000", value: "p2000" },
+                { text: "P250", value: "p250" },
+                { text: "P90", value: "p90" },
+                { text: "PP-Bizon", value: "bizon" },
+                { text: "R8 Revolver", value: "r8" },
+                { text: "SCAR-20", value: "scar20" },
+                { text: "SG 553", value: "sg553" },
+                { text: "SSG 08", value: "ssg08" },
+                { text: "Sawed-Off", value: "sawedoff" },
+                { text: "Tec-9", value: "tec9" },
+                { text: "UMP-45", value: "ump45" },
+                { text: "USP-S", value: "usps" },
+                { text: "XM1014", value: "xm1014" },
+                { text: "Zeus x27", value: "zeus" }
+                ]
+                textRole: "text"
+                currentIndex: 0
+                spacing: 5
+                onActivated: {
+                    // TODO
+                }
+            }
+
+            AlgLabel {
+                text: "Map"
+            }
+
+            AlgResourceWidget {
+                id: uMap
+                Layout.fillWidth: true
+
+                text: "Select environment texture"
+                filters: AlgResourcePicker.ENVIRONMENT
+            }
+        }
+
+
+        AlgSlider {
+            id: uWear
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            value: 0.0
+            minValue: 0.0
+            maxValue: 1.0
+            text: "Wear"
         }
 
         AlgGroupWidget {
@@ -125,7 +198,6 @@ Rectangle {
 
                 GridLayout {
                     columns: 2
-                    rows: 4
                     columnSpacing: 15
                     Layout.fillWidth: true
 
@@ -251,35 +323,47 @@ Rectangle {
                             alg.log.warn("use pearlescent mask: " + checked)
                         }
                     }
-
-                    AlgLabel {
-                        text: "Pearlescent Mask:"
-                    }
-
-                    AlgComboBox {
-                        id: pearlMaskSelector
+                    RowLayout {
                         Layout.fillWidth: true
-                        tooltip: "Select a channel which will be used for export"
-                        textRole: "text"
+                        Layout.fillHeight: true
+                        spacing: 10
+                        Layout.alignment: Qt.AlignJustify
+                        AlgLabel {
+                            text: "Pearlescent Mask"
+                        }
+
+                        AlgComboBox {
+                            id: pearlMaskSelector
+                            Layout.fillWidth: true
+                            tooltip: "Select a channel which will be used for export"
+                            textRole: "text"
+                        }
                     }
 
                     AlgCheckBox {
                         id: useRoughnessTex
-                        text: "Use Pearlescent Mask"
+                        text: "Use Roughness Texture"
                         onCheckedChanged: {
-                            alg.log.warn("use pearlescent mask: " + checked)
+                            alg.log.warn("use roughness texture: " + checked)
                         }
                     }
 
-                    AlgLabel {
-                        text: "Roughness Texture:"
-                    }
-
-                    AlgComboBox {
-                        id: roughnessTexSelector
+                    RowLayout {
                         Layout.fillWidth: true
-                        tooltip: "Select a channel which will be used for export"
-                        textRole: "text"
+                        Layout.fillHeight: true
+                        spacing: 10
+                        Layout.alignment: Qt.AlignJustify
+
+                        AlgLabel {
+                            text: "Roughness Texture"
+                        }
+
+                        AlgComboBox {
+                            id: roughnessTexSelector
+                            Layout.fillWidth: true
+                            tooltip: "Select a channel which will be used for export"
+                            textRole: "text"
+                        }
                     }
                 }
             }
@@ -295,58 +379,84 @@ Rectangle {
                     AlgCheckBox {
                         id: useNormalMap
                         text: "Use Custom Normal Map"
+
                         onCheckedChanged: {
                             alg.log.warn("use: " + checked)
                         }
                     }
 
-                    AlgLabel {
-                        text: "Normal Map:"
-                    }
-
-                    AlgComboBox {
-                        id: normalMapSelector
+                    RowLayout {
                         Layout.fillWidth: true
-                        tooltip: "Select a channel which will be used for export"
-                        textRole: "text"
+                        Layout.fillHeight: true
+                        spacing: 10
+                        Layout.alignment: Qt.AlignJustify
+
+                        AlgLabel {
+                            text: "Normal Map"
+                        }
+
+                        AlgComboBox {
+                            id: normalMapSelector
+                            Layout.fillWidth: true
+                            tooltip: "Select a channel which will be used for export"
+                            textRole: "text"
+                        }
                     }
 
                     AlgCheckBox {
                         id: useMaterialTex
                         text: "Use Custom Material Mask"
+                        Layout.topMargin: 10
+
                         onCheckedChanged: {
                             alg.log.warn("use material mask: " + checked)
                         }
                     }
 
-                    AlgLabel {
-                        text: "Material Mask:"
-                    }
-
-                    AlgComboBox {
-                        id: matMaskSelector
+                    RowLayout {
                         Layout.fillWidth: true
-                        tooltip: "Select a channel which will be used for export"
-                        textRole: "text"
+                        Layout.fillHeight: true
+                        spacing: 10
+                        Layout.alignment: Qt.AlignJustify
+
+                        AlgLabel {
+                            text: "Material Mask"
+                        }
+
+                        AlgComboBox {
+                            id: matMaskSelector
+                            Layout.fillWidth: true
+                            tooltip: "Select a channel which will be used for export"
+                            textRole: "text"
+                        }
                     }
 
                     AlgCheckBox {
                         id: useAOTex
                         text: "Use Custom Ambient Occlusion"
+                        Layout.topMargin: 10
+
                         onCheckedChanged: {
                             alg.log.warn("use ao: " + checked)
                         }
                     }
 
-                    AlgLabel {
-                        text: "Ambient Occlusion:"
-                    }
-
-                    AlgComboBox {
-                        id: aoSelector
+                    RowLayout {
                         Layout.fillWidth: true
-                        tooltip: "Select a channel which will be used for export"
-                        textRole: "text"
+                        Layout.fillHeight: true
+                        spacing: 10
+                        Layout.alignment: Qt.AlignJustify
+
+                        AlgLabel {
+                            text: "Ambient Occlusion"
+                        }
+
+                        AlgComboBox {
+                            id: aoSelector
+                            Layout.fillWidth: true
+                            tooltip: "Select a channel which will be used for export"
+                            textRole: "text"
+                        }
                     }
                 }
             }
