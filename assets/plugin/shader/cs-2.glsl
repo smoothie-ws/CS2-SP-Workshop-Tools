@@ -1,4 +1,3 @@
-// aaфaaaaa
 //: metadata {
 //:   "custom-ui": "cs-2/custom-ui.qml"
 //: } 
