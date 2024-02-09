@@ -1,13 +1,12 @@
-# import substance_painter.event as sp_event
-# import os
+from .plugin_manager import PluginManager
 
 
 def start_plugin():
-    pass
+    PluginManager.init_plugin()
 
 
 def close_plugin():
-    pass
+    PluginManager.delete_plugin()
 
 
 if __name__ == "__main__":

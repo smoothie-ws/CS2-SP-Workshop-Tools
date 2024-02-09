@@ -1,6 +1,7 @@
 from substance_painter import ui as sp_ui
 from .cs2menu import CS2Menu
 
+
 class UI:
     sp_main_window = sp_ui.get_main_window()
 

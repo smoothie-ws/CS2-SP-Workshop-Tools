@@ -1,6 +1,11 @@
+import lib-pbr.glsl
+import lib-bent-normal.glsl
+import lib-sss.glsl
+import lib-utils.glsl
+
 //: metadata {
-//:   "custom-ui": "cs-2/custom-ui.qml"
-//: } 
+//:   "custom-ui": "cs2/custom-ui.qml"
+//: }
 
 //: param auto channel_basecolor
 uniform SamplerSparse basecolor_tex;
@@ -314,11 +319,6 @@ uniform float u_pt_texture_scale;
 //:   "widget": "color" 
 //: }
 uniform vec3 u_pt_color_base_metal;
-
-import lib-pbr.glsl
-import lib-bent-normal.glsl
-import lib-sss.glsl
-import lib-utils.glsl
 
 void shade(V2F inputs)
 {

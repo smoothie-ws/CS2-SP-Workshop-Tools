@@ -1,6 +1,7 @@
 from PySide2.QtWidgets import QMenu
 from cs2.tools import CS2
 
+
 class CS2Menu(QMenu):
     def __init__(self) -> None:
         super().__init__("CS2 Workshop Tools")
