@@ -2,7 +2,7 @@ from .plugin_manager import PluginManager
 
 
 def start_plugin():
-    PluginManager.init_plugin()
+    PluginManager.setup_plugin()
 
 
 def close_plugin():

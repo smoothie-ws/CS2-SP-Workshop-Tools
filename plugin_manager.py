@@ -15,7 +15,7 @@ class PluginManager:
         is_plugin_set_up = False
 
     @classmethod
-    def init_plugin(cls):
+    def setup_plugin(cls):
         if not cls.is_plugin_set_up:
             cls.update_plugin()
 
