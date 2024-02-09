@@ -1,5 +1,5 @@
-from ._log import Log
-from ._project import Project
+from .log import Log
+from .project import Project
 
 class CS2:
     log = Log()
