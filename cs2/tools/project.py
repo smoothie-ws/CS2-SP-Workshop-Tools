@@ -1,12 +1,11 @@
 import substance_painter.project as sp_project
-import substance_painter.event as sp_event
 
 class Project:
     def __init__(self):
-        pass
+        self.metadata = sp_project.Metadata("CS2WT")
     
     def save(self):
-        pass
+        sp_project.save()
 
     def save_as_econitem(self):
         pass

@@ -118,7 +118,7 @@ Rectangle {
                 ]
                 textRole: "text"
                 currentIndex: 0
-                spacing: 5
+                spacing: 15
                 onActivated: {
                     // TODO
                 }
