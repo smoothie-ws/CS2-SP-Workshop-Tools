@@ -1,11 +1,11 @@
 from substance_painter import ui as sp_ui
-from .menu import Menu
+from .cs2menu import CS2Menu
 
-class UIExtension:
+class UI:
     sp_main_window = sp_ui.get_main_window()
 
     def __init__(self) -> None:
-        self.cs2_menu = Menu()
+        self.cs2_menu = CS2Menu()
 
     def extend(self):
         self.sp_main_window.menuBar().addMenu(self.cs2_menu)
