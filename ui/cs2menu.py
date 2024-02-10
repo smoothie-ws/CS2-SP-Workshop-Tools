@@ -1,12 +1,12 @@
 from PySide2.QtWidgets import QMenu
-from cs2.tools import CS2
+from cs2.tools import Log
 
 
 class CS2Menu(QMenu):
     def __init__(self) -> None:
         super().__init__("CS2 Workshop Tools")
 
-        self.act_about = self.addAction("About the plugin")
+        self.act_about = self.addAction("About the cs2")
         self.act_about.triggered.connect(self.on_about_click)
 
         self.addSeparator()
@@ -20,13 +20,13 @@ class CS2Menu(QMenu):
         self.act_autoupdate_on_save.triggered.connect(self.on_autoupdate_click)
 
     def on_about_click(self):
-        CS2.log.i("CS2 Workshop Tools")
+        Log.i("CS2 Workshop Tools")
 
     def on_save_econ_click(self):
-        CS2.log.i("Project saved as econitem")
+        Log.i("Project saved as econitem")
 
     def on_autoupdate_click(self):
         if self.act_autoupdate_on_save.isChecked():
-            CS2.log.i("Econitem autoupdate enabled")
+            Log.i("Econitem autoupdate enabled")
         else:
-            CS2.log.i("Econitem autoupdate disabled")
+            Log.i("Econitem autoupdate disabled")
