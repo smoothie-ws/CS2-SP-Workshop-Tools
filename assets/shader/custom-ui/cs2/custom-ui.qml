@@ -35,6 +35,14 @@ Rectangle {
         normalMapSelector.model = channelModel;
         matMaskSelector.model = channelModel;
         aoSelector.model = channelModel;
+
+        alg.log.info("Current env map: " + alg.display.getEnvironmentResource())
+        // Look for the bonifacio_street env map
+        var res = alg.resources.findResources("bonifacio_street")[0]
+        // Set bonifacio_street as the new env map.
+        alg.display.setEnvironmentResource(res)
+        // Log the resource url of the newly used env map
+        alg.log.info("New env map: " + alg.display.getEnvironmentResource())
     }
 
     ColumnLayout {
@@ -129,14 +137,14 @@ Rectangle {
             }
 
             AlgResourceWidget {
-                id: uMap
                 Layout.fillWidth: true
 
-                text: "Select environment texture"
                 filters: AlgResourcePicker.ENVIRONMENT
+                refineQuery: "u:cs2map "
+                defaultLabel: "Select a CS2 map"
+
             }
         }
-
 
         AlgSlider {
             id: uWear

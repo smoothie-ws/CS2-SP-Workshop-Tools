@@ -1,5 +1,5 @@
 from PySide2.QtWidgets import QMenu
-from cs2.tools import Log
+from CS2WT.tools import Log
 
 
 class CS2Menu(QMenu):
