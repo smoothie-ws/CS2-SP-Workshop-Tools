@@ -1,5 +1,6 @@
 from .plugin_manager import PluginManager
 
+
 def start_plugin():
     PluginManager.start_plugin()
 
