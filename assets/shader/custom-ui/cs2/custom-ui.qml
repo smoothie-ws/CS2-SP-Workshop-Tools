@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Layouts 1.3
+import QtQuick.Controls 2.7
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
@@ -264,34 +265,37 @@ Rectangle {
                 ColumnLayout {
                     Layout.fillWidth: true
 
-                    AlgSlider {
+                    SPRangeSlider {
                         id: texRotation
                         Layout.fillWidth: true
+                        label: "Texture Rotation"
 
-                        value: 0
                         minValue: -360.0
                         maxValue: 360.0
-                        text: "Texture Rotation"
+                        firstValue: 0.0
+                        secondValue: 0.0
                     }
 
-                    AlgSlider {
+                    SPRangeSlider {
                         id: texOffsetX
                         Layout.fillWidth: true
+                        label: "Texture Offset X"
 
-                        value: 0.0
                         minValue: -1.0
                         maxValue: 1.0
-                        text: "Texture Offset X"
+                        firstValue: 0.0
+                        secondValue: 0.0
                     }
 
-                    AlgSlider {
+                    SPRangeSlider {
                         id: texOffsetY
                         Layout.fillWidth: true
+                        label: "Texture Offset Y"
 
-                        value: 0.0
                         minValue: -1.0
                         maxValue: 1.0
-                        text: "Texture Offset Y"
+                        firstValue: 0.0
+                        secondValue: 0.0
                     }
                 }
             }
