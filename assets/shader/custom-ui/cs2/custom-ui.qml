@@ -274,6 +274,7 @@ Rectangle {
                         maxValue: 360.0
                         firstValue: 0.0
                         secondValue: 0.0
+                        step: 1.0
                     }
 
                     SPRangeSlider {
@@ -285,6 +286,7 @@ Rectangle {
                         maxValue: 1.0
                         firstValue: 0.0
                         secondValue: 0.0
+                        step: 0.1
                     }
 
                     SPRangeSlider {
@@ -296,6 +298,7 @@ Rectangle {
                         maxValue: 1.0
                         firstValue: 0.0
                         secondValue: 0.0
+                        step: 0.1
                     }
                 }
             }

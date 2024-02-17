@@ -6,10 +6,11 @@ import AlgWidgets.Style 2.0
 
 ColumnLayout {
     property string label
-    property int minValue
-    property int maxValue
-    property int firstValue
-    property int secondValue
+    property real minValue
+    property real maxValue
+    property real firstValue
+    property real secondValue
+    property real step
 
     RowLayout {
         Layout.fillWidth: true
@@ -25,15 +26,44 @@ ColumnLayout {
         }
 
         AlgTextInput {
+            Layout.preferredWidth: 50
             id: minValueText
-            text: firstValue
-            // TODO
+            text: parseFloat(firstValue).toFixed(2)
+            validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
+
+            onActiveFocusChanged: {
+                if (focus)
+                {
+                    selectAll()
+                }
+                else {
+                    deselect()
+                }
+            }
+            onEditingFinished: {
+                firstValue = parseFloat(text)
+
+            }
         }
 
         AlgTextInput {
+            Layout.preferredWidth: 50
             id: maxValueText
-            text: secondValue
-            // TODO
+            text: parseFloat(secondValue).toFixed(2)
+            validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
+
+            onActiveFocusChanged: {
+                if (focus)
+                {
+                    selectAll()
+                }
+                else {
+                    deselect()
+                }
+            }
+            onEditingFinished: {
+                secondValue = parseFloat(text)
+            }
         }
     }
 
@@ -42,15 +72,17 @@ ColumnLayout {
         id: slider
         from: minValue
         to: maxValue
+        snapMode: RangeSlider.SnapAlways
+        stepSize: step
         first.value: firstValue
         second.value: secondValue
 
         first.onValueChanged: {
-            minValueText.text = parseFloat(second.value).toFixed(2);
+            firstValue = first.value
         }
-        
+
         second.onValueChanged: {
-            maxValueText.text = parseFloat(second.value).toFixed(2);
+            secondValue = second.value
         }
     }
 }
