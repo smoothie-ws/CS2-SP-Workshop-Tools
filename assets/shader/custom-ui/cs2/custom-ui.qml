@@ -24,7 +24,7 @@ Rectangle {
             var channels = alg.mapexport.channelIdentifiers(textureSet);
             var channelModel = []
 
-            commonParams.text = "Gunsmith";
+            styleBox.currentIndex = 4;
 
             for (var i = 0; i < channels.length; i++) {
                 channelModel.push({text: channels[i] + " channel", value: i});
@@ -68,7 +68,6 @@ Rectangle {
                     { text: "Spray Paint", value: 7 }
                     ]
                     textRole: "text"
-                    currentIndex: 4 // gunsmith
                     spacing: 5
                     onActivated: {
                         // styleParamsGroup.setFinishStyle(model[index].text)
@@ -97,6 +96,7 @@ Rectangle {
                     { text: "Glock-18", value: "g18" },
                     { text: "MAC-10", value: "mac10" },
                     { text: "MAG-7", value: "mag7" },
+                    { text: "M249", value: "m249" },
                     { text: "M4A1-S", value: "m4a1s" },
                     { text: "M4A4", value: "m4a4" },
                     { text: "MP5-SD", value: "mp5sd" },
@@ -155,6 +155,7 @@ Rectangle {
             AlgGroupWidget {
                 id: commonParams
                 activeScopeBorder: true
+                text: styleBox.currentText
 
                 ColumnLayout {
                     RowLayout {
@@ -334,10 +335,13 @@ Rectangle {
                             }
                         }
                         RowLayout {
+                            id: pearlMask
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             spacing: 10
                             Layout.alignment: Qt.AlignJustify
+                            visible: usePearlMask.checked
+
                             AlgLabel {
                                 text: "Pearlescent Mask"
                             }
@@ -357,12 +361,13 @@ Rectangle {
                                 alg.log.warn("use roughness texture: " + checked)
                             }
                         }
-
                         RowLayout {
+                            id: roughnessTex
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             spacing: 10
                             Layout.alignment: Qt.AlignJustify
+                            visible: useRoughnessTex.checked
 
                             AlgLabel {
                                 text: "Roughness Texture"
@@ -396,10 +401,12 @@ Rectangle {
                         }
 
                         RowLayout {
+                            id: normalMap
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             spacing: 10
                             Layout.alignment: Qt.AlignJustify
+                            visible: useNormalMap.checked
 
                             AlgLabel {
                                 text: "Normal Map"
@@ -424,10 +431,12 @@ Rectangle {
                         }
 
                         RowLayout {
+                            id: matMask
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             spacing: 10
                             Layout.alignment: Qt.AlignJustify
+                            visible: useMaterialTex.checked
 
                             AlgLabel {
                                 text: "Material Mask"
@@ -447,15 +456,18 @@ Rectangle {
                             Layout.topMargin: 10
 
                             onCheckedChanged: {
-                                alg.log.warn("use ao: " + checked)
+                                alg.project.settings.setValue('use_custom_ao', checked);
+                                alg.log.warning(alg.project.settings.value('use_custom_ao'));
                             }
                         }
 
                         RowLayout {
+                            id: aoMap
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             spacing: 10
                             Layout.alignment: Qt.AlignJustify
+                            visible: useAOTex.checked
 
                             AlgLabel {
                                 text: "Ambient Occlusion"
