@@ -7,6 +7,7 @@ import lib-bent-normal.glsl
 import lib-sss.glsl
 import lib-utils.glsl
 import lib-vectors.glsl
+import lib-sampler.glsl
 
 //- Attach a custom UI file.
 //: metadata {
@@ -83,6 +84,8 @@ uniform int u_weapon;
 uniform float u_wear;
 //: param custom { "default": 1.00 }
 uniform float u_tex_scale;
+//: param custom { "default": 1.00 }
+uniform float u_pearl_scale;
 
 //- Special methods:
 // All components are in the range [0…1], including hue.
@@ -129,15 +132,9 @@ void shade(V2F inputs)
   LocalVectors vectors = computeLocalFrame(inputs);
   computeBentNormal(vectors, inputs);
 
-  // convert a diffuse color to the HSV color space
   vec3 hsv = rgb2hsv(diffColor);
-    
-  // shift a color hue
-  hsv.x = getEyeVec(inputs.position).x;
-  
-  // convert a diffuse color back to the RGB color space
-  // vec3 shiftedColor = hsv2rgb(hsv);
-  vec3 shiftedColor = vectors.eye;
+  hsv.x -= max(0.0, dot(vectors.normal, vectors.eye)) * u_pearl_scale / 6;
+  vec3 shiftedColor = hsv2rgb(hsv);
 
   // Feed parameters for a physically based BRDF integration
   emissiveColorOutput(pbrComputeEmissive(emissive_tex, inputs.sparse_coord));

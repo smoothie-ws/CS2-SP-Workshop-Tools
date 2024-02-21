@@ -38,6 +38,7 @@ Rectangle {
             aoSelector.model = channelModel;
 
             Shader.connect(textureScale, "value", alg.shaders.parameter(shader, "u_tex_scale"));
+            Shader.connect(pearlScale, "value", alg.shaders.parameter(shader, "u_pearl_scale"));
         }
 
         ColumnLayout {
@@ -156,7 +157,7 @@ Rectangle {
                 id: commonParams
                 activeScopeBorder: true
                 text: styleBox.currentText
-
+                
                 ColumnLayout {
                     RowLayout {
                         Layout.topMargin: 10
