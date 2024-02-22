@@ -37,6 +37,7 @@ Rectangle {
             matMaskSelector.model = channelModel;
             aoSelector.model = channelModel;
 
+            Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shader, "u_enable_live_preview"));
             Shader.connect(textureScale, "value", alg.shaders.parameter(shader, "u_tex_scale"));
             Shader.connect(pearlScale, "value", alg.shaders.parameter(shader, "u_pearl_scale"));
         }
@@ -140,6 +141,14 @@ Rectangle {
                     defaultLabel: "Select a CS2 map"
 
                 }
+            }
+
+            AlgCheckBox {
+                id: enableLivePreview
+                text: "Live Preview"
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+                checked: true
             }
 
             AlgSlider {

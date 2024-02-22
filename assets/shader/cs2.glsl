@@ -24,7 +24,9 @@ uniform SamplerSparse metallic_tex;
 //: param auto channel_specularlevel
 uniform SamplerSparse specularlevel_tex;
 
-//- CS2 Weapon Finish specific parameter:
+//- CS2 Weapon Finish specific parameters:
+//: param custom { "default": true }
+uniform_specialization bool u_enable_live_preview;
 //: param auto channel_user0
 uniform SamplerSparse pearlescent_tex;
 
@@ -80,11 +82,12 @@ uniform int u_finish_style;
 uniform int u_weapon;
 
 //- Other parameters:
+//
 //: param custom { "default": 0.00 }
 uniform float u_wear;
 //: param custom { "default": 1.00 }
 uniform float u_tex_scale;
-//: param custom { "default": 1.00 }
+//: param custom { "default": 0.00 }
 uniform float u_pearl_scale;
 
 //- Special functions:
@@ -116,7 +119,9 @@ vec3 shift_color(vec3 c, LocalVectors v, float p_scale, float p_mask) {
 //- Entry point of the shader.
 void shade(V2F inputs)
 { 
-  inputs.sparse_coord.tex_coord *= u_tex_scale;
+  if (u_enable_live_preview) {
+    inputs.sparse_coord.tex_coord *= u_tex_scale;
+  }
 
   // Fetch material parameters
   float roughness = getRoughness(roughness_tex, inputs.sparse_coord);
@@ -131,16 +136,18 @@ void shade(V2F inputs)
     use_bent_normal ? shadowFactor : occlusion * shadowFactor,
     metallic,
     roughness);
-  float u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
 
   LocalVectors vectors = computeLocalFrame(inputs);
-  computeBentNormal(vectors, inputs);
+
+  if (u_enable_live_preview) {
+    float u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
+
+    diffColor = shift_color(diffColor, vectors, u_pearl_scale / 6, u_pearl_mask);
+    specColor = shift_color(specColor, vectors, u_pearl_scale / 6, u_pearl_mask);
+  }
 
   // Feed parameters for a physically based BRDF integration
-  emissiveColorOutput(pbrComputeEmissive(emissive_tex, inputs.sparse_coord));
-  albedoOutput(shift_color(diffColor, vectors, u_pearl_scale / 6, u_pearl_mask));
+  albedoOutput(diffColor);
   diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(getDiffuseBentNormal(vectors)));
   specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, getBentNormalSpecularAmount()));
-  sssCoefficientsOutput(getSSSCoefficients(inputs.sparse_coord));
-  sssColorOutput(getSSSColor(inputs.sparse_coord));
 }
