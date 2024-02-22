@@ -1,11 +1,8 @@
 //- Substance 3D Painter CS2 shader
 //- ============================================
-//-
+//- 
 //- Import from libraries.
 import lib-pbr.glsl
-import lib-bent-normal.glsl
-import lib-sss.glsl
-import lib-utils.glsl
 import lib-vectors.glsl
 import lib-sampler.glsl
 
@@ -29,6 +26,8 @@ uniform SamplerSparse specularlevel_tex;
 uniform_specialization bool u_enable_live_preview;
 //: param auto channel_user0
 uniform SamplerSparse pearlescent_tex;
+//: param auto channel_user1
+uniform SamplerSparse alpha_tex;
 
 //- Finish styles:
 #define AA 0 // Anodized Airbrushed
@@ -82,7 +81,6 @@ uniform int u_finish_style;
 uniform int u_weapon;
 
 //- Other parameters:
-//
 //: param custom { "default": 0.00 }
 uniform float u_wear;
 //: param custom { "default": 1.00 }
@@ -118,7 +116,7 @@ vec3 shift_color(vec3 c, LocalVectors v, float p_scale, float p_mask) {
 
 //- Entry point of the shader.
 void shade(V2F inputs)
-{ 
+{
   if (u_enable_live_preview) {
     inputs.sparse_coord.tex_coord *= u_tex_scale;
   }
@@ -131,9 +129,8 @@ void shade(V2F inputs)
   vec3 diffColor = generateDiffuseColor(baseColor, metallic);
   vec3 specColor = generateSpecularColor(specularLevel, baseColor, metallic);
   float shadowFactor = getShadowFactor();
-  float occlusion = getAO(inputs.sparse_coord, true, use_bent_normal);
-  float specOcclusion = specularOcclusionCorrection(
-    use_bent_normal ? shadowFactor : occlusion * shadowFactor,
+  float occlusion = getAO(inputs.sparse_coord, true);
+  float specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor,
     metallic,
     roughness);
 
@@ -148,6 +145,6 @@ void shade(V2F inputs)
 
   // Feed parameters for a physically based BRDF integration
   albedoOutput(diffColor);
-  diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(getDiffuseBentNormal(vectors)));
-  specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, getBentNormalSpecularAmount()));
+  diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(vectors.normal));
+  specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, 0.0));
 }
