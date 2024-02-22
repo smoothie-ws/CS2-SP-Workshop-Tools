@@ -87,24 +87,30 @@ uniform float u_tex_scale;
 //: param custom { "default": 1.00 }
 uniform float u_pearl_scale;
 
-//- Special methods:
-// All components are in the range [0…1], including hue.
+//- Special functions:
 vec3 rgb2hsv(vec3 c)
 {
-    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
 
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+  float d = q.x - min(q.w, q.y);
+  float e = 1.0e-10;
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
-// All components are in the range [0…1], including hue.
+
 vec3 hsv2rgb(vec3 c)
 {
-    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+vec3 shift_color(vec3 c, LocalVectors v, float p_scale, float p_mask) {
+  vec3 hsv = rgb2hsv(c);
+  float p_factor = 1 - max(0.0, dot(v.normal, v.eye));
+  hsv.x += p_factor * p_scale * p_mask;
+  return hsv2rgb(hsv);
 }
 
 //- Entry point of the shader.
@@ -112,34 +118,27 @@ void shade(V2F inputs)
 { 
   inputs.sparse_coord.tex_coord *= u_tex_scale;
 
-  // Fetch material parameters, and conversion to the specular/roughness model
+  // Fetch material parameters
   float roughness = getRoughness(roughness_tex, inputs.sparse_coord);
   vec3 baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
   float metallic = getMetallic(metallic_tex, inputs.sparse_coord);
   float specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
   vec3 diffColor = generateDiffuseColor(baseColor, metallic);
   vec3 specColor = generateSpecularColor(specularLevel, baseColor, metallic);
-  float pearlMask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
-
-  // Get detail (ambient occlusion) and global (shadow) occlusion factors
-  // separately in order to blend the bent normals properly
   float shadowFactor = getShadowFactor();
   float occlusion = getAO(inputs.sparse_coord, true, use_bent_normal);
   float specOcclusion = specularOcclusionCorrection(
     use_bent_normal ? shadowFactor : occlusion * shadowFactor,
     metallic,
     roughness);
+  float u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
 
   LocalVectors vectors = computeLocalFrame(inputs);
   computeBentNormal(vectors, inputs);
 
-  vec3 hsv = rgb2hsv(diffColor);
-  hsv.x -= max(0.0, dot(vectors.normal, vectors.eye)) * u_pearl_scale / 6 * pearlMask;
-  vec3 shiftedColor = hsv2rgb(hsv);
-
   // Feed parameters for a physically based BRDF integration
   emissiveColorOutput(pbrComputeEmissive(emissive_tex, inputs.sparse_coord));
-  albedoOutput(shiftedColor);
+  albedoOutput(shift_color(diffColor, vectors, u_pearl_scale / 6, u_pearl_mask));
   diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(getDiffuseBentNormal(vectors)));
   specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, getBentNormalSpecularAmount()));
   sssCoefficientsOutput(getSSSCoefficients(inputs.sparse_coord));
