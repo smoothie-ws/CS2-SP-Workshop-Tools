@@ -70,6 +70,46 @@ vec3 shift_color(vec3 c, LocalVectors v, float p_scale, float p_mask) {
   return hsv2rgb(hsv);
 }
 
+vec3 calculate_luminance(vec3 color) {
+    return vec3(dot(color, vec3(0.299, 0.587, 0.114)));
+}
+
+vec3 clamp_brightness(vec3 color, float brightness_limit) {
+    vec3 hsv = rgb_to_hsv(color);
+    hsv.z = clamp(pow(hsv.z, hsv.z / brightness_limit), 0.0, 1.0);
+    return hsv_to_rgb(hsv);
+}
+
+vec3 unclamp_brightness(vec3 color, float brightness_limit) {
+    vec3 hsv = rgb_to_hsv(color);
+    hsv.z = (1.0 - hsv.z) * (brightness_limit / 255.0);
+    return hsv_to_rgb(hsv);
+}
+
+vec3 correct_range(vec3 color, vec2 limit_values) {
+    vec3 linear_rgb = srgb_to_linear(color);
+    float luminance = calculate_luminance(linear_rgb);
+    float luminance_corrected = clamp(luminance, limit_values.x, limit_values.y);
+    float luminance_lightening_factor = clamp(luminance_corrected - luminance, 0.0, 255.0);
+    float luminance_darkening_factor = clamp(luminance - luminance_corrected, 0.0, 255.0);
+    vec3 color_ratios = linear_rgb / max(luminance, 1e-12);
+    vec3 linear_rgb_lightened = linear_rgb + luminance_lightening_factor * color_ratios;
+    vec3 linear_rgb_corrected = clamp(linear_rgb_lightened - luminance_darkening_factor, 0.0, 255.0);
+    return linear_to_srgb(linear_rgb_corrected);
+}
+
+vec3 verify_range(vec3 color, vec2 limit_values) {
+    vec3 linear_rgb = srgb_to_linear(color);
+    float luminance = calculate_luminance(linear_rgb);
+    if (luminance < limit_values.x) {
+        return vec3(0.0, 0.0, 1.0); // Blue color indicating below the limit
+    }
+    if (luminance > limit_values.y) {
+        return vec3(1.0, 0.0, 0.0); // Red color indicating above the limit
+    }
+    return color;
+}
+
 void shade(V2F inputs)
 {
   LocalVectors vectors = computeLocalFrame(inputs);
