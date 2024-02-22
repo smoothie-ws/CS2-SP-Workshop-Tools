@@ -25,8 +25,8 @@ uniform SamplerSparse metallic_tex;
 uniform SamplerSparse specularlevel_tex;
 
 //- CS2 Weapon Finish specific parameter:
-//: param auto user_0
-uniform float pearlescent_tex;
+//: param auto channel_user0
+uniform SamplerSparse pearlescent_tex;
 
 //- Finish styles:
 #define AA 0 // Anodized Airbrushed
@@ -119,6 +119,7 @@ void shade(V2F inputs)
   float specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
   vec3 diffColor = generateDiffuseColor(baseColor, metallic);
   vec3 specColor = generateSpecularColor(specularLevel, baseColor, metallic);
+  float pearlMask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
 
   // Get detail (ambient occlusion) and global (shadow) occlusion factors
   // separately in order to blend the bent normals properly
@@ -133,7 +134,7 @@ void shade(V2F inputs)
   computeBentNormal(vectors, inputs);
 
   vec3 hsv = rgb2hsv(diffColor);
-  hsv.x -= max(0.0, dot(vectors.normal, vectors.eye)) * u_pearl_scale / 6;
+  hsv.x -= max(0.0, dot(vectors.normal, vectors.eye)) * u_pearl_scale / 6 * pearlMask;
   vec3 shiftedColor = hsv2rgb(hsv);
 
   // Feed parameters for a physically based BRDF integration
