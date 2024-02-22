@@ -1,15 +1,20 @@
-//- Substance 3D Painter CS2 shader
-//- ============================================
-//- 
-//- Import from libraries.
 import lib-pbr.glsl
 import lib-vectors.glsl
 import lib-sampler.glsl
 
-//- Attach a custom UI file.
 //: metadata {
 //:   "custom-ui": "cs2/custom-ui.qml"
 //: }
+
+//- Finish styles:
+#define AA 0 // Anodized Airbrushed
+#define AM 1 // Anodized Multicolored
+#define AN 2 // Anodized
+#define CU 3 // Custom Paint Job
+#define GS 4 // Gunsmith
+#define HG 5 // Hydrographic
+#define PT 6 // patina
+#define SP 7 // Spray-Paint
 
 //- PBR shader specific parameters:
 //: param auto channel_basecolor
@@ -28,59 +33,10 @@ uniform_specialization bool u_enable_live_preview;
 uniform SamplerSparse pearlescent_tex;
 //: param auto channel_user1
 uniform SamplerSparse alpha_tex;
-
-//- Finish styles:
-#define AA 0 // Anodized Airbrushed
-#define AM 1 // Anodized Multicolored
-#define AN 2 // Anodized
-#define CU 3 // Custom Paint Job
-#define GS 4 // Gunsmith
-#define HG 5 // Hydrographic
-#define PT 6 // patina
-#define SP 7 // Spray-Paint
 //: param custom { "default": 4 }
 uniform int u_finish_style;
-
-//- Weapons:
-#define ak47 0
-#define aug 1
-#define awp 2
-#define cz75 3
-#define deagle 4
-#define duals 5
-#define famas 6
-#define fiveseven 7
-#define g3sg1 8
-#define galil 9
-#define g18 10
-#define mac10 11
-#define mag7 12
-#define m249 13
-#define m4a1s 14
-#define m4a4 15
-#define mp5sd 16
-#define mp7 17
-#define mp9 18
-#define negev 19
-#define nova 20
-#define p2000 21
-#define p250 22
-#define p90 23
-#define bizon 24
-#define r8 25
-#define scar20 26
-#define sg553 27
-#define ssg08 28
-#define sawedoff 29
-#define tec9 30
-#define ump45 31
-#define usps 32
-#define xm1014 33
-#define zeus 34
 //: param custom { "default": 0 }
 uniform int u_weapon;
-
-//- Other parameters:
 //: param custom { "default": 0.00 }
 uniform float u_wear;
 //: param custom { "default": 1.00 }
@@ -114,36 +70,65 @@ vec3 shift_color(vec3 c, LocalVectors v, float p_scale, float p_mask) {
   return hsv2rgb(hsv);
 }
 
-//- Entry point of the shader.
 void shade(V2F inputs)
 {
+  LocalVectors vectors = computeLocalFrame(inputs);
+  float roughness = 0.0;
+  vec3 baseColor = vec3(0.0, 0.0, 0.0);
+  float metallic = 0.0;
+  float specularLevel = 0.0;
+  vec3 diffColor = vec3(0.0, 0.0, 0.0);
+  vec3 specColor = vec3(0.0, 0.0, 0.0);
+  float shadowFactor = 0.0;
+  float occlusion = 0.0;
+  float specOcclusion = 0.0;
+
   if (u_enable_live_preview) {
     inputs.sparse_coord.tex_coord *= u_tex_scale;
-  }
 
-  // Fetch material parameters
-  float roughness = getRoughness(roughness_tex, inputs.sparse_coord);
-  vec3 baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
-  float metallic = getMetallic(metallic_tex, inputs.sparse_coord);
-  float specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
-  vec3 diffColor = generateDiffuseColor(baseColor, metallic);
-  vec3 specColor = generateSpecularColor(specularLevel, baseColor, metallic);
-  float shadowFactor = getShadowFactor();
-  float occlusion = getAO(inputs.sparse_coord, true);
-  float specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor,
-    metallic,
-    roughness);
+    roughness = getRoughness(roughness_tex, inputs.sparse_coord);
+    baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
 
-  LocalVectors vectors = computeLocalFrame(inputs);
+    if (u_finish_style != CU && 
+        u_finish_style != SP && 
+        u_finish_style != HG && 
+        u_finish_style != AN && 
+        u_finish_style != AA) {
 
-  if (u_enable_live_preview) {
+          if (u_finish_style != PT &&
+              u_finish_style != AM) {
+
+            metallic = getMetallic(metallic_tex, inputs.sparse_coord);
+
+          } else {
+            metallic = 1.0;
+          }
+    }
+
+    specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
+    diffColor = generateDiffuseColor(baseColor, metallic);
+    specColor = generateSpecularColor(specularLevel, baseColor, metallic);
+    shadowFactor = getShadowFactor();
+    occlusion = getAO(inputs.sparse_coord, true);
+    specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor, metallic, roughness);
+
     float u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
 
     diffColor = shift_color(diffColor, vectors, u_pearl_scale / 6, u_pearl_mask);
     specColor = shift_color(specColor, vectors, u_pearl_scale / 6, u_pearl_mask);
+
+  } else {
+    roughness = getRoughness(roughness_tex, inputs.sparse_coord);
+    baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
+    metallic = getMetallic(metallic_tex, inputs.sparse_coord);
+    specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
+    diffColor = generateDiffuseColor(baseColor, metallic);
+    specColor = generateSpecularColor(specularLevel, baseColor, metallic);
+    shadowFactor = getShadowFactor();
+    occlusion = getAO(inputs.sparse_coord, true);
+    specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor, metallic, roughness);
   }
 
-  // Feed parameters for a physically based BRDF integration
   albedoOutput(diffColor);
   diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(vectors.normal));
   specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, 0.0));
