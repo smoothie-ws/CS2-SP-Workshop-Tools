@@ -38,7 +38,11 @@ Rectangle {
         aoSelector.model = channelModel;
 
         Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shader, "u_enable_live_preview"));
-        Shader.connect(enableRangeVerification, "tick", alg.shaders.parameter(shader, "u_enable_range_verification"));
+        Shader.connect(enablePBRValidation, "tick", alg.shaders.parameter(shader, "u_enable_pbr_validation"));
+        Shader.connect(mRGBRange, "firstValue", alg.shaders.parameter(shader, "u_m_rgb_min"));
+        Shader.connect(mRGBRange, "secondValue", alg.shaders.parameter(shader, "u_m_rgb_max"));
+        Shader.connect(nmRGBRange, "firstValue", alg.shaders.parameter(shader, "u_nm_rgb_min"));
+        Shader.connect(nmRGBRange, "secondValue", alg.shaders.parameter(shader, "u_nm_rgb_max"));
         Shader.connect(styleBox, "currentIndex", alg.shaders.parameter(shader, "u_finish_style"));
         Shader.connect(textureScale, "value", alg.shaders.parameter(shader, "u_tex_scale"));
         Shader.connect(pearlScale, "value", alg.shaders.parameter(shader, "u_pearl_scale"));
@@ -48,37 +52,6 @@ Rectangle {
         id: mainLayout
         width: parent.width
         spacing: 15
-
-        AlgCheckBox {
-            id: enableLivePreview
-            text: "Live Preview"
-            Layout.fillWidth: true
-            Layout.topMargin: 10
-            checked: true
-        }
-
-        AlgCheckBox {
-            id: enableRangeVerification
-            text: "Verify RGB Range"
-            Layout.fillWidth: true
-
-            property bool tick: false
-
-            onCheckedChanged: {
-                tick = checked;
-            }
-
-            Timer {
-                id: timer
-                interval: 1000
-                running: enableRangeVerification.checked
-                repeat: true
-                onTriggered: {
-                    enableRangeVerification.tick = !enableRangeVerification.tick;
-                }
-            }
-        }
-
 
         GridLayout {
             columns: 2
@@ -163,15 +136,6 @@ Rectangle {
             AlgLabel {
                 text: "Map"
             }
-
-            AlgResourceWidget {
-                Layout.fillWidth: true
-
-                filters: AlgResourcePicker.ENVIRONMENT
-                refineQuery: "u:cs2map "
-                defaultLabel: "Select a CS2 map"
-
-            }
         }
 
         AlgSlider {
@@ -196,337 +160,394 @@ Rectangle {
                         return "Wear: Battle-Scarred (BS)";
                 }
         }
+        
+                AlgCheckBox {
+            id: enableLivePreview
+            text: "Live Preview"
+            Layout.fillWidth: true
+            Layout.topMargin: 10
+            checked: true
+        }
+
+        AlgCheckBox {
+            id: enablePBRValidation
+            text: "PBR Validate"
+            Layout.fillWidth: true
+
+            property bool tick: false
+
+            onCheckedChanged: {
+                tick = checked;
+            }
+
+            Timer {
+                id: timer
+                interval: 500
+                running: parent.checked
+                repeat: true
+                onTriggered: {
+                    parent.tick = !parent.tick;
+                }
+            }
+        }
 
         AlgGroupWidget {
-            id: commonParams
-            activeScopeBorder: true
-            text: styleBox.currentText
+            text: "PBR Validation Parameters"
+            visible: enablePBRValidation.checked
+            toggled: true
+
+            SPRangeSlider {
+                id: mRGBRange
+                Layout.fillWidth: true
+                
+                label: "RGB range for metallic finishes"
+                minValue: 1
+                maxValue: 255
+                firstValue: 90
+                secondValue: 250
+                step: 1
+                precision: 0
+            }
+
+            SPRangeSlider {
+                id: nmRGBRange
+                Layout.fillWidth: true
+
+                label: "RGB range for non-metallic finishes"
+                minValue: 1
+                maxValue: 255
+                firstValue: 55
+                secondValue: 220
+                step: 1
+                precision: 0
+            }
+        }
             
+        ColumnLayout {
+            RowLayout {
+                Layout.topMargin: 10
+                spacing: 15
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Base Texture"
+                }
+
+                AlgComboBox {
+                    id: baseTexSelector
+                    Layout.fillWidth: true
+                    tooltip: "Select a channel which will be used for export"
+                    textRole: "text"
+                }
+            }
+
+            AlgSlider {
+                id: textureScale
+                value: 1.0
+                minValue: -10.0
+                maxValue: 10.0
+                text: "Texture Scale"
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+            }
+
+            AlgCheckBox {
+                text: "Ignore Weapon Size Scale"
+                Layout.fillWidth: true
+                Layout.topMargin: 10
+
+                onCheckedChanged: {
+                    alg.log.warn("checked: " + checked)
+                }
+            }
+        }
+
+        AlgGroupWidget {
+            activeScopeBorder : true
+            Layout.topMargin: 10
+            text: "Color"
+
+            GridLayout {
+                columns: 2
+                columnSpacing: 15
+                Layout.fillWidth: true
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Base Metal"
+                }
+                AlgColorButton {
+                    id: colBaseMetal
+                    Layout.fillWidth: true
+
+                    arrayColor: [0.5, 0.5, 0.5]
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Patina Tint"
+                }
+                AlgColorButton {
+                    id: colPatinaTint
+                    Layout.fillWidth: true
+
+                    arrayColor: [0.5, 0.5, 0.5]
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Patina Wear"
+                }
+                AlgColorButton {
+                    id: colPatinaWear
+                    Layout.fillWidth: true
+
+                    arrayColor: [0.5, 0.5, 0.5]
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Grime"
+                }
+                AlgColorButton {
+                    id: colGrime
+                    Layout.fillWidth: true
+
+                    arrayColor: [0.5, 0.5, 0.5]
+                }
+            }
+        }
+
+        // TODO: change the sliders to double sliders
+        AlgGroupWidget {
+            activeScopeBorder : true
+            Layout.topMargin: 10
+            text: "Texture Placement"
+
             ColumnLayout {
+                Layout.fillWidth: true
+
+                SPRangeSlider {
+                    id: texRotation
+                    Layout.fillWidth: true
+                    label: "Texture Rotation"
+
+                    minValue: -360.0
+                    maxValue: 360.0
+                    firstValue: 0.0
+                    secondValue: 0.0
+                    step: 1.0
+                }
+
+                SPRangeSlider {
+                    id: texOffsetX
+                    Layout.fillWidth: true
+                    label: "Texture Offset X"
+
+                    minValue: -1.0
+                    maxValue: 1.0
+                    firstValue: 0.0
+                    secondValue: 0.0
+                    step: 0.1
+                }
+
+                SPRangeSlider {
+                    id: texOffsetY
+                    Layout.fillWidth: true
+                    label: "Texture Offset Y"
+
+                    minValue: -1.0
+                    maxValue: 1.0
+                    firstValue: 0.0
+                    secondValue: 0.0
+                    step: 0.1
+                }
+            }
+        }
+
+        AlgGroupWidget {
+            activeScopeBorder : true
+            Layout.topMargin: 10
+            text: "Effects"
+
+            ColumnLayout {
+                Layout.fillWidth: true
+
+                AlgSlider {
+                    id: wear
+                    Layout.fillWidth: true
+
+                    value: 0
+                    minValue: 0.0
+                    maxValue: 1.0
+                    text: "Wear"
+                }
+
+                AlgSlider {
+                    id: pearlScale
+                    Layout.fillWidth: true
+
+                    value: 0.0
+                    minValue: -6.0
+                    maxValue: 6.0
+                    text: "Pearlescent Scale"
+                }
+
+                AlgCheckBox {
+                    id: usePearlMask
+                    text: "Use Pearlescent Mask"
+                    onCheckedChanged: {
+                        alg.log.warn("use pearlescent mask: " + checked)
+                    }
+                }
                 RowLayout {
-                    Layout.topMargin: 10
-                    spacing: 15
+                    id: pearlMask
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 10
+                    Layout.alignment: Qt.AlignJustify
+                    visible: usePearlMask.checked
 
                     AlgLabel {
-                        Layout.fillHeight: true
-                        text: "Base Texture"
+                        text: "Pearlescent Mask"
                     }
 
                     AlgComboBox {
-                        id: baseTexSelector
+                        id: pearlMaskSelector
                         Layout.fillWidth: true
                         tooltip: "Select a channel which will be used for export"
                         textRole: "text"
                     }
                 }
 
-                AlgSlider {
-                    id: textureScale
-                    value: 1.0
-                    minValue: -10.0
-                    maxValue: 10.0
-                    text: "Texture Scale"
+                AlgCheckBox {
+                    id: useRoughnessTex
+                    text: "Use Roughness Texture"
+                    onCheckedChanged: {
+                        alg.log.warn("use roughness texture: " + checked)
+                    }
+                }
+                RowLayout {
+                    id: roughnessTex
                     Layout.fillWidth: true
-                    Layout.topMargin: 10
+                    Layout.fillHeight: true
+                    spacing: 10
+                    Layout.alignment: Qt.AlignJustify
+                    visible: useRoughnessTex.checked
+
+                    AlgLabel {
+                        text: "Roughness Texture"
+                    }
+
+                    AlgComboBox {
+                        id: roughnessTexSelector
+                        Layout.fillWidth: true
+                        tooltip: "Select a channel which will be used for export"
+                        textRole: "text"
+                    }
+                }
+            }
+        }
+
+        AlgGroupWidget {
+            activeScopeBorder : true
+            Layout.topMargin: 10
+            text: "Advanced"
+
+            ColumnLayout {
+                Layout.fillWidth: true
+
+                AlgCheckBox {
+                    id: useNormalMap
+                    text: "Use Custom Normal Map"
+
+                    onCheckedChanged: {
+                        alg.log.warn("use: " + checked)
+                    }
+                }
+
+                RowLayout {
+                    id: normalMap
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 10
+                    Layout.alignment: Qt.AlignJustify
+                    visible: useNormalMap.checked
+
+                    AlgLabel {
+                        text: "Normal Map"
+                    }
+
+                    AlgComboBox {
+                        id: normalMapSelector
+                        Layout.fillWidth: true
+                        tooltip: "Select a channel which will be used for export"
+                        textRole: "text"
+                    }
                 }
 
                 AlgCheckBox {
-                    text: "Ignore Weapon Size Scale"
-                    Layout.fillWidth: true
+                    id: useMaterialTex
+                    text: "Use Custom Material Mask"
                     Layout.topMargin: 10
 
                     onCheckedChanged: {
-                        alg.log.warn("checked: " + checked)
+                        alg.log.warn("use material mask: " + checked)
                     }
                 }
-            }
 
-            AlgGroupWidget {
-                activeScopeBorder : true
-                Layout.topMargin: 10
-                text: "Color"
-
-                GridLayout {
-                    columns: 2
-                    columnSpacing: 15
+                RowLayout {
+                    id: matMask
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 10
+                    Layout.alignment: Qt.AlignJustify
+                    visible: useMaterialTex.checked
 
                     AlgLabel {
-                        Layout.fillHeight: true
-                        text: "Base Metal"
+                        text: "Material Mask"
                     }
-                    AlgColorButton {
-                        id: colBaseMetal
+
+                    AlgComboBox {
+                        id: matMaskSelector
                         Layout.fillWidth: true
-
-                        arrayColor: [0.5, 0.5, 0.5]
-                    }
-
-                    AlgLabel {
-                        Layout.fillHeight: true
-                        text: "Patina Tint"
-                    }
-                    AlgColorButton {
-                        id: colPatinaTint
-                        Layout.fillWidth: true
-
-                        arrayColor: [0.5, 0.5, 0.5]
-                    }
-
-                    AlgLabel {
-                        Layout.fillHeight: true
-                        text: "Patina Wear"
-                    }
-                    AlgColorButton {
-                        id: colPatinaWear
-                        Layout.fillWidth: true
-
-                        arrayColor: [0.5, 0.5, 0.5]
-                    }
-
-                    AlgLabel {
-                        Layout.fillHeight: true
-                        text: "Grime"
-                    }
-                    AlgColorButton {
-                        id: colGrime
-                        Layout.fillWidth: true
-
-                        arrayColor: [0.5, 0.5, 0.5]
+                        tooltip: "Select a channel which will be used for export"
+                        textRole: "text"
                     }
                 }
-            }
 
-            // TODO: change the sliders to double sliders
-            AlgGroupWidget {
-                activeScopeBorder : true
-                Layout.topMargin: 10
-                text: "Texture Placement"
+                AlgCheckBox {
+                    id: useAOTex
+                    text: "Use Custom Ambient Occlusion"
+                    Layout.topMargin: 10
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-
-                    SPRangeSlider {
-                        id: texRotation
-                        Layout.fillWidth: true
-                        label: "Texture Rotation"
-
-                        minValue: -360.0
-                        maxValue: 360.0
-                        firstValue: 0.0
-                        secondValue: 0.0
-                        step: 1.0
-                    }
-
-                    SPRangeSlider {
-                        id: texOffsetX
-                        Layout.fillWidth: true
-                        label: "Texture Offset X"
-
-                        minValue: -1.0
-                        maxValue: 1.0
-                        firstValue: 0.0
-                        secondValue: 0.0
-                        step: 0.1
-                    }
-
-                    SPRangeSlider {
-                        id: texOffsetY
-                        Layout.fillWidth: true
-                        label: "Texture Offset Y"
-
-                        minValue: -1.0
-                        maxValue: 1.0
-                        firstValue: 0.0
-                        secondValue: 0.0
-                        step: 0.1
+                    onCheckedChanged: {
+                        alg.project.settings.setValue('use_custom_ao', checked);
+                        alg.log.warning(alg.project.settings.value('use_custom_ao'));
                     }
                 }
-            }
 
-            AlgGroupWidget {
-                activeScopeBorder : true
-                Layout.topMargin: 10
-                text: "Effects"
-
-                ColumnLayout {
+                RowLayout {
+                    id: aoMap
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 10
+                    Layout.alignment: Qt.AlignJustify
+                    visible: useAOTex.checked
 
-                    AlgSlider {
-                        id: wear
+                    AlgLabel {
+                        text: "Ambient Occlusion"
+                    }
+
+                    AlgComboBox {
+                        id: aoSelector
                         Layout.fillWidth: true
-
-                        value: 0
-                        minValue: 0.0
-                        maxValue: 1.0
-                        text: "Wear"
-                    }
-
-                    AlgSlider {
-                        id: pearlScale
-                        Layout.fillWidth: true
-
-                        value: 0.0
-                        minValue: -6.0
-                        maxValue: 6.0
-                        text: "Pearlescent Scale"
-                    }
-
-                    AlgCheckBox {
-                        id: usePearlMask
-                        text: "Use Pearlescent Mask"
-                        onCheckedChanged: {
-                            alg.log.warn("use pearlescent mask: " + checked)
-                        }
-                    }
-                    RowLayout {
-                        id: pearlMask
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 10
-                        Layout.alignment: Qt.AlignJustify
-                        visible: usePearlMask.checked
-
-                        AlgLabel {
-                            text: "Pearlescent Mask"
-                        }
-
-                        AlgComboBox {
-                            id: pearlMaskSelector
-                            Layout.fillWidth: true
-                            tooltip: "Select a channel which will be used for export"
-                            textRole: "text"
-                        }
-                    }
-
-                    AlgCheckBox {
-                        id: useRoughnessTex
-                        text: "Use Roughness Texture"
-                        onCheckedChanged: {
-                            alg.log.warn("use roughness texture: " + checked)
-                        }
-                    }
-                    RowLayout {
-                        id: roughnessTex
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 10
-                        Layout.alignment: Qt.AlignJustify
-                        visible: useRoughnessTex.checked
-
-                        AlgLabel {
-                            text: "Roughness Texture"
-                        }
-
-                        AlgComboBox {
-                            id: roughnessTexSelector
-                            Layout.fillWidth: true
-                            tooltip: "Select a channel which will be used for export"
-                            textRole: "text"
-                        }
-                    }
-                }
-            }
-
-            AlgGroupWidget {
-                activeScopeBorder : true
-                Layout.topMargin: 10
-                text: "Advanced"
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-
-                    AlgCheckBox {
-                        id: useNormalMap
-                        text: "Use Custom Normal Map"
-
-                        onCheckedChanged: {
-                            alg.log.warn("use: " + checked)
-                        }
-                    }
-
-                    RowLayout {
-                        id: normalMap
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 10
-                        Layout.alignment: Qt.AlignJustify
-                        visible: useNormalMap.checked
-
-                        AlgLabel {
-                            text: "Normal Map"
-                        }
-
-                        AlgComboBox {
-                            id: normalMapSelector
-                            Layout.fillWidth: true
-                            tooltip: "Select a channel which will be used for export"
-                            textRole: "text"
-                        }
-                    }
-
-                    AlgCheckBox {
-                        id: useMaterialTex
-                        text: "Use Custom Material Mask"
-                        Layout.topMargin: 10
-
-                        onCheckedChanged: {
-                            alg.log.warn("use material mask: " + checked)
-                        }
-                    }
-
-                    RowLayout {
-                        id: matMask
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 10
-                        Layout.alignment: Qt.AlignJustify
-                        visible: useMaterialTex.checked
-
-                        AlgLabel {
-                            text: "Material Mask"
-                        }
-
-                        AlgComboBox {
-                            id: matMaskSelector
-                            Layout.fillWidth: true
-                            tooltip: "Select a channel which will be used for export"
-                            textRole: "text"
-                        }
-                    }
-
-                    AlgCheckBox {
-                        id: useAOTex
-                        text: "Use Custom Ambient Occlusion"
-                        Layout.topMargin: 10
-
-                        onCheckedChanged: {
-                            alg.project.settings.setValue('use_custom_ao', checked);
-                            alg.log.warning(alg.project.settings.value('use_custom_ao'));
-                        }
-                    }
-
-                    RowLayout {
-                        id: aoMap
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        spacing: 10
-                        Layout.alignment: Qt.AlignJustify
-                        visible: useAOTex.checked
-
-                        AlgLabel {
-                            text: "Ambient Occlusion"
-                        }
-
-                        AlgComboBox {
-                            id: aoSelector
-                            Layout.fillWidth: true
-                            tooltip: "Select a channel which will be used for export"
-                            textRole: "text"
-                        }
+                        tooltip: "Select a channel which will be used for export"
+                        textRole: "text"
                     }
                 }
             }
         }
     }
 }
+

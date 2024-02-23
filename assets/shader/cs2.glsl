@@ -13,8 +13,8 @@ import lib-sampler.glsl
 #define AN 2 // Anodized
 #define CU 3 // Custom Paint Job
 #define GS 4 // Gunsmith
-#define HG 5 // Hydrographic
-#define PT 6 // patina
+#define HY 5 // Hydrographic
+#define AQ 6 // Patina
 #define SP 7 // Spray-Paint
 
 //- PBR shader specific parameters:
@@ -30,16 +30,24 @@ uniform SamplerSparse specularlevel_tex;
 //- CS2 Weapon Finish specific parameters:
 //: param custom { "default": true }
 uniform_specialization bool u_enable_live_preview;
+//: param custom { "default": 4 }
+uniform_specialization int u_finish_style;
+//: param custom { "default": 0 }
+uniform_specialization int u_weapon;
 //: param custom { "default": false }
-uniform bool u_enable_range_verification;
+uniform_specialization bool u_enable_pbr_validation;
+//: param custom { "default": 78.0 }
+uniform float u_m_rgb_min;
+//: param custom { "default": 250.0 }
+uniform float u_m_rgb_max;
+//: param custom { "default": 52.0 }
+uniform float u_nm_rgb_min;
+//: param custom { "default": 220.0 }
+uniform float u_nm_rgb_max;
 //: param auto channel_user0
 uniform SamplerSparse pearlescent_tex;
 //: param auto channel_user1
 uniform SamplerSparse alpha_tex;
-//: param custom { "default": 4 }
-uniform int u_finish_style;
-//: param custom { "default": 0 }
-uniform int u_weapon;
 //: param custom { "default": 0.00 }
 uniform float u_wear;
 //: param custom { "default": 1.00 }
@@ -50,18 +58,18 @@ uniform float u_pearl_scale;
 //- Special functions:
 vec3 rgb2hsv(vec3 c)
 {
-    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    vec4 K = vec4(0.0, -1.0 * 0.33, 2.0 * 0.33, -1.0); // 0.33 is 1/3
     vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
     vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
 
     float d = q.x - min(q.w, q.y);
     float e = 1.0e-10;
-    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+    return vec3(abs(q.z + (q.w - q.y) * (1 / (6.0 * d + e))), d * (1 / (q.x + e)), q.x);
 }
 
 vec3 hsv2rgb(vec3 c)
 {
-  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec4 K = vec4(1.0, 2.0 * 0.33, 1.0 * 0.33, 3.0); // 0.33 is 1/3
   vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
   return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
@@ -74,45 +82,14 @@ vec3 shiftColor(vec3 c, LocalVectors v, float p_scale, float p_mask)
     return hsv2rgb(hsv);
 }
 
-float getLuminance(vec3 c) {
-    return float(dot(c, vec3(0.299, 0.587, 0.114)));
-}
-
-vec3 clampBrightness(vec3 c, float brightness_limit) 
+vec3 PBRValidate(vec3 c, float v_min, float v_max)
 {
-    vec3 hsv = rgb2hsv(c);
-    hsv.z = clamp(pow(hsv.z, hsv.z / brightness_limit), 0.0, 1.0);
-    return hsv2rgb(hsv);
-}
-
-vec3 unclampBrightness(vec3 c, float brightness_limit) 
-{
-    vec3 hsv = rgb2hsv(c);
-    hsv.z = (1.0 - hsv.z) * (brightness_limit / 255.0);
-    return hsv2rgb(hsv);
-}
-
-// vec3 correct_range(vec3 c, vec2 limit_values) {
-//     vec3 linear_rgb = sRGB2linear(c);
-//     vec3 luminance = getLuminance(linear_rgb);
-//     vec3 luminance_corrected = clamp(luminance, limit_values.x, limit_values.y);
-//     vec3 luminance_lightening_factor = clamp(luminance_corrected - luminance, 0.0, 255.0);
-//     vec3 luminance_darkening_factor = clamp(luminance - luminance_corrected, 0.0, 255.0);
-//     vec3 color_ratios = linear_rgb / max(luminance, 1e-12);
-//     vec3 linear_rgb_lightened = linear_rgb + luminance_lightening_factor * color_ratios;
-//     vec3 linear_rgb_corrected = clamp(linear_rgb_lightened - luminance_darkening_factor, 0.0, 255.0);
-//     return linear2sRGB(linear_rgb_corrected);
-// }
-
-vec3 verifyRange(vec3 c, vec2 limit_values) 
-{
-    vec3 linear_rgb = sRGB2linear(c);
-    float luminance = getLuminance(linear_rgb);
-    if (luminance < limit_values.x) {
-        return vec3(0.0, 0.0, 1.0); // blue color indicating below the limit
+    float luminance = dot(c, vec3(0.299, 0.587, 0.114));
+    if (luminance < pow(v_min / 255.0, 2.2)) {
+        return vec3(0.0, 0.0, 1.0); // Any too dark color will blink Blue
     }
-    if (luminance > limit_values.y) {
-        return vec3(1.0, 0.0, 0.0); // red color indicating above the limit
+    if (luminance > pow(v_max / 255.0, 2.2)) {
+        return vec3(1.0, 0.0, 0.0); // Any too light color will blink Red
     }
     return vec3(0.0);
 }
@@ -138,11 +115,11 @@ void shade(V2F inputs)
 
         if (u_finish_style != CU && 
             u_finish_style != SP && 
-            u_finish_style != HG && 
+            u_finish_style != HY && 
             u_finish_style != AN && 
             u_finish_style != AA) 
         {
-                if (u_finish_style != PT &&
+                if (u_finish_style != AQ &&
                     u_finish_style != AM) 
                 {
                 metallic = getMetallic(metallic_tex, inputs.sparse_coord);
@@ -160,8 +137,8 @@ void shade(V2F inputs)
 
         float u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
 
-        diffColor = shiftColor(diffColor, vectors, u_pearl_scale / 6, u_pearl_mask);
-        specColor = shiftColor(specColor, vectors, u_pearl_scale / 6, u_pearl_mask);
+        diffColor = shiftColor(diffColor, vectors, u_pearl_scale * 0.167, u_pearl_mask); // 0.167 is 1/6
+        specColor = shiftColor(specColor, vectors, u_pearl_scale * 0.167, u_pearl_mask);
 
     } else {
         roughness = getRoughness(roughness_tex, inputs.sparse_coord);
@@ -175,11 +152,15 @@ void shade(V2F inputs)
         specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor, metallic, roughness);
     }
 
-    if (u_enable_range_verification) 
-    {
-        emissiveColorOutput(verifyRange(baseColor, vec2(0.03, 0.92)));
+    if (u_enable_pbr_validation)
+    {   
+        if (metallic <= 0.5) {
+            emissiveColorOutput(PBRValidate(baseColor, u_nm_rgb_min, u_nm_rgb_max));
+        } else {
+            emissiveColorOutput(PBRValidate(baseColor, u_m_rgb_min, u_m_rgb_max));
+        }
     }
-    
+
     albedoOutput(diffColor);
     diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(vectors.normal));
     specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, 0.0));
