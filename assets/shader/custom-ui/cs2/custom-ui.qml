@@ -38,6 +38,7 @@ Rectangle {
         aoSelector.model = channelModel;
 
         Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shader, "u_enable_live_preview"));
+        Shader.connect(enableRangeVerification, "tick", alg.shaders.parameter(shader, "u_enable_range_verification"));
         Shader.connect(styleBox, "currentIndex", alg.shaders.parameter(shader, "u_finish_style"));
         Shader.connect(textureScale, "value", alg.shaders.parameter(shader, "u_tex_scale"));
         Shader.connect(pearlScale, "value", alg.shaders.parameter(shader, "u_pearl_scale"));
@@ -49,13 +50,35 @@ Rectangle {
         spacing: 15
 
         AlgCheckBox {
-            x: 0
             id: enableLivePreview
             text: "Live Preview"
             Layout.fillWidth: true
             Layout.topMargin: 10
             checked: true
         }
+
+        AlgCheckBox {
+            id: enableRangeVerification
+            text: "Verify RGB Range"
+            Layout.fillWidth: true
+
+            property bool tick: false
+
+            onCheckedChanged: {
+                tick = checked;
+            }
+
+            Timer {
+                id: timer
+                interval: 1000
+                running: enableRangeVerification.checked
+                repeat: true
+                onTriggered: {
+                    enableRangeVerification.tick = !enableRangeVerification.tick;
+                }
+            }
+        }
+
 
         GridLayout {
             columns: 2
