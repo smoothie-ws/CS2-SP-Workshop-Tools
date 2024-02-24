@@ -132,10 +132,6 @@ Rectangle {
                     // TODO
                 }
             }
-
-            AlgLabel {
-                text: "Map"
-            }
         }
 
         AlgSlider {
@@ -161,11 +157,10 @@ Rectangle {
                 }
         }
         
-                AlgCheckBox {
+        AlgCheckBox {
             id: enableLivePreview
             text: "Live Preview"
             Layout.fillWidth: true
-            Layout.topMargin: 10
             checked: true
         }
 
@@ -182,8 +177,8 @@ Rectangle {
 
             Timer {
                 id: timer
-                interval: 500
-                running: parent.checked
+                interval: blinkInterval.value * 1000
+                running: enableBlinking.checked
                 repeat: true
                 onTriggered: {
                     parent.tick = !parent.tick;
@@ -195,6 +190,33 @@ Rectangle {
             text: "PBR Validation Parameters"
             visible: enablePBRValidation.checked
             toggled: true
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                AlgCheckBox {
+                    id: enableBlinking
+                    text: "Blink"
+
+                    onCheckedChanged: {
+                        enablePBRValidation.tick = checked ? enablePBRValidation.tick : true;
+                    }
+                }
+
+                AlgSlider {
+                    id: blinkInterval
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    visible: enableBlinking.checked
+                    value: 0.5
+                    minValue: 0.0
+                    maxValue: 1.0
+                    stepSize: 0.01
+                    text: "Interval"
+                }
+            }
 
             SPRangeSlider {
                 id: mRGBRange
