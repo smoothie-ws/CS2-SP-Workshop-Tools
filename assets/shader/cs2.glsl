@@ -6,7 +6,7 @@ import lib-sampler.glsl
 //: metadata {
 //:   "custom-ui": "cs2/custom-ui.qml"
 //: }
-
+// aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 //- Finish styles:
 #define AA 0 // Anodized Airbrushed
 #define AM 1 // Anodized Multicolored
@@ -50,12 +50,22 @@ uniform SamplerSparse pearlescent_tex;
 uniform SamplerSparse alpha_tex;
 //: param custom { "default": 0.00 }
 uniform float u_wear;
+//: param custom { "default": 1 }
+uniform vec3 u_base_metal;
+//: param custom { "default": 1 }
+uniform vec3 u_patina_tint;
+//: param custom { "default": 1 }
+uniform vec3 u_patina_wear;
+//: param custom { "default": 1 }
+uniform vec3 u_grime;
 //: param custom { "default": 1.00 }
 uniform float u_tex_scale;
 //: param custom { "default": 0.00 }
 uniform float u_pearl_scale;
 //: param custom { "default": true }
 uniform bool u_use_pearl_mask;
+//: param custom { "default": 0.6 }
+uniform float u_paint_roughness;
 //: param custom { "default": true }
 uniform bool u_use_roughness_tex;
 //: param custom { "default": true }
@@ -109,7 +119,7 @@ void shade(V2F inputs)
     LocalVectors vectors = computeLocalFrame(inputs);
 
     // TODO: set this values to the actual default values for weapon finishes
-    float roughness = 0.0;
+    float roughness = u_paint_roughness;
     vec3 baseColor = vec3(0.0, 0.0, 0.0);
     float metallic = 0.0;
     float specularLevel = 0.0;
@@ -146,7 +156,7 @@ void shade(V2F inputs)
 
         specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
         diffColor = generateDiffuseColor(baseColor, metallic);
-        specColor = generateSpecularColor(specularLevel, baseColor, metallic);
+        specColor = generateSpecularColor(specularLevel, baseColor * u_patina_tint, metallic);
         shadowFactor = getShadowFactor();
 
         if (u_use_ao_tex) {
@@ -161,6 +171,7 @@ void shade(V2F inputs)
         }
 
         diffColor = shiftColor(diffColor, vectors, u_pearl_scale * 0.167, u_pearl_mask); // 0.167 is 1/6
+
         specColor = shiftColor(specColor, vectors, u_pearl_scale * 0.167, u_pearl_mask);
 
     } else {

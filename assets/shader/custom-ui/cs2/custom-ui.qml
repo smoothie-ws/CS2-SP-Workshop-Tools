@@ -26,8 +26,13 @@ Rectangle {
         Shader.connect(nmRGBRange, "secondValue", alg.shaders.parameter(shaderId, "u_nm_rgb_max"));
         Shader.connect(styleBox, "currentIndex", alg.shaders.parameter(shaderId, "u_finish_style"));
         Shader.connect(textureScale, "value", alg.shaders.parameter(shaderId, "u_tex_scale"));
+        Shader.connect(colBaseMetal, "arrayColor", alg.shaders.parameter(shaderId, "u_base_metal"));
+        Shader.connect(colPatinaTint, "arrayColor", alg.shaders.parameter(shaderId, "u_patina_tint"));
+        Shader.connect(colPatinaWear, "arrayColor", alg.shaders.parameter(shaderId, "u_patina_wear"));
+        Shader.connect(colGrime, "arrayColor", alg.shaders.parameter(shaderId, "u_grime"));
         Shader.connect(pearlScale, "value", alg.shaders.parameter(shaderId, "u_pearl_scale"));
         Shader.connect(usePearlMask, "checked", alg.shaders.parameter(shaderId, "u_use_pearl_mask"));
+        Shader.connect(paintRoughness, "value", alg.shaders.parameter(shaderId, "u_paint_roughness"));
         Shader.connect(useRoughnessTex, "checked", alg.shaders.parameter(shaderId, "u_use_roughness_tex"));
         Shader.connect(useNormalMap, "checked", alg.shaders.parameter(shaderId, "u_use_normal_map"));
         Shader.connect(useMaterialMask, "checked", alg.shaders.parameter(shaderId, "u_use_material_mask"));
@@ -156,7 +161,7 @@ Rectangle {
             Layout.fillWidth: true
             checked: true
 
-            property bool tick: false
+            property bool tick: true
 
             onCheckedChanged: {
                 tick = checked;
@@ -165,7 +170,7 @@ Rectangle {
             Timer {
                 id: timer
                 interval: blinkInterval.value * 1000
-                running: enableBlinking.checked
+                running: enableBlinking.checked & enablePBRValidation.checked
                 repeat: true
                 onTriggered: {
                     parent.tick = !parent.tick;
@@ -185,6 +190,7 @@ Rectangle {
                 AlgCheckBox {
                     id: enableBlinking
                     text: "Blink"
+                    checked: true
 
                     onCheckedChanged: {
                         enablePBRValidation.tick = checked ? enablePBRValidation.tick : true;
@@ -201,7 +207,7 @@ Rectangle {
                     minValue: 0.0
                     maxValue: 1.0
                     stepSize: 0.01
-                    text: "Interval"
+                    text: "Blink Interval"
                 }
 
                 SPRangeSlider {
@@ -390,17 +396,21 @@ Rectangle {
                 AlgCheckBox {
                     id: usePearlMask
                     text: "Use Pearlescent Mask"
-                    onCheckedChanged: {
-                        // TODO
-                    }
                 }
-
+       
                 AlgCheckBox {
                     id: useRoughnessTex
                     text: "Use Roughness Texture"
-                    onCheckedChanged: {
-                        // TODO
-                    }
+                }
+
+                AlgSlider {
+                    id: paintRoughness
+                    Layout.fillWidth: true
+                    visible: !useRoughnessTex.checked
+                    value: 0.6
+                    minValue: 0.0
+                    maxValue: 1.0
+                    text: "Paint Roughness"
                 }
             }
         }
@@ -410,32 +420,23 @@ Rectangle {
             text: "Advanced"
             toggled: true
 
-            AlgCheckBox {
-                id: useNormalMap
-                text: "Use Custom Normal Map"
+            ColumnLayout {
+                spacing: 10
+                Layout.fillWidth: true
 
-                onCheckedChanged: {
-                    // TODO
+                AlgCheckBox {
+                    id: useNormalMap
+                    text: "Use Custom Normal Map"
                 }
-            }
 
-            AlgCheckBox {
-                id: useMaterialMask
-                text: "Use Custom Material Mask"
-                Layout.topMargin: 10
-
-                onCheckedChanged: {
-                    // TODO
+                AlgCheckBox {
+                    id: useMaterialMask
+                    text: "Use Custom Material Mask"
                 }
-            }
 
-            AlgCheckBox {
-                id: useAOTex
-                text: "Use Custom Ambient Occlusion"
-                Layout.topMargin: 10
-
-                onCheckedChanged: {
-                    // TODO
+                AlgCheckBox {
+                    id: useAOTex
+                    text: "Use Custom Ambient Occlusion"
                 }
             }
         }
