@@ -1,4 +1,5 @@
 import QtQuick 2.7
+import QtGraphicalEffects 1.15
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
 import AlgWidgets 2.0
@@ -22,7 +23,7 @@ RowLayout {
     }
 
     ColumnLayout {
-        spacing: 10
+        spacing: 5
         
         RowLayout {
             Layout.fillWidth: true
@@ -105,66 +106,70 @@ RowLayout {
                 second.onValueChanged: {
                     secondValue = second.value
                 }
-
+                
                 first.handle: Item {
-                    x: control.first.visualPosition * control.width - width / 2
-                    y: control.topPadding + ((control.availableHeight - height) / 2) - 4
+                    x: control.first.visualPosition * control.availableWidth
+                    y: control.topPadding + ((control.availableHeight - height) / 2)
                     width: 10
                     height: 10
 
-                    Canvas {
+                    Rectangle {
                         width: parent.width
                         height: parent.height
-
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.beginPath();
-                            ctx.moveTo(width / 2, height);
-                            ctx.lineTo(width, 0);
-                            ctx.lineTo(0, 0);
-                            ctx.closePath();
-                            ctx.fillStyle = control.hovered ? "#1a8dff" : "#d0d0d0";
-                            ctx.fill();
-                        }
+                        scale: control.first.pressed ? 1.3 : 1
+                        color: control.first.pressed ? "#1a8dff" : "#d0d0d0"
+                        border.color: "#1a8dff"
+                        border.width: control.first.pressed ? 2 : 0
+                        radius: 180
                     }
                 }
 
                 second.handle: Item {
-                    x: control.second.visualPosition * control.width - width / 2
-                    y: control.topPadding + ((control.availableHeight - height) / 2) + 4
+                    x: control.second.visualPosition * control.availableWidth
+                    y: control.topPadding + ((control.availableHeight - height) / 2)
                     width: 10
                     height: 10
 
-                    Canvas {
+                    Rectangle {
                         width: parent.width
                         height: parent.height
-
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.beginPath();
-                            ctx.moveTo(width / 2, 0);
-                            ctx.lineTo(width, height);
-                            ctx.lineTo(0, height);
-                            ctx.closePath();
-                            ctx.fillStyle = "#d0d0d0";
-                            ctx.fill();
-                        }
+                        scale: control.second.pressed ? 1.3 : 1
+                        color: control.second.pressed ? "#1a8dff" : "#d0d0d0"
+                        border.color: "#1a8dff"
+                        border.width: control.second.pressed ? 2 : 0
+                        radius: 180
                     }
                 }
 
                 background: Rectangle {
-                    width: control.width
+                    width: control.availableWidth
                     height: 2
                     radius: Math.round(Math.min(width/2, height/2))
                     color: (control.first.pressed | control.second.pressed) ? "#d0d0d0" : "#666666"
                     anchors.centerIn: parent
 
-                    Rectangle {
+                    Item {
                         x: control.first.visualPosition * parent.width
                         y: 0
-                        width: control.second.visualPosition * parent.width - control.first.visualPosition * parent.width
+                        width: (control.second.visualPosition - control.first.visualPosition) * parent.width
                         height: 2
-                        color: (control.hovered | control.first.pressed | control.second.pressed) ? "#1a8dff" : "#d0d0d0"
+
+                        LinearGradient {
+                            anchors.fill: parent
+                            start: Qt.point(0, 0)
+                            end: Qt.point(parent.width, 0)
+                            
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 0.0
+                                    color: control.first.pressed ? "#1a8dff" : "#d0d0d0"
+                                }
+                                GradientStop {
+                                    position: 1.0
+                                    color: control.second.pressed ? "#1a8dff" : "#d0d0d0"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -177,7 +182,15 @@ RowLayout {
 
     AlgButton {
         text: "Restore Defaults"
-
+        background: Rectangle {
+                        width: parent.width
+                        height: parent.height
+                        color: "#2d2d2d"
+                        border.color: "#4d4d4d"
+                        border.width: 1
+                        radius: 5
+                    }
+                
         onClicked: {
             firstValue = defaults[0];
             secondValue = defaults[1];

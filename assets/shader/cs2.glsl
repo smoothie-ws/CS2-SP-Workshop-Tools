@@ -34,7 +34,7 @@ uniform_specialization bool u_enable_live_preview;
 uniform_specialization int u_finish_style;
 //: param custom { "default": 0 }
 uniform_specialization int u_weapon;
-//: param custom { "default": false }
+//: param custom { "default": true }
 uniform_specialization bool u_enable_pbr_validation;
 //: param custom { "default": 78.0 }
 uniform float u_m_rgb_min;
@@ -54,6 +54,16 @@ uniform float u_wear;
 uniform float u_tex_scale;
 //: param custom { "default": 0.00 }
 uniform float u_pearl_scale;
+//: param custom { "default": true }
+uniform bool u_use_pearl_mask;
+//: param custom { "default": true }
+uniform bool u_use_roughness_tex;
+//: param custom { "default": true }
+uniform bool u_use_normal_map;
+//: param custom { "default": true }
+uniform bool u_use_material_mask;
+//: param custom { "default": true }
+uniform bool u_use_ao_tex;
 
 //- Special functions:
 vec3 rgb2hsv(vec3 c)
@@ -97,6 +107,8 @@ vec3 PBRValidate(vec3 c, float v_min, float v_max)
 void shade(V2F inputs) 
 {
     LocalVectors vectors = computeLocalFrame(inputs);
+
+    // TODO: set this values to the actual default values for weapon finishes
     float roughness = 0.0;
     vec3 baseColor = vec3(0.0, 0.0, 0.0);
     float metallic = 0.0;
@@ -104,13 +116,16 @@ void shade(V2F inputs)
     vec3 diffColor = vec3(0.0, 0.0, 0.0);
     vec3 specColor = vec3(0.0, 0.0, 0.0);
     float shadowFactor = 0.0;
-    float occlusion = 0.0;
+    float occlusion = 1.0;
     float specOcclusion = 0.0;
 
     if (u_enable_live_preview) {
         inputs.sparse_coord.tex_coord *= u_tex_scale;
 
-        roughness = getRoughness(roughness_tex, inputs.sparse_coord);
+        if (u_use_roughness_tex) {
+            roughness = getRoughness(roughness_tex, inputs.sparse_coord);
+        }
+
         baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
 
         if (u_finish_style != CU && 
@@ -120,11 +135,12 @@ void shade(V2F inputs)
             u_finish_style != AA) 
         {
                 if (u_finish_style != AQ &&
-                    u_finish_style != AM) 
-                {
-                metallic = getMetallic(metallic_tex, inputs.sparse_coord);
+                    u_finish_style != AM && 
+                    u_use_material_mask) 
+                {   
+                    metallic = getMetallic(metallic_tex, inputs.sparse_coord);
                 } else {
-                metallic = 1.0;
+                    metallic = 1.0;
                 }
         }
 
@@ -132,10 +148,17 @@ void shade(V2F inputs)
         diffColor = generateDiffuseColor(baseColor, metallic);
         specColor = generateSpecularColor(specularLevel, baseColor, metallic);
         shadowFactor = getShadowFactor();
-        occlusion = getAO(inputs.sparse_coord, true);
+
+        if (u_use_ao_tex) {
+            occlusion = getAO(inputs.sparse_coord, true);
+        }
         specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor, metallic, roughness);
 
-        float u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
+        float u_pearl_mask = 1.0;
+
+        if (u_use_pearl_mask) {
+            u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
+        }
 
         diffColor = shiftColor(diffColor, vectors, u_pearl_scale * 0.167, u_pearl_mask); // 0.167 is 1/6
         specColor = shiftColor(specColor, vectors, u_pearl_scale * 0.167, u_pearl_mask);
@@ -154,7 +177,7 @@ void shade(V2F inputs)
 
     if (u_enable_pbr_validation)
     {   
-        if (metallic <= 0.5) {
+        if (metallic < 0.5) {
             emissiveColorOutput(PBRValidate(baseColor, u_nm_rgb_min, u_nm_rgb_max));
         } else {
             emissiveColorOutput(PBRValidate(baseColor, u_m_rgb_min, u_m_rgb_max));
