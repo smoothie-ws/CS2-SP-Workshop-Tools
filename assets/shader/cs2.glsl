@@ -21,13 +21,9 @@ import lib-sampler.glsl
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D default_basecolor_sampler;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D default_roughness_sampler;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D default_metallic_sampler;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D default_normal_sampler;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D default_ao_sampler;
+//: param custom { "default": "", "default_color": [1.0, 0.5, 0.0] }
+uniform sampler2D default_orm_sampler;
 
 //- PBR shader specific parameters:
 //: param auto channel_basecolor
@@ -38,6 +34,8 @@ uniform SamplerSparse roughness_tex;
 uniform SamplerSparse metallic_tex;
 //: param auto channel_specularlevel
 uniform SamplerSparse specularlevel_tex;
+//: param auto texture_curvature
+uniform SamplerSparse curvature_tex;
 
 //- CS2 Weapon Finish specific parameters:
 //: param custom { "default": true }
@@ -117,6 +115,7 @@ vec3 shiftColor(vec3 c, LocalVectors v, float p_scale, float p_mask)
 vec3 PBRValidate(vec3 c, float v_min, float v_max)
 {
     float luminance = dot(c, vec3(0.299, 0.587, 0.114));
+
     if (luminance < pow(v_min / 255.0, 2.2)) {
         return vec3(0.0, 0.0, 1.0); // Any too dark color will blink Blue
     }
@@ -149,6 +148,9 @@ void shade(V2F inputs)
     if (u_enable_live_preview) {
         inputs.sparse_coord.tex_coord *= u_tex_scale;
 
+        vec3 curvature = textureSparse(curvature_tex, inputs.sparse_coord).xxx;
+        vec3 wear_mask = step(0.0, 1.0 - curvature * (5.0 / (5.0 - u_wear * 2))); // 5.0 and 2 is 1 * 5 and 0.4 * 5
+
         if (u_use_roughness_tex) {
             roughness = getRoughness(roughness_tex, inputs.sparse_coord);
         }
@@ -173,7 +175,9 @@ void shade(V2F inputs)
 
         specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
         diffColor = generateDiffuseColor(baseColor, metallic);
-        specColor = generateSpecularColor(specularLevel, baseColor * u_patina_tint, metallic);
+
+        vec3 patina_tint = clamp(u_patina_tint, u_wear, 1.0);
+        specColor = generateSpecularColor(specularLevel, baseColor * patina_tint, metallic);
         shadowFactor = getShadowFactor();
 
         if (u_use_ao_tex) {
@@ -188,13 +192,11 @@ void shade(V2F inputs)
         }
 
         diffColor = shiftColor(diffColor, vectors, u_pearl_scale * 0.167, u_pearl_mask); // 0.167 is 1/6
-
         specColor = shiftColor(specColor, vectors, u_pearl_scale * 0.167, u_pearl_mask);
 
     } else {
         roughness = getRoughness(roughness_tex, inputs.sparse_coord);
-        // baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
-        baseColor = sampler2Texture(default_basecolor_tex, inputs.sparse_coord);
+        baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
         metallic = getMetallic(metallic_tex, inputs.sparse_coord);
         specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
         diffColor = generateDiffuseColor(baseColor, metallic);
@@ -206,14 +208,15 @@ void shade(V2F inputs)
 
     if (u_enable_pbr_validation)
     {   
+        vec3 color = mix(baseColor, specColor, metallic);
+
         if (metallic < 0.5) {
-            emissiveColorOutput(PBRValidate(baseColor, u_nm_rgb_min, u_nm_rgb_max));
+            emissiveColorOutput(PBRValidate(color, u_nm_rgb_min, u_nm_rgb_max));
         } else {
-            emissiveColorOutput(PBRValidate(baseColor, u_m_rgb_min, u_m_rgb_max));
+            emissiveColorOutput(PBRValidate(color, u_m_rgb_min, u_m_rgb_max));
         }
     }
 
-    // emissiveColorOutput(diffColor);
     albedoOutput(diffColor);
     diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(vectors.normal));
     specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, 0.0));

@@ -40,7 +40,7 @@ Rectangle {
     }
     
     function displayShaderParameters(shaderId) {
-        Shader.connect(res, "restex", alg.shaders.parameter(shaderId, "default_basecolor_tex"));
+        // Shader.connect(res, "restex", alg.shaders.parameter(shaderId, "default_basecolor_tex"));
 
         Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shaderId, "u_enable_live_preview"));
         Shader.connect(enablePBRValidation, "tick", alg.shaders.parameter(shaderId, "u_enable_pbr_validation"));
@@ -49,6 +49,7 @@ Rectangle {
         Shader.connect(nmRGBRange, "firstValue", alg.shaders.parameter(shaderId, "u_nm_rgb_min"));
         Shader.connect(nmRGBRange, "secondValue", alg.shaders.parameter(shaderId, "u_nm_rgb_max"));
         Shader.connect(styleBox, "currentIndex", alg.shaders.parameter(shaderId, "u_finish_style"));
+        Shader.connect(uWear, "value", alg.shaders.parameter(shaderId, "u_wear"));
         Shader.connect(textureScale, "value", alg.shaders.parameter(shaderId, "u_tex_scale"));
         Shader.connect(colBaseMetal, "arrayColor", alg.shaders.parameter(shaderId, "u_base_metal"));
         Shader.connect(colPatinaTint, "arrayColor", alg.shaders.parameter(shaderId, "u_patina_tint"));
@@ -107,39 +108,39 @@ Rectangle {
                 { text: "AK-47", value: "ak47" },
                 { text: "AUG", value: "aug" },
                 { text: "AWP", value: "awp" },
-                { text: "CZ75-Auto", value: "cz75" },
+                { text: "PP-Bizon", value: "bizon" },
+                { text: "CZ75-Auto", value: "cz75a" },
                 { text: "Desert Eagle", value: "deagle" },
-                { text: "Dual Berettas", value: "duals" },
+                { text: "Dual Berettas", value: "elite" },
                 { text: "FAMAS", value: "famas" },
                 { text: "Five-SeveN", value: "fiveseven" },
+                { text: "Glock-18", value: "glock18" },
                 { text: "G3SG1", value: "g3sg1" },
-                { text: "Galil AR", value: "galil" },
-                { text: "Glock-18", value: "g18" },
+                { text: "Galil AR", value: "galilar" },
                 { text: "MAC-10", value: "mac10" },
-                { text: "MAG-7", value: "mag7" },
                 { text: "M249", value: "m249" },
-                { text: "M4A1-S", value: "m4a1s" },
+                { text: "M4A1-S", value: "m4a1_silencer" },
                 { text: "M4A4", value: "m4a4" },
+                { text: "MAG-7", value: "mag7" },
                 { text: "MP5-SD", value: "mp5sd" },
                 { text: "MP7", value: "mp7" },
                 { text: "MP9", value: "mp9" },
                 { text: "Negev", value: "negev" },
                 { text: "Nova", value: "nova" },
-                { text: "P2000", value: "p2000" },
+                { text: "P2000", value: "hkp2000" },
                 { text: "P250", value: "p250" },
                 { text: "P90", value: "p90" },
-                { text: "PP-Bizon", value: "bizon" },
-                { text: "R8 Revolver", value: "r8" },
-                { text: "SCAR-20", value: "scar20" },
-                { text: "SG 553", value: "sg553" },
-                { text: "SSG 08", value: "ssg08" },
+                { text: "R8 Revolver", value: "revolver" },
                 { text: "Sawed-Off", value: "sawedoff" },
+                { text: "SCAR-20", value: "scar20" },
+                { text: "SG 553", value: "sg556" },
+                { text: "SSG 08", value: "ssg08" },
                 { text: "Tec-9", value: "tec9" },
                 { text: "UMP-45", value: "ump45" },
-                { text: "USP-S", value: "usps" },
+                { text: "USP-S", value: "usp_silencer" },
                 { text: "XM1014", value: "xm1014" },
-                { text: "Zeus x27", value: "zeus" }
-                ]
+                { text: "Zeus x27", value: "taser" }
+            ]
                 textRole: "text"
                 currentIndex: 0
                 spacing: 15
