@@ -6,7 +6,7 @@ import lib-sampler.glsl
 //: metadata {
 //:   "custom-ui": "cs2/custom-ui.qml"
 //: }
-// aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
 //- Finish styles:
 #define AA 0 // Anodized Airbrushed
 #define AM 1 // Anodized Multicolored
@@ -16,6 +16,18 @@ import lib-sampler.glsl
 #define HY 5 // Hydrographic
 #define AQ 6 // Patina
 #define SP 7 // Spray-Paint
+
+//- Default Weapon Material parameters:
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D default_basecolor_sampler;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D default_roughness_sampler;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D default_metallic_sampler;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D default_normal_sampler;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D default_ao_sampler;
 
 //- PBR shader specific parameters:
 //: param auto channel_basecolor
@@ -114,6 +126,11 @@ vec3 PBRValidate(vec3 c, float v_min, float v_max)
     return vec3(0.0);
 }
 
+vec3 sampler2Texture(sampler2D u_sampler, SparseCoord sparse_coord) {
+    vec3 tex = texture(u_sampler, sparse_coord.tex_coord).rgb;
+    return sRGB2linear(tex);
+}
+
 void shade(V2F inputs) 
 {
     LocalVectors vectors = computeLocalFrame(inputs);
@@ -176,7 +193,8 @@ void shade(V2F inputs)
 
     } else {
         roughness = getRoughness(roughness_tex, inputs.sparse_coord);
-        baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
+        // baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
+        baseColor = sampler2Texture(default_basecolor_tex, inputs.sparse_coord);
         metallic = getMetallic(metallic_tex, inputs.sparse_coord);
         specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
         diffColor = generateDiffuseColor(baseColor, metallic);
@@ -195,6 +213,7 @@ void shade(V2F inputs)
         }
     }
 
+    // emissiveColorOutput(diffColor);
     albedoOutput(diffColor);
     diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(vectors.normal));
     specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, 0.0));

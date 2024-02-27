@@ -83,7 +83,6 @@ RowLayout {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 5
 
             AlgLabel {
                 text: minValue

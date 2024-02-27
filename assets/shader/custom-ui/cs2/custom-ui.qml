@@ -17,7 +17,31 @@ Rectangle {
         }
     }
 
+    function configureWeaponMesh() {
+        const mesh_url = alg.project.lastImportedMeshUrl();
+        const mesh_name = mesh_url.split('/').pop().split('.')[0];
+        let index = weaponBox.model.findIndex(item => item.value === mesh_name);
+
+        if (index !== -1) {
+            weaponBox.currentIndex = index;
+        }
+    }
+
+    PainterPlugin {
+        onNewProjectCreated: {
+            configureWeaponMesh();
+        }
+		onProjectOpened: {
+			configureWeaponMesh();
+		}
+        onComputationStatusChanged: function(isComputing) {
+            configureWeaponMesh();
+        }
+    }
+    
     function displayShaderParameters(shaderId) {
+        Shader.connect(res, "restex", alg.shaders.parameter(shaderId, "default_basecolor_tex"));
+
         Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shaderId, "u_enable_live_preview"));
         Shader.connect(enablePBRValidation, "tick", alg.shaders.parameter(shaderId, "u_enable_pbr_validation"));
         Shader.connect(mRGBRange, "firstValue", alg.shaders.parameter(shaderId, "u_m_rgb_min"));
@@ -178,6 +202,14 @@ Rectangle {
             }
         }
 
+        AlgResourceWidget {
+            id: res
+            filters: AlgResourcePicker.TEXTURE
+            property var restex: {
+                return 
+            }
+        }
+
         AlgGroupWidget {
             activeScopeBorder : true
             text: "PBR Validation Parameters"
@@ -190,7 +222,6 @@ Rectangle {
                 AlgCheckBox {
                     id: enableBlinking
                     text: "Blink"
-                    checked: true
 
                     onCheckedChanged: {
                         enablePBRValidation.tick = checked ? enablePBRValidation.tick : true;
