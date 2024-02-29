@@ -18,6 +18,10 @@ import lib-sampler.glsl
 #define SP 7 // Spray-Paint
 
 //- Default Weapon Material parameters:
+//: param custom { "default": "gun_grunge", "default_color": [1.0, 1.0, 1.0] }
+uniform sampler2D gun_grunge_sampler;
+//: param custom { "default": "paint_wear", "default_color": [1.0, 1.0, 1.0] }
+uniform sampler2D paint_wear_sampler;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D default_basecolor_sampler;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
@@ -112,9 +116,9 @@ vec3 shiftColor(vec3 c, LocalVectors v, float p_scale, float p_mask)
     return hsv2rgb(hsv);
 }
 
-vec3 PBRValidate(vec3 c, float v_min, float v_max)
+vec3 validateLuminance(vec3 c, float v_min, float v_max)
 {
-    float luminance = dot(c, vec3(0.299, 0.587, 0.114));
+    float luminance = sqrt(dot(pow(c, vec3(2.0)), vec3(0.299, 0.587, 0.114)));
 
     if (luminance < pow(v_min / 255.0, 2.2)) {
         return vec3(0.0, 0.0, 1.0); // Any too dark color will blink Blue
@@ -144,11 +148,13 @@ void shade(V2F inputs)
     float shadowFactor = 0.0;
     float occlusion = 1.0;
     float specOcclusion = 0.0;
+    vec3 wear_mask = vec3(1.0, 1.0, 1.0);
 
     if (u_enable_live_preview) {
         inputs.sparse_coord.tex_coord *= u_tex_scale;
 
-        vec3 curvature = textureSparse(curvature_tex, inputs.sparse_coord).xxx;
+        vec3 curvature = textureSparse(curvature_tex, inputs.sparse_coord).rgb;
+        vec3 gun_grunge = texture(gun_grunge_sampler, inputs.tex_coord).rgb;
         vec3 wear_mask = step(0.0, 1.0 - curvature * (5.0 / (5.0 - u_wear * 2))); // 5.0 and 2 is 1 * 5 and 0.4 * 5
 
         if (u_use_roughness_tex) {
@@ -191,8 +197,8 @@ void shade(V2F inputs)
             u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
         }
 
-        diffColor = shiftColor(diffColor, vectors, u_pearl_scale * 0.167, u_pearl_mask); // 0.167 is 1/6
-        specColor = shiftColor(specColor, vectors, u_pearl_scale * 0.167, u_pearl_mask);
+        diffColor = shiftColor(diffColor, vectors, u_pearl_scale * 0.167, u_pearl_mask) * wear_mask * gun_grunge; // 0.167 is 1/6
+        specColor = shiftColor(specColor, vectors, u_pearl_scale * 0.167, u_pearl_mask) * wear_mask;
 
     } else {
         roughness = getRoughness(roughness_tex, inputs.sparse_coord);
@@ -211,13 +217,13 @@ void shade(V2F inputs)
         vec3 color = mix(baseColor, specColor, metallic);
 
         if (metallic < 0.5) {
-            emissiveColorOutput(PBRValidate(color, u_nm_rgb_min, u_nm_rgb_max));
+            emissiveColorOutput(validateLuminance(color, u_nm_rgb_min, u_nm_rgb_max));
         } else {
-            emissiveColorOutput(PBRValidate(color, u_m_rgb_min, u_m_rgb_max));
+            emissiveColorOutput(validateLuminance(color, u_m_rgb_min, u_m_rgb_max));
         }
     }
 
     albedoOutput(diffColor);
     diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(vectors.normal));
-    specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness, occlusion, 0.0));
+    specularShadingOutput(pbrComputeSpecular(vectors, specColor, roughness, occlusion, 0.0));
 }
