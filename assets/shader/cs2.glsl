@@ -40,6 +40,10 @@ uniform SamplerSparse metallic_tex;
 uniform SamplerSparse specularlevel_tex;
 //: param auto texture_curvature
 uniform SamplerSparse curvature_tex;
+//: param auto channel_user0
+uniform SamplerSparse pearlescent_tex;
+//: param auto channel_user1
+uniform SamplerSparse alpha_tex;
 
 //- CS2 Weapon Finish specific parameters:
 //: param custom { "default": true }
@@ -58,10 +62,6 @@ uniform float u_m_rgb_max;
 uniform float u_nm_rgb_min;
 //: param custom { "default": 220.0 }
 uniform float u_nm_rgb_max;
-//: param auto channel_user0
-uniform SamplerSparse pearlescent_tex;
-//: param auto channel_user1
-uniform SamplerSparse alpha_tex;
 //: param custom { "default": 0.00 }
 uniform float u_wear;
 //: param custom { "default": 1 }
@@ -89,49 +89,25 @@ uniform bool u_use_material_mask;
 //: param custom { "default": true }
 uniform bool u_use_ao_tex;
 
-//- Special functions:
-vec3 rgb2hsv(vec3 c)
-{
-    vec4 K = vec4(0.0, -1.0 * 0.33, 2.0 * 0.33, -1.0); // 0.33 is 1/3
-    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return vec3(abs(q.z + (q.w - q.y) * (1 / (6.0 * d + e))), d * (1 / (q.x + e)), q.x);
+vec3 hueShift(vec3 color, float factor) {
+    const vec3 w = vec3(0.5, 0.5, 0.5);
+    float cosAngle = cos(factor);
+    return vec3(color * cosAngle + cross(w, color) * sin(factor) + w * dot(w, color) * (1.0 - cosAngle));
 }
 
-vec3 hsv2rgb(vec3 c)
-{
-  vec4 K = vec4(1.0, 2.0 * 0.33, 1.0 * 0.33, 3.0); // 0.33 is 1/3
-  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+float calculateWearMask(float curvature, float factor, float alpha, float tex) {
+    float mask = tex * sRGB2linear(curvature);
+    mask *= factor * 6.0 + 1.0;
+    mask *= smoothstep(0.0, 0.5, alpha);
+    mask += smoothstep(0.5, 0.6, alpha) * smoothstep(1.0, 0.9, alpha);
+    mask = smoothstep(0.58, 0.68, mask);
+    return mask;
 }
 
-vec3 shiftColor(vec3 c, LocalVectors v, float p_scale, float p_mask) 
-{
-    vec3 hsv = rgb2hsv(c);
-    float p_factor = 1 - max(0.0, dot(v.normal, v.eye));
-    hsv.x += p_factor * p_scale * p_mask;
-    return hsv2rgb(hsv);
-}
-
-vec3 validateLuminance(vec3 c, float v_min, float v_max)
-{
-    float luminance = sqrt(dot(pow(c, vec3(2.0)), vec3(0.299, 0.587, 0.114)));
-
-    if (luminance < pow(v_min / 255.0, 2.2)) {
-        return vec3(0.0, 0.0, 1.0); // Any too dark color will blink Blue
-    }
-    if (luminance > pow(v_max / 255.0, 2.2)) {
-        return vec3(1.0, 0.0, 0.0); // Any too light color will blink Red
-    }
-    return vec3(0.0);
-}
-
-vec3 sampler2Texture(sampler2D u_sampler, SparseCoord sparse_coord) {
-    vec3 tex = texture(u_sampler, sparse_coord.tex_coord).rgb;
-    return sRGB2linear(tex);
+vec3 validateLuminance(vec3 c, float v_min, float v_max) {
+    float lum = dot(c*c, vec3(0.299, 0.587, 0.114));
+    float minLum = pow(v_min / 255.0, 4.4), maxLum = pow(v_max / 255.0, 4.4);
+    return lum < minLum ? vec3(0.0, 0.0, 1.0) : (lum > maxLum ? vec3(1.0, 0.0, 0.0) : vec3(0.0));
 }
 
 void shade(V2F inputs) 
@@ -148,25 +124,38 @@ void shade(V2F inputs)
     float shadowFactor = 0.0;
     float occlusion = 1.0;
     float specOcclusion = 0.0;
-    vec3 wear_mask = vec3(1.0, 1.0, 1.0);
 
     if (u_enable_live_preview) {
+        vec3 gun_grunge = texture(gun_grunge_sampler, inputs.tex_coord).rgb;
+        float paint_wear = texture(paint_wear_sampler, inputs.tex_coord).x;
+
         inputs.sparse_coord.tex_coord *= u_tex_scale;
 
-        vec3 curvature = textureSparse(curvature_tex, inputs.sparse_coord).rgb;
-        vec3 gun_grunge = texture(gun_grunge_sampler, inputs.tex_coord).rgb;
-        vec3 wear_mask = step(0.0, 1.0 - curvature * (5.0 / (5.0 - u_wear * 2))); // 5.0 and 2 is 1 * 5 and 0.4 * 5
+        float curvature = textureSparse(curvature_tex, inputs.sparse_coord).x;
+        float alpha = textureSparse(alpha_tex, inputs.sparse_coord).x;
+        float wear_mask = calculateWearMask(curvature, u_wear, alpha, paint_wear);
 
         if (u_use_roughness_tex) {
             roughness = getRoughness(roughness_tex, inputs.sparse_coord);
         }
 
-        baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
+        roughness *= step(0.1, clamp(gun_grunge.x, 1.0 - u_wear, 1.0));
 
-        if (u_finish_style != CU && 
-            u_finish_style != SP && 
-            u_finish_style != HY && 
-            u_finish_style != AN && 
+        float u_pearl_mask = 1.0;
+
+        if (u_use_pearl_mask) {
+            u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
+        }
+
+        float hue_shift_factor = (1.0 - dot(vectors.normal, vectors.eye)) * u_pearl_scale * u_pearl_mask;
+
+        baseColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
+        baseColor = hueShift(baseColor, hue_shift_factor);
+
+        if (u_finish_style != CU &&
+            u_finish_style != SP &&
+            u_finish_style != HY &&
+            u_finish_style != AN &&
             u_finish_style != AA) 
         {
                 if (u_finish_style != AQ &&
@@ -180,7 +169,7 @@ void shade(V2F inputs)
         }
 
         specularLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
-        diffColor = generateDiffuseColor(baseColor, metallic);
+        diffColor = mix(generateDiffuseColor(baseColor, metallic), vec3(0.0, 0.0, 0.0), wear_mask);
 
         vec3 patina_tint = clamp(u_patina_tint, u_wear, 1.0);
         specColor = generateSpecularColor(specularLevel, baseColor * patina_tint, metallic);
@@ -189,16 +178,8 @@ void shade(V2F inputs)
         if (u_use_ao_tex) {
             occlusion = getAO(inputs.sparse_coord, true);
         }
+
         specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor, metallic, roughness);
-
-        float u_pearl_mask = 1.0;
-
-        if (u_use_pearl_mask) {
-            u_pearl_mask = textureSparse(pearlescent_tex, inputs.sparse_coord).x;
-        }
-
-        diffColor = shiftColor(diffColor, vectors, u_pearl_scale * 0.167, u_pearl_mask) * wear_mask * gun_grunge; // 0.167 is 1/6
-        specColor = shiftColor(specColor, vectors, u_pearl_scale * 0.167, u_pearl_mask) * wear_mask;
 
     } else {
         roughness = getRoughness(roughness_tex, inputs.sparse_coord);

@@ -40,7 +40,9 @@ Rectangle {
     }
     
     function displayShaderParameters(shaderId) {
-        // Shader.connect(res, "restex", alg.shaders.parameter(shaderId, "default_basecolor_tex"));
+        res["urlChanged"].connect(function() {
+            alg.shaders.parameter(shaderId, "paint_wear_sampler").value = res.url;
+        });
 
         Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shaderId, "u_enable_live_preview"));
         Shader.connect(enablePBRValidation, "tick", alg.shaders.parameter(shaderId, "u_enable_pbr_validation"));
@@ -206,9 +208,6 @@ Rectangle {
         AlgResourceWidget {
             id: res
             filters: AlgResourcePicker.TEXTURE
-            property var restex: {
-                return 
-            }
         }
 
         AlgGroupWidget {
