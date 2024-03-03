@@ -17,31 +17,59 @@ Rectangle {
         }
     }
 
-    function configureWeaponMesh() {
-        const mesh_url = alg.project.lastImportedMeshUrl();
-        const mesh_name = mesh_url.split('/').pop().split('.')[0];
+    function configureWeaponMesh(mesh_name) {
         let index = weaponBox.model.findIndex(item => item.value === mesh_name);
 
         if (index !== -1) {
             weaponBox.currentIndex = index;
         }
+
+        var path = *default path to the plugin material assets folder* + "weapons/" + mesh_name + "/" + mesh_name + "_";
+        alg.resources.importProjectResource(path + "albedo.jpg", ["texture"]);
+        alg.resources.importProjectResource(path + "normal.jpg", ["texture"]);
+        alg.resources.importProjectResource(path + "orm.jpg", ["texture"]);
+
+        albedoResource.requestUrl(alg.resources.findResources("*", mesh_name + "_albedo")[0]);
+        normalMapResource.requestUrl(alg.resources.findResources("*", mesh_name + "_normal")[0]);
+        ormResource.requestUrl(alg.resources.findResources("*", mesh_name + "_orm")[0]);
     }
 
     PainterPlugin {
         onNewProjectCreated: {
-            configureWeaponMesh();
+            var mesh_url = alg.project.lastImportedMeshUrl();
+            var mesh_name = mesh_url.split('/').pop().split('.')[0];
+            configureWeaponMesh(mesh_name);
         }
 		onProjectOpened: {
-			configureWeaponMesh();
+			var mesh_url = alg.project.lastImportedMeshUrl();
+            var mesh_name = mesh_url.split('/').pop().split('.')[0];
+            configureWeaponMesh(mesh_name);
 		}
         onComputationStatusChanged: function(isComputing) {
-            configureWeaponMesh();
+            var mesh_url = alg.project.lastImportedMeshUrl();
+            var mesh_name = mesh_url.split('/').pop().split('.')[0];
+            configureWeaponMesh(mesh_name);
         }
     }
     
     function displayShaderParameters(shaderId) {
-        res["urlChanged"].connect(function() {
-            alg.shaders.parameter(shaderId, "paint_wear_sampler").value = res.url;
+        gunGrungeResource["urlChanged"].connect(function() {
+            alg.shaders.parameter(shaderId, "gun_grunge_sampler").value = gunGrungeResource.url;
+        });
+        roughnessGrungeResource["urlChanged"].connect(function() {
+            alg.shaders.parameter(shaderId, "roughness_grunge_sampler").value = roughnessGrungeResource.url;
+        });
+        paintWearResource["urlChanged"].connect(function() {
+            alg.shaders.parameter(shaderId, "paint_wear_sampler").value = paintWearResource.url;
+        });
+        albedoResource["urlChanged"].connect(function() {
+            alg.shaders.parameter(shaderId, "default_basecolor_sampler").value = albedoResource.url;
+        });
+        normalMapResource["urlChanged"].connect(function() {
+            alg.shaders.parameter(shaderId, "default_normal_sampler").value = normalMapResource.url;
+        });
+        ormResource["urlChanged"].connect(function() {
+            alg.shaders.parameter(shaderId, "default_orm_sampler").value = ormResource.url;
         });
 
         Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shaderId, "u_enable_live_preview"));
@@ -85,14 +113,15 @@ Rectangle {
                 Layout.fillWidth: true
                 tooltip: "Select a finish style"
                 model: [
-                { text: "Anodized Airbrushed", value: 0 },
-                { text: "Anodized Multicolored", value: 1 },
-                { text: "Anodized", value: 2 },
-                { text: "Custom Paint Job", value: 3 },
-                { text: "Gunsmith", value: 4 },
-                { text: "Hydrographic", value: 5 },
-                { text: "Patina", value: 6 },
-                { text: "Spray Paint", value: 7 }
+                    { text: "Solid Color", value: 1 },
+                    { text: "Hydrographic", value: 2 },
+                    { text: "Spray Paint", value: 3 },
+                    { text: "Anodized", value: 4 },
+                    { text: "Anodized Multicolored", value: 5 },
+                    { text: "Anodized Airbrushed", value: 6 },
+                    { text: "Custom Paint Job", value: 7 },
+                    { text: "Patina", value: 8 },
+                    { text: "Gunsmith", value: 9 }
                 ]
                 textRole: "text"
                 spacing: 5
@@ -147,7 +176,88 @@ Rectangle {
                 currentIndex: 0
                 spacing: 15
                 onActivated: {
-                    // TODO
+                    configureWeaponMesh(model[index].value);
+                }
+            }
+        }
+
+        
+        AlgGroupWidget {
+            activeScopeBorder: true
+            text: "Default Material Textures"
+            visible: true
+            toggled: true
+
+            GridLayout {
+                columns: 2
+                columnSpacing: 15
+                rowSpacing: 10
+                Layout.fillWidth: true
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Gun Grunge Texture"
+                }
+                AlgResourceWidget {
+                    id: gunGrungeResource
+                    Layout.fillWidth: true
+
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Roughness Grunge Texture"
+                }
+                AlgResourceWidget {
+                    id: roughnessGrungeResource
+                    Layout.fillWidth: true
+
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Paint Wear Texture"
+                }
+                AlgResourceWidget {
+                    id: paintWearResource
+                    Layout.fillWidth: true
+                    
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Albedo Texture"
+                }
+                AlgResourceWidget {
+                    id: albedoResource
+                    Layout.fillWidth: true
+                    
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "Normal Map"
+                }
+                AlgResourceWidget {
+                    id: normalMapResource
+                    Layout.fillWidth: true
+                    
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    Layout.fillHeight: true
+                    text: "ORM Texture"
+                }
+                AlgResourceWidget {
+                    id: ormResource
+                    Layout.fillWidth: true
+                    
+                    filters: AlgResourcePicker.TEXTURE
                 }
             }
         }
@@ -203,11 +313,6 @@ Rectangle {
                     parent.tick = !parent.tick;
                 }
             }
-        }
-
-        AlgResourceWidget {
-            id: res
-            filters: AlgResourcePicker.TEXTURE
         }
 
         AlgGroupWidget {

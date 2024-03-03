@@ -66,7 +66,7 @@ for d in ls(cd):
                                   d_masks_img,
                                   d_metal_img)
 
-            orm_tex.save(f'{fpath(d)}/{d}_orm.jpg', quality=90)
+            orm_tex.save('w_orm.jpg', quality=90)
             d_ao_img.close()
             d_roughness_img.close()
             d_masks_img.close()
@@ -74,18 +74,18 @@ for d in ls(cd):
 
         if d_color_img:
             albedo_tex = d_color_img.resize(SIZE_2048).convert('RGB')
-            albedo_tex.save(f'{fpath(d)}/{d}_albedo.jpg', quality=90)
+            albedo_tex.save('w_albedo.jpg', quality=90)
             d_color_img.close()
 
         if d_normal_img:
             d_normal_img.resize(SIZE_2048)
-            d_normal_img.save(f'{fpath(d)}/{d}_normal.jpg', quality=90)
+            d_normal_img.save('w_normal.jpg', quality=90)
             d_normal_img.close()
 
 for d in ls(cd):
     if isdir(d) and not d.startswith('.'):
         for f in ls(fpath(d)):
-            if f.endswith(("_orm.jpg", "_albedo.jpg", "_normal.jpg")):
+            if f.endswith(("w_orm.jpg", "w_albedo.jpg", "w_normal.jpg")):
                 continue
             else:
                 try:
