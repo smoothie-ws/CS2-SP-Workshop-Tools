@@ -5,7 +5,7 @@ import lib-sampler.glsl
 import lib-normal.glsl
 
 //: metadata {
-//:   "custom-ui": "cs2/custom-ui.qml"
+//:     "custom-ui": "cs2/custom-ui.qml"
 //: }
 
 //- Finish styles:
@@ -19,21 +19,14 @@ import lib-normal.glsl
 #define AQ 8 // Patina
 #define GS 9 // Gunsmith
 
-//- Default Weapon Material parameters:
 //: param custom { "default": "gun_grunge", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D gun_grunge_sampler;
-//: param custom { "default": "roughness_grunge", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D roughness_grunge_sampler;
-//: param custom { "default": "paint_wear", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D paint_wear_sampler;
-//: param custom { "default": "", "default_color": [0.1, 0.1, 0.1] }
+//: param custom { "default": "", "default_color": [0.2, 0.2, 0.2] }
 uniform sampler2D default_basecolor_sampler;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
 uniform sampler2D default_normal_sampler;
-//: param custom { "default": "", "default_color": [1.0, 0.5, 0.0] }
+//: param custom { "default": "", "default_color": [1.0, 0.3, 1.0] }
 uniform sampler2D default_orm_sampler;
-
-//- PBR shader specific parameters:
 //: param auto channel_basecolor
 uniform SamplerSparse basecolor_tex;
 //: param auto channel_roughness
@@ -49,7 +42,6 @@ uniform SamplerSparse pearlescent_tex;
 //: param auto channel_user1
 uniform SamplerSparse alpha_tex;
 
-//- CS2 Weapon Finish specific parameters:
 //: param custom { "default": true }
 uniform_specialization bool u_enable_live_preview;
 //: param custom { "default": 4 }
@@ -175,15 +167,13 @@ void shade(V2F inputs) {
 
         // cutoff mask calculation
         vec3 gunGrunge = texture(gun_grunge_sampler, inputs.tex_coord * 1.8).rgb;
-        float roughGrunge = texture(roughness_grunge_sampler, inputs.tex_coord * 1.8).x;
-        float paintWear = texture(paint_wear_sampler, inputs.tex_coord * 1.8).x;
         float curvature = textureSparse(curvature_tex, inputs.sparse_coord).x;
         float alpha = textureSparse(alpha_tex, inputs.sparse_coord).x;
-        cutoffMask = computeCutoffMask(curvature, u_wear, alpha, paintWear);
+        cutoffMask = computeCutoffMask(curvature, u_wear, alpha, gunGrunge.b);
 
         // apply wear effect
-        pColor *= clamp(pow(gunGrunge, vec3(2.0) * u_wear), 0.0, 1.0);
-        pORM.g += roughGrunge * clamp(2 * u_wear - 1.0, 0.0, 1.0);
+        pColor *= clamp(pow(gunGrunge.r, 2.0 * u_wear), 0.0, 1.0);
+        pORM.g += gunGrunge.g * clamp(2 * u_wear - 1.0, 0.0, 1.0);
         // TODO: make wear also affect specular color
 
         float pearlMask = u_use_pearl_mask ? textureSparse(pearlescent_tex, inputs.sparse_coord).x : 1.0;

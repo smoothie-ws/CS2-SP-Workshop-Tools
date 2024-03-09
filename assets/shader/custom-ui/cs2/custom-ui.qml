@@ -10,24 +10,20 @@ Rectangle {
     id: root
     color: AlgStyle.background.color.mainWindow
     height: mainLayout.height
-    onHeightChanged: {
-        if (height != mainLayout.height)
-        {
-            height = Qt.binding(function() { return mainLayout.height});
-        }
-    }
 
-    function configureWeaponMesh(mesh_name) {
+    function configureWeaponMesh(path, mesh_name) {
         let index = weaponBox.model.findIndex(item => item.value === mesh_name);
 
         if (index !== -1) {
             weaponBox.currentIndex = index;
+        } else {
+            mesh_name = weaponBox.currentValue;
         }
 
-        var path = *default path to the plugin material assets folder* + "weapons/" + mesh_name + "/" + mesh_name + "_";
-        alg.resources.importProjectResource(path + "albedo.jpg", ["texture"]);
-        alg.resources.importProjectResource(path + "normal.jpg", ["texture"]);
-        alg.resources.importProjectResource(path + "orm.jpg", ["texture"]);
+        path += "assets/materials/weapons/" + mesh_name + "/" + mesh_name;
+        alg.resources.importProjectResource(path + "_albedo.jpg", ["texture"]);
+        alg.resources.importProjectResource(path + "_normal.jpg", ["texture"]);
+        alg.resources.importProjectResource(path + "_orm.jpg", ["texture"]);
 
         albedoResource.requestUrl(alg.resources.findResources("*", mesh_name + "_albedo")[0]);
         normalMapResource.requestUrl(alg.resources.findResources("*", mesh_name + "_normal")[0]);
@@ -35,32 +31,36 @@ Rectangle {
     }
 
     PainterPlugin {
+        id: plugin
+        property string pluginPath: "C:/Users/Admin/Documents/Adobe/Adobe Substance 3D Painter/python/plugins/CS2-SP-Workshop-Tools/";
+
         onNewProjectCreated: {
+            alg.resources.importProjectResource(pluginPath + "assets/materials/gun_grunge.jpg", ["texture"]);
+            gunGrungeResource.requestUrl(alg.resources.findResources("*", "gun_grunge")[0]);
+
             var mesh_url = alg.project.lastImportedMeshUrl();
             var mesh_name = mesh_url.split('/').pop().split('.')[0];
-            configureWeaponMesh(mesh_name);
+            configureWeaponMesh(pluginPath, mesh_name);
         }
+
 		onProjectOpened: {
-			var mesh_url = alg.project.lastImportedMeshUrl();
-            var mesh_name = mesh_url.split('/').pop().split('.')[0];
-            configureWeaponMesh(mesh_name);
+			alg.resources.importProjectResource(pluginPath + "assets/materials/gun_grunge.jpg", ["texture"]);
+            gunGrungeResource.requestUrl(alg.resources.findResources("*", "gun_grunge")[0]);
+
+            var mesh_name = weaponBox.currentValue;
+            configureWeaponMesh(pluginPath, mesh_name);
 		}
+
         onComputationStatusChanged: function(isComputing) {
             var mesh_url = alg.project.lastImportedMeshUrl();
             var mesh_name = mesh_url.split('/').pop().split('.')[0];
-            configureWeaponMesh(mesh_name);
+            configureWeaponMesh(pluginPath, mesh_name);
         }
     }
     
     function displayShaderParameters(shaderId) {
         gunGrungeResource["urlChanged"].connect(function() {
             alg.shaders.parameter(shaderId, "gun_grunge_sampler").value = gunGrungeResource.url;
-        });
-        roughnessGrungeResource["urlChanged"].connect(function() {
-            alg.shaders.parameter(shaderId, "roughness_grunge_sampler").value = roughnessGrungeResource.url;
-        });
-        paintWearResource["urlChanged"].connect(function() {
-            alg.shaders.parameter(shaderId, "paint_wear_sampler").value = paintWearResource.url;
         });
         albedoResource["urlChanged"].connect(function() {
             alg.shaders.parameter(shaderId, "default_basecolor_sampler").value = albedoResource.url;
@@ -93,197 +93,12 @@ Rectangle {
         Shader.connect(useMaterialMask, "checked", alg.shaders.parameter(shaderId, "u_use_material_mask"));
         Shader.connect(useAOTex, "checked", alg.shaders.parameter(shaderId, "u_use_ao_tex"));
     }
+    
 
     ColumnLayout {
         id: mainLayout
         width: parent.width
         spacing: 15
-
-        GridLayout {
-            columns: 2
-            columnSpacing: 15
-            Layout.fillWidth: true
-
-            AlgLabel {
-                text: "Finish style"
-            }
-
-            AlgComboBox {
-                id: styleBox
-                Layout.fillWidth: true
-                tooltip: "Select a finish style"
-                model: [
-                    { text: "Solid Color", value: 1 },
-                    { text: "Hydrographic", value: 2 },
-                    { text: "Spray Paint", value: 3 },
-                    { text: "Anodized", value: 4 },
-                    { text: "Anodized Multicolored", value: 5 },
-                    { text: "Anodized Airbrushed", value: 6 },
-                    { text: "Custom Paint Job", value: 7 },
-                    { text: "Patina", value: 8 },
-                    { text: "Gunsmith", value: 9 }
-                ]
-                textRole: "text"
-                spacing: 5
-            }
-
-            AlgLabel {
-                text: "Weapon"
-            }
-
-            AlgComboBox {
-                id: weaponBox
-                Layout.fillWidth: true
-                tooltip: "Select a weapon"
-                model: [
-                { text: "AK-47", value: "ak47" },
-                { text: "AUG", value: "aug" },
-                { text: "AWP", value: "awp" },
-                { text: "PP-Bizon", value: "bizon" },
-                { text: "CZ75-Auto", value: "cz75a" },
-                { text: "Desert Eagle", value: "deagle" },
-                { text: "Dual Berettas", value: "elite" },
-                { text: "FAMAS", value: "famas" },
-                { text: "Five-SeveN", value: "fiveseven" },
-                { text: "Glock-18", value: "glock18" },
-                { text: "G3SG1", value: "g3sg1" },
-                { text: "Galil AR", value: "galilar" },
-                { text: "MAC-10", value: "mac10" },
-                { text: "M249", value: "m249" },
-                { text: "M4A1-S", value: "m4a1_silencer" },
-                { text: "M4A4", value: "m4a4" },
-                { text: "MAG-7", value: "mag7" },
-                { text: "MP5-SD", value: "mp5sd" },
-                { text: "MP7", value: "mp7" },
-                { text: "MP9", value: "mp9" },
-                { text: "Negev", value: "negev" },
-                { text: "Nova", value: "nova" },
-                { text: "P2000", value: "hkp2000" },
-                { text: "P250", value: "p250" },
-                { text: "P90", value: "p90" },
-                { text: "R8 Revolver", value: "revolver" },
-                { text: "Sawed-Off", value: "sawedoff" },
-                { text: "SCAR-20", value: "scar20" },
-                { text: "SG 553", value: "sg556" },
-                { text: "SSG 08", value: "ssg08" },
-                { text: "Tec-9", value: "tec9" },
-                { text: "UMP-45", value: "ump45" },
-                { text: "USP-S", value: "usp_silencer" },
-                { text: "XM1014", value: "xm1014" },
-                { text: "Zeus x27", value: "taser" }
-            ]
-                textRole: "text"
-                currentIndex: 0
-                spacing: 15
-                onActivated: {
-                    configureWeaponMesh(model[index].value);
-                }
-            }
-        }
-
-        
-        AlgGroupWidget {
-            activeScopeBorder: true
-            text: "Default Material Textures"
-            visible: true
-            toggled: true
-
-            GridLayout {
-                columns: 2
-                columnSpacing: 15
-                rowSpacing: 10
-                Layout.fillWidth: true
-
-                AlgLabel {
-                    Layout.fillHeight: true
-                    text: "Gun Grunge Texture"
-                }
-                AlgResourceWidget {
-                    id: gunGrungeResource
-                    Layout.fillWidth: true
-
-                    filters: AlgResourcePicker.TEXTURE
-                }
-
-                AlgLabel {
-                    Layout.fillHeight: true
-                    text: "Roughness Grunge Texture"
-                }
-                AlgResourceWidget {
-                    id: roughnessGrungeResource
-                    Layout.fillWidth: true
-
-                    filters: AlgResourcePicker.TEXTURE
-                }
-
-                AlgLabel {
-                    Layout.fillHeight: true
-                    text: "Paint Wear Texture"
-                }
-                AlgResourceWidget {
-                    id: paintWearResource
-                    Layout.fillWidth: true
-                    
-                    filters: AlgResourcePicker.TEXTURE
-                }
-
-                AlgLabel {
-                    Layout.fillHeight: true
-                    text: "Albedo Texture"
-                }
-                AlgResourceWidget {
-                    id: albedoResource
-                    Layout.fillWidth: true
-                    
-                    filters: AlgResourcePicker.TEXTURE
-                }
-
-                AlgLabel {
-                    Layout.fillHeight: true
-                    text: "Normal Map"
-                }
-                AlgResourceWidget {
-                    id: normalMapResource
-                    Layout.fillWidth: true
-                    
-                    filters: AlgResourcePicker.TEXTURE
-                }
-
-                AlgLabel {
-                    Layout.fillHeight: true
-                    text: "ORM Texture"
-                }
-                AlgResourceWidget {
-                    id: ormResource
-                    Layout.fillWidth: true
-                    
-                    filters: AlgResourcePicker.TEXTURE
-                }
-            }
-        }
-
-        AlgSlider {
-            id: uWear
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            value: 0.0
-            minValue: 0.0
-            maxValue: 1.0
-            stepSize: 0.01
-            text: {
-                    if (value < 0.07)
-                        return "Wear: Factory New (FN)";
-                    else if (value < 0.15)
-                        return "Wear: Minimal Wear (MW)";
-                    else if (value < 0.37)
-                        return "Wear: Field Tested (FT)";
-                    else if (value < 0.45)
-                        return "Wear: Well-Worn (WW)";
-                    else
-                        return "Wear: Battle-Scarred (BS)";
-                }
-        }
         
         AlgCheckBox {
             id: enableLivePreview
@@ -374,6 +189,165 @@ Rectangle {
             }
         }
 
+        GridLayout {
+            columns: 2
+            columnSpacing: 15
+            Layout.fillWidth: true
+
+            AlgLabel {
+                text: "Finish style"
+            }
+
+            AlgComboBox {
+                id: styleBox
+                Layout.fillWidth: true
+                tooltip: "Select a finish style"
+                model: [
+                    { text: "Solid Color", value: 1 },
+                    { text: "Hydrographic", value: 2 },
+                    { text: "Spray Paint", value: 3 },
+                    { text: "Anodized", value: 4 },
+                    { text: "Anodized Multicolored", value: 5 },
+                    { text: "Anodized Airbrushed", value: 6 },
+                    { text: "Custom Paint Job", value: 7 },
+                    { text: "Patina", value: 8 },
+                    { text: "Gunsmith", value: 9 }
+                ]
+                textRole: "text"
+                spacing: 5
+            }
+
+            AlgLabel {
+                text: "Weapon"
+            }
+
+            AlgComboBox {
+                id: weaponBox
+                Layout.fillWidth: true
+                tooltip: "Select a weapon"
+                model: [
+                { text: "AK-47", value: "ak47" },
+                { text: "AUG", value: "aug" },
+                { text: "AWP", value: "awp" },
+                { text: "PP-Bizon", value: "bizon" },
+                { text: "CZ75-Auto", value: "cz75a" },
+                { text: "Desert Eagle", value: "deagle" },
+                { text: "Dual Berettas", value: "elite" },
+                { text: "FAMAS", value: "famas" },
+                { text: "Five-SeveN", value: "fiveseven" },
+                { text: "Glock-18", value: "glock18" },
+                { text: "G3SG1", value: "g3sg1" },
+                { text: "Galil AR", value: "galilar" },
+                { text: "MAC-10", value: "mac10" },
+                { text: "M249", value: "m249" },
+                { text: "M4A1-S", value: "m4a1_silencer" },
+                { text: "M4A4", value: "m4a4" },
+                { text: "MAG-7", value: "mag7" },
+                { text: "MP5-SD", value: "mp5sd" },
+                { text: "MP7", value: "mp7" },
+                { text: "MP9", value: "mp9" },
+                { text: "Negev", value: "negev" },
+                { text: "Nova", value: "nova" },
+                { text: "P2000", value: "hkp2000" },
+                { text: "P250", value: "p250" },
+                { text: "P90", value: "p90" },
+                { text: "R8 Revolver", value: "revolver" },
+                { text: "Sawed-Off", value: "sawedoff" },
+                { text: "SCAR-20", value: "scar20" },
+                { text: "SG 553", value: "sg556" },
+                { text: "SSG 08", value: "ssg08" },
+                { text: "Tec-9", value: "tec9" },
+                { text: "UMP-45", value: "ump45" },
+                { text: "USP-S", value: "usp_silencer" },
+                { text: "XM1014", value: "xm1014" },
+                { text: "Zeus x27", value: "taser" }
+            ]
+                textRole: "text"
+                currentIndex: 0
+                spacing: 15
+                onActivated: {
+                    configureWeaponMesh(plugin.pluginPath, model[index].value);
+                }
+            }
+        }
+        
+        AlgGroupWidget {
+            activeScopeBorder: true
+            text: "Default Material Textures"
+            visible: true
+            toggled: true
+
+            GridLayout {
+                columns: 2
+                columnSpacing: 15
+                rowSpacing: 10
+                Layout.fillWidth: true
+
+                AlgLabel {
+                    text: "Gun Grunge Texture"
+                }
+                AlgResourceWidget {
+                    id: gunGrungeResource
+                    Layout.fillWidth: true
+
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    text: "Albedo Texture"
+                }
+                AlgResourceWidget {
+                    id: albedoResource
+                    Layout.fillWidth: true
+                    
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    text: "Normal Map"
+                }
+                AlgResourceWidget {
+                    id: normalMapResource
+                    Layout.fillWidth: true
+                    
+                    filters: AlgResourcePicker.TEXTURE
+                }
+
+                AlgLabel {
+                    text: "ORM Texture"
+                }
+                AlgResourceWidget {
+                    id: ormResource
+                    Layout.fillWidth: true
+                    
+                    filters: AlgResourcePicker.TEXTURE
+                }
+            }
+        }
+
+        AlgSlider {
+            id: uWear
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            value: 0.0
+            minValue: 0.0
+            maxValue: 1.0
+            stepSize: 0.01
+            text: {
+                    if (value < 0.07)
+                        return "Wear: Factory New (FN)";
+                    else if (value < 0.15)
+                        return "Wear: Minimal Wear (MW)";
+                    else if (value < 0.37)
+                        return "Wear: Field Tested (FT)";
+                    else if (value < 0.45)
+                        return "Wear: Well-Worn (WW)";
+                    else
+                        return "Wear: Battle-Scarred (BS)";
+                }
+        }
+
         AlgSlider {
             id: textureScale
             value: 1.0
@@ -381,13 +355,11 @@ Rectangle {
             maxValue: 10.0
             text: "Texture Scale"
             Layout.fillWidth: true
-            Layout.topMargin: 10
         }
 
         AlgCheckBox {
             text: "Ignore Weapon Size Scale"
             Layout.fillWidth: true
-            Layout.topMargin: 10
 
             onCheckedChanged: {
                 alg.log.warn("checked: " + checked)
@@ -578,4 +550,3 @@ Rectangle {
         }
     }
 }
-
