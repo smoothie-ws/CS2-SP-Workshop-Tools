@@ -7,7 +7,8 @@ import AlgWidgets.Style 2.0
 
 RowLayout {
     spacing: 10
-
+    opacity: enabled ? 1.0 : 0.3
+    
     property string label
     property real minValue: 0.25
     property real maxValue: 0.50
@@ -179,20 +180,10 @@ RowLayout {
         }
     }
 
-    AlgButton {
-        text: "Restore Defaults"
-        background: Rectangle {
-                        width: parent.width
-                        height: parent.height
-                        color: "#2d2d2d"
-                        border.color: "#4d4d4d"
-                        border.width: 1
-                        radius: 5
-                    }
-                
+    SPButton {
+        text: "Reset"
         onClicked: {
-            firstValue = defaults[0];
-            secondValue = defaults[1];
+            controlValue = defaults;
         }
     }
 }

@@ -10,6 +10,7 @@ Rectangle {
     id: root
     color: AlgStyle.background.color.mainWindow
     height: mainLayout.height
+    visible: true
 
     function configureWeaponMesh(path, mesh_name) {
         let index = weaponBox.model.findIndex(item => item.value === mesh_name);
@@ -73,7 +74,7 @@ Rectangle {
         });
 
         Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shaderId, "u_enable_live_preview"));
-        Shader.connect(enablePBRValidation, "tick", alg.shaders.parameter(shaderId, "u_enable_pbr_validation"));
+        Shader.connect(enablePBRValidation, "checked", alg.shaders.parameter(shaderId, "u_enable_pbr_validation"));
         Shader.connect(mRGBRange, "firstValue", alg.shaders.parameter(shaderId, "u_m_rgb_min"));
         Shader.connect(mRGBRange, "secondValue", alg.shaders.parameter(shaderId, "u_m_rgb_max"));
         Shader.connect(nmRGBRange, "firstValue", alg.shaders.parameter(shaderId, "u_nm_rgb_min"));
@@ -93,18 +94,20 @@ Rectangle {
         Shader.connect(useMaterialMask, "checked", alg.shaders.parameter(shaderId, "u_use_material_mask"));
         Shader.connect(useAOTex, "checked", alg.shaders.parameter(shaderId, "u_use_ao_tex"));
     }
-    
 
     ColumnLayout {
         id: mainLayout
         width: parent.width
         spacing: 15
         
-        AlgCheckBox {
+        CheckBox {
             id: enableLivePreview
             text: "Live Preview"
             Layout.fillWidth: true
             checked: true
+            onChecked {
+                alg.log.info(checked)
+            }
         }
 
         AlgCheckBox {
@@ -112,22 +115,6 @@ Rectangle {
             text: "PBR Validate"
             Layout.fillWidth: true
             checked: true
-
-            property bool tick: true
-
-            onCheckedChanged: {
-                tick = checked;
-            }
-
-            Timer {
-                id: timer
-                interval: blinkInterval.value * 1000
-                running: enableBlinking.checked & enablePBRValidation.checked
-                repeat: true
-                onTriggered: {
-                    parent.tick = !parent.tick;
-                }
-            }
         }
 
         AlgGroupWidget {
@@ -138,28 +125,6 @@ Rectangle {
 
             ColumnLayout {
                 spacing: 15
-
-                AlgCheckBox {
-                    id: enableBlinking
-                    text: "Blink"
-
-                    onCheckedChanged: {
-                        enablePBRValidation.tick = checked ? enablePBRValidation.tick : true;
-                    }
-                }
-
-                AlgSlider {
-                    id: blinkInterval
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-
-                    visible: enableBlinking.checked
-                    value: 0.5
-                    minValue: 0.0
-                    maxValue: 1.0
-                    stepSize: 0.01
-                    text: "Blink Interval"
-                }
 
                 SPRangeSlider {
                     id: mRGBRange

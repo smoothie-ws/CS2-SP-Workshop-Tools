@@ -4,29 +4,17 @@ import lib-utils.glsl
 import lib-sampler.glsl
 import lib-normal.glsl
 
-//: metadata {
-//:     "custom-ui": "cs2/custom-ui.qml"
-//: }
-
 //- Finish styles:
-#define SO 1 // Solid Color
-#define HY 2 // Hydrographic
-#define SP 3 // Spray-Paint
-#define AN 4 // Anodized
-#define AM 5 // Anodized Multicolored
-#define AA 6 // Anodized Airbrushed
-#define CU 7 // Custom Paint Job
-#define AQ 8 // Patina
-#define GS 9 // Gunsmith
+#define SO 0 // Solid Color
+#define HY 1 // Hydrographic
+#define SP 2 // Spray-Paint
+#define AN 3 // Anodized
+#define AM 4 // Anodized Multicolored
+#define AA 5 // Anodized Airbrushed
+#define CU 6 // Custom Paint Job
+#define AQ 7 // Patina
+#define GS 8 // Gunsmith
 
-//: param custom { "default": "gun_grunge", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D gun_grunge_sampler;
-//: param custom { "default": "", "default_color": [0.2, 0.2, 0.2] }
-uniform sampler2D default_basecolor_sampler;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
-uniform sampler2D default_normal_sampler;
-//: param custom { "default": "", "default_color": [1.0, 0.3, 1.0] }
-uniform sampler2D default_orm_sampler;
 //: param auto channel_basecolor
 uniform SamplerSparse basecolor_tex;
 //: param auto channel_roughness
@@ -42,47 +30,53 @@ uniform SamplerSparse pearlescent_tex;
 //: param auto channel_user1
 uniform SamplerSparse alpha_tex;
 
-//: param custom { "default": true }
+//: param custom { "default": true, "visible": false }
 uniform_specialization bool u_enable_live_preview;
-//: param custom { "default": 4 }
+//: param custom { "default": 4, "visible": false }
 uniform_specialization int u_finish_style;
-//: param custom { "default": 0 }
-uniform_specialization int u_weapon;
-//: param custom { "default": true }
+//: param custom { "default": true, "visible": false }
 uniform_specialization bool u_enable_pbr_validation;
-//: param custom { "default": 78.0 }
+//: param custom { "default": "gun_grunge", "default_color": [0.5, 0.5, 0.5], "visible": false }
+uniform sampler2D gun_grunge_sampler;
+//: param custom { "default": "", "default_color": [0.2, 0.2, 0.2], "visible": false }
+uniform sampler2D default_basecolor_sampler;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0], "visible": false }
+uniform sampler2D default_normal_sampler;
+//: param custom { "default": "", "default_color": [1.0, 0.3, 1.0], "visible": false }
+uniform sampler2D default_orm_sampler;
+//: param custom { "default": 78.0, "visible": false }
 uniform float u_m_rgb_min;
-//: param custom { "default": 250.0 }
+//: param custom { "default": 250.0, "visible": false }
 uniform float u_m_rgb_max;
-//: param custom { "default": 52.0 }
+//: param custom { "default": 52.0, "visible": false }
 uniform float u_nm_rgb_min;
-//: param custom { "default": 220.0 }
+//: param custom { "default": 220.0, "visible": false }
 uniform float u_nm_rgb_max;
-//: param custom { "default": 0.00 }
+//: param custom { "default": 0.00, "visible": false }
 uniform float u_wear;
-//: param custom { "default": 1 }
+//: param custom { "default": 1, "visible": false }
 uniform vec3 u_base_metal;
-//: param custom { "default": 1 }
+//: param custom { "default": 1, "visible": false }
 uniform vec3 u_patina_tint;
-//: param custom { "default": 1 }
+//: param custom { "default": 1, "visible": false }
 uniform vec3 u_patina_wear;
-//: param custom { "default": 1 }
+//: param custom { "default": 1, "visible": false }
 uniform vec3 u_grime;
-//: param custom { "default": 1.00 }
+//: param custom { "default": 1.00, "visible": false }
 uniform float u_tex_scale;
-//: param custom { "default": 0.00 }
+//: param custom { "default": 0.00, "visible": false }
 uniform float u_pearl_scale;
-//: param custom { "default": true }
+//: param custom { "default": true, "visible": false }
 uniform bool u_use_pearl_mask;
-//: param custom { "default": 0.6 }
+//: param custom { "default": 0.6, "visible": false }
 uniform float u_paint_roughness;
-//: param custom { "default": true }
+//: param custom { "default": true, "visible": false }
 uniform bool u_use_roughness_tex;
-//: param custom { "default": true }
+//: param custom { "default": true, "visible": false }
 uniform bool u_use_normal_map;
-//: param custom { "default": true }
+//: param custom { "default": true, "visible": false }
 uniform bool u_use_material_mask;
-//: param custom { "default": true }
+//: param custom { "default": true, "visible": false }
 uniform bool u_use_ao_tex;
 
 vec3 hueShift(vec3 col, float factor) {
@@ -157,13 +151,15 @@ void shade(V2F inputs) {
         pORM.g = u_use_roughness_tex ? getRoughness(roughness_tex, inputs.sparse_coord) : u_paint_roughness;
         pORM.b = 0.0;
         
-        // if (u_use_material_mask) {
-        if (u_finish_style == AQ || u_finish_style == AM) {   
-            pORM.b = 1.0;
-        } else if (u_finish_style == GS) {
-            pORM.b = getMetallic(metallic_tex, inputs.sparse_coord);
-        } 
-        // }
+        if (u_use_material_mask) {
+            if (u_finish_style == AQ || u_finish_style == AM) {   
+                pORM.b = 1.0;
+            } else if (u_finish_style == GS) {
+                pORM.b = getMetallic(metallic_tex, inputs.sparse_coord);
+            } 
+        } else {
+            pORM.b = dORM.b;
+        }
 
         // cutoff mask calculation
         vec3 gunGrunge = texture(gun_grunge_sampler, inputs.tex_coord * 1.8).rgb;
@@ -204,6 +200,7 @@ void shade(V2F inputs) {
         } else {
             res = validateLuminance(rColor, u_m_rgb_min, u_m_rgb_max);
         }
+        rColor = (res.r > 0.0 || res.b > 0.0) ? vec3(0.0) : rColor;
         emissiveColorOutput(mix(res, vec3(0.0), cutoffMask));
     }
     
