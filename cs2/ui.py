@@ -7,11 +7,11 @@ from .assets import AssetBundle
 from .shader import ShaderBridge
 
 
-class UI(QQuickWidget):
+class ShaderUI(QQuickWidget):
     def __init__(self, assets: AssetBundle, shader_bridge: ShaderBridge):
         super().__init__()
         self.rootContext().setContextProperty("shader_bridge", shader_bridge)
-        self.setSource(QUrl.fromLocalFile(assets("shader").fetch("test.qml")))
+        self.setSource(QUrl.fromLocalFile(assets("shader").fetch("custom-ui.qml")))
         self.setWindowTitle("CS2 Workshop Tools")
         self.setWindowIcon(QIcon(assets("icons").fetch("logo.png")))
         self.setResizeMode(QQuickWidget.SizeRootObjectToView)

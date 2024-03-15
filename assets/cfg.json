@@ -1,15 +1,15 @@
 {
-  "PLUGIN" :
+  "SETTINGS":
   {
-    "SETTINGS":
+    "ASSETS": 
     {
       "shader": "shaders",
       "export-presets": "export-presets"
     }
   },
-    "DEFAULTS":
-    {
-      "shader": "shaders",
-      "export-presets": "export-presets"
-    }
+  "DEFAULTS":
+  {
+    "shader": "shaders",
+    "export-presets": "export-presets"
+  }
 }

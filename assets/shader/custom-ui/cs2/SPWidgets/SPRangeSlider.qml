@@ -183,7 +183,8 @@ RowLayout {
     SPButton {
         text: "Reset"
         onClicked: {
-            controlValue = defaults;
+            firstValue = defaults[0];
+            secondValue = defaults[1];
         }
     }
 }
