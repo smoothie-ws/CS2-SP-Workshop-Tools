@@ -200,7 +200,7 @@ void shade(V2F inputs) {
         } else {
             res = validateLuminance(rColor, u_m_rgb_min, u_m_rgb_max);
         }
-        rColor = (res.r > 0.0 || res.b > 0.0) ? vec3(0.0) : rColor;
+        rColor = mix((res.r > 0.0 || res.b > 0.0) ? vec3(0.0) : rColor, rColor, cutoffMask);
         emissiveColorOutput(mix(res, vec3(0.0), cutoffMask));
     }
     

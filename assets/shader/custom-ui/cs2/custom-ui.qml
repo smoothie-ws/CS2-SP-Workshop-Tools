@@ -4,117 +4,152 @@ import QtQuick.Controls 2.7
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
-import "shaderconnect.js" as Shader
+import "SPWidgets"
 
-Rectangle {
+
+ScrollView {
     id: root
-    color: AlgStyle.background.color.mainWindow
-    height: mainLayout.height
+    clip: true
     visible: true
+    enabled: true
+    width: parent.width
+    height: parent.height
+    padding: 10
+    ScrollBar.vertical.policy: root.contentHeight > root.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+    ScrollBar.horizontal.policy: root.contentWidth > root.width ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
 
-    function configureWeaponMesh(path, mesh_name) {
-        let index = weaponBox.model.findIndex(item => item.value === mesh_name);
-
-        if (index !== -1) {
-            weaponBox.currentIndex = index;
-        } else {
-            mesh_name = weaponBox.currentValue;
+    background: Rectangle {
+            width: parent.width
+            height: parent.height
+            color: AlgStyle.background.color.mainWindow
         }
 
-        path += "assets/materials/weapons/" + mesh_name + "/" + mesh_name;
-        alg.resources.importProjectResource(path + "_albedo.jpg", ["texture"]);
-        alg.resources.importProjectResource(path + "_normal.jpg", ["texture"]);
-        alg.resources.importProjectResource(path + "_orm.jpg", ["texture"]);
-
-        albedoResource.requestUrl(alg.resources.findResources("*", mesh_name + "_albedo")[0]);
-        normalMapResource.requestUrl(alg.resources.findResources("*", mesh_name + "_normal")[0]);
-        ormResource.requestUrl(alg.resources.findResources("*", mesh_name + "_orm")[0]);
+    // Block signals while applying a function on a QML component
+    function protectSignalRetroAction(qmlComponent, fn) {
+        return function() {
+        var state = qmlComponent.state;
+        if (state == "blockSignals") return;
+        qmlComponent.state = "blockSignals";
+        fn();
+        qmlComponent.state = state;
+        };
     }
 
-    PainterPlugin {
-        id: plugin
-        property string pluginPath: "C:/Users/Admin/Documents/Adobe/Adobe Substance 3D Painter/python/plugins/CS2-SP-Workshop-Tools/";
+    function updateComponentValue(qmlComponent, propertyKey, shaderParameter) {
+        const getProperty = (propertyKey, shaderParameter) => {
+        const propertyType = typeof qmlComponent[propertyKey];
+            switch (propertyType) {
+            case "number":
+                return shader_bridge.get_number(shaderParameter);
+            case "boolean":
+                return shader_bridge.get_bool(shaderParameter);
+            default:
+                return shader_bridge.get_list(shaderParameter);
+            }
+        };
 
-        onNewProjectCreated: {
-            alg.resources.importProjectResource(pluginPath + "assets/materials/gun_grunge.jpg", ["texture"]);
-            gunGrungeResource.requestUrl(alg.resources.findResources("*", "gun_grunge")[0]);
+        // Set QML property to the current parameter value
+        qmlComponent[propertyKey] = getProperty(propertyKey, shaderParameter);
+    }
 
-            var mesh_url = alg.project.lastImportedMeshUrl();
-            var mesh_name = mesh_url.split('/').pop().split('.')[0];
-            configureWeaponMesh(pluginPath, mesh_name);
-        }
+    // Connect a shader parameter to the property of a QML component
+    function shaderParameterConnect(qmlComponent, propertyKey, shaderParameter) {
+        // When the QML property has changed, update shader parameter data
+        qmlComponent[propertyKey + "Changed"].connect(protectSignalRetroAction(qmlComponent, function() {
+            shader_bridge.set_parameter_value(shaderParameter, qmlComponent[propertyKey]);
+        }));
+    }
 
-		onProjectOpened: {
-			alg.resources.importProjectResource(pluginPath + "assets/materials/gun_grunge.jpg", ["texture"]);
-            gunGrungeResource.requestUrl(alg.resources.findResources("*", "gun_grunge")[0]);
+    property var parameters: []
 
-            var mesh_name = weaponBox.currentValue;
-            configureWeaponMesh(pluginPath, mesh_name);
-		}
+    Component.onCompleted: {
+        parameters = [
+            { element: enableLivePreview, property: "checked", uniform: "u_enable_live_preview" },
+            { element: enablePBRValidation, property: "checked", uniform: "u_enable_pbr_validation" },
+            { element: mRGBRange, property: "firstValue", uniform: "u_m_rgb_min" },
+            { element: mRGBRange, property: "secondValue", uniform: "u_m_rgb_max" },
+            { element: nmRGBRange, property: "firstValue", uniform: "u_nm_rgb_min" },
+            { element: nmRGBRange, property: "secondValue", uniform: "u_nm_rgb_max" },
+            { element: styleBox, property: "currentIndex", uniform: "u_finish_style" },
+            { element: uWear, property: "controlValue", uniform: "u_wear" },
+            { element: textureScale, property: "controlValue", uniform: "u_tex_scale" },
+            { element: colBaseMetal, property: "arrayColor", uniform: "u_base_metal" },
+            { element: colPatinaTint, property: "arrayColor", uniform: "u_patina_tint" },
+            { element: colPatinaWear, property: "arrayColor", uniform: "u_patina_wear" },
+            { element: colGrime, property: "arrayColor", uniform: "u_grime" },
+            { element: pearlScale, property: "controlValue", uniform: "u_pearl_scale" },
+            { element: usePearlMask, property: "checked", uniform: "u_use_pearl_mask" },
+            { element: paintRoughness, property: "controlValue", uniform: "u_paint_roughness" },
+            { element: useRoughnessTex, property: "checked", uniform: "u_use_roughness_tex" },
+            { element: useNormalMap, property: "checked", uniform: "u_use_normal_map" },
+            { element: useMaterialMask, property: "checked", uniform: "u_use_material_mask" },
+            { element: useAOTex, property: "checked", uniform: "u_use_ao_tex" }
+        ];
 
-        onComputationStatusChanged: function(isComputing) {
-            var mesh_url = alg.project.lastImportedMeshUrl();
-            var mesh_name = mesh_url.split('/').pop().split('.')[0];
-            configureWeaponMesh(pluginPath, mesh_name);
-        }
+        parameters.forEach(function(parameter) {
+            shaderParameterConnect(parameter.element, parameter.property, parameter.uniform);
+        });
     }
     
-    function displayShaderParameters(shaderId) {
-        gunGrungeResource["urlChanged"].connect(function() {
-            alg.shaders.parameter(shaderId, "gun_grunge_sampler").value = gunGrungeResource.url;
-        });
-        albedoResource["urlChanged"].connect(function() {
-            alg.shaders.parameter(shaderId, "default_basecolor_sampler").value = albedoResource.url;
-        });
-        normalMapResource["urlChanged"].connect(function() {
-            alg.shaders.parameter(shaderId, "default_normal_sampler").value = normalMapResource.url;
-        });
-        ormResource["urlChanged"].connect(function() {
-            alg.shaders.parameter(shaderId, "default_orm_sampler").value = ormResource.url;
-        });
+    Timer {
+        id: timer
+        running: true
+        repeat: true
+        interval: 1000
 
-        Shader.connect(enableLivePreview, "checked", alg.shaders.parameter(shaderId, "u_enable_live_preview"));
-        Shader.connect(enablePBRValidation, "checked", alg.shaders.parameter(shaderId, "u_enable_pbr_validation"));
-        Shader.connect(mRGBRange, "firstValue", alg.shaders.parameter(shaderId, "u_m_rgb_min"));
-        Shader.connect(mRGBRange, "secondValue", alg.shaders.parameter(shaderId, "u_m_rgb_max"));
-        Shader.connect(nmRGBRange, "firstValue", alg.shaders.parameter(shaderId, "u_nm_rgb_min"));
-        Shader.connect(nmRGBRange, "secondValue", alg.shaders.parameter(shaderId, "u_nm_rgb_max"));
-        Shader.connect(styleBox, "currentIndex", alg.shaders.parameter(shaderId, "u_finish_style"));
-        Shader.connect(uWear, "value", alg.shaders.parameter(shaderId, "u_wear"));
-        Shader.connect(textureScale, "value", alg.shaders.parameter(shaderId, "u_tex_scale"));
-        Shader.connect(colBaseMetal, "arrayColor", alg.shaders.parameter(shaderId, "u_base_metal"));
-        Shader.connect(colPatinaTint, "arrayColor", alg.shaders.parameter(shaderId, "u_patina_tint"));
-        Shader.connect(colPatinaWear, "arrayColor", alg.shaders.parameter(shaderId, "u_patina_wear"));
-        Shader.connect(colGrime, "arrayColor", alg.shaders.parameter(shaderId, "u_grime"));
-        Shader.connect(pearlScale, "value", alg.shaders.parameter(shaderId, "u_pearl_scale"));
-        Shader.connect(usePearlMask, "checked", alg.shaders.parameter(shaderId, "u_use_pearl_mask"));
-        Shader.connect(paintRoughness, "value", alg.shaders.parameter(shaderId, "u_paint_roughness"));
-        Shader.connect(useRoughnessTex, "checked", alg.shaders.parameter(shaderId, "u_use_roughness_tex"));
-        Shader.connect(useNormalMap, "checked", alg.shaders.parameter(shaderId, "u_use_normal_map"));
-        Shader.connect(useMaterialMask, "checked", alg.shaders.parameter(shaderId, "u_use_material_mask"));
-        Shader.connect(useAOTex, "checked", alg.shaders.parameter(shaderId, "u_use_ao_tex"));
+        onTriggered: {
+            parameters.forEach(function(parameter) {
+                updateComponentValue(parameter.element, parameter.property, parameter.uniform);
+            });
+        }
     }
 
     ColumnLayout {
-        id: mainLayout
-        width: parent.width
+        id: settingsLayout
+        width: root.availableWidth
         spacing: 15
-        
-        CheckBox {
-            id: enableLivePreview
-            text: "Live Preview"
-            Layout.fillWidth: true
-            checked: true
-            onChecked {
-                alg.log.info(checked)
-            }
-        }
 
-        AlgCheckBox {
-            id: enablePBRValidation
-            text: "PBR Validate"
+        Rectangle {
             Layout.fillWidth: true
-            checked: true
+            height: previewButtons.height + 20
+            color: "#2d2d2d"
+            radius: 5
+
+            RowLayout {
+                id: previewButtons
+                y: 10
+                width: parent.width
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                SPButton {
+                    id: enableLivePreview
+                    text: "Live Preview"
+                    checkable: true
+                    checked: true
+
+                    onCheckedChanged: {
+                        shader_bridge.test_slot("u_patina_wear")
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+                
+                SPButton {
+                    id: enablePBRValidation
+                    text: "PBR Validate"
+                    checkable: true
+                    checked: true
+                }
+                
+                Item {
+                    Layout.fillWidth: true
+                }
+            }
         }
 
         AlgGroupWidget {
@@ -290,35 +325,35 @@ Rectangle {
             }
         }
 
-        AlgSlider {
+        SPSlider {
             id: uWear
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            value: 0.0
+            controlValue: 0.0
             minValue: 0.0
             maxValue: 1.0
-            stepSize: 0.01
-            text: {
-                    if (value < 0.07)
+            step: 0.01
+            label: {
+                    if (controlValue < 0.07)
                         return "Wear: Factory New (FN)";
-                    else if (value < 0.15)
+                    else if (controlValue < 0.15)
                         return "Wear: Minimal Wear (MW)";
-                    else if (value < 0.37)
+                    else if (controlValue < 0.37)
                         return "Wear: Field Tested (FT)";
-                    else if (value < 0.45)
+                    else if (controlValue < 0.45)
                         return "Wear: Well-Worn (WW)";
                     else
                         return "Wear: Battle-Scarred (BS)";
                 }
         }
 
-        AlgSlider {
+        SPSlider {
             id: textureScale
-            value: 1.0
+            controlValue: 1.0
             minValue: -10.0
             maxValue: 10.0
-            text: "Texture Scale"
+            label: "Texture Scale"
             Layout.fillWidth: true
         }
 
@@ -456,34 +491,34 @@ Rectangle {
                     step: 0.05
                 }
 
-                AlgSlider {
+                SPSlider {
                     id: pearlScale
                     Layout.fillWidth: true
 
-                    value: 0.0
+                    controlValue: 0.0
                     minValue: -6.0
                     maxValue: 6.0
-                    text: "Pearlescent Scale"
+                    label: "Pearlescent Scale"
                 }
 
                 AlgCheckBox {
                     id: usePearlMask
                     text: "Use Pearlescent Mask"
                 }
-       
+    
                 AlgCheckBox {
                     id: useRoughnessTex
                     text: "Use Roughness Texture"
                 }
 
-                AlgSlider {
+                SPSlider {
                     id: paintRoughness
                     Layout.fillWidth: true
                     visible: !useRoughnessTex.checked
-                    value: 0.6
+                    controlValue: 0.6
                     minValue: 0.0
                     maxValue: 1.0
-                    text: "Paint Roughness"
+                    label: "Paint Roughness"
                 }
             }
         }
