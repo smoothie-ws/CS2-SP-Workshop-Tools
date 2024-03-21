@@ -17,7 +17,6 @@ RowLayout {
     property real step: 0.1
     property bool isFloat: false
     property int precision: 2
-    property var defaults: []
 
     Component.onCompleted: {
         defaults = [firstValue, secondValue];
@@ -177,14 +176,6 @@ RowLayout {
             AlgLabel {
                 text: maxValue
             }
-        }
-    }
-
-    SPButton {
-        text: "Reset"
-        onClicked: {
-            firstValue = defaults[0];
-            secondValue = defaults[1];
         }
     }
 }

@@ -16,11 +16,6 @@ RowLayout {
     property real step: 0.1
     property bool isFloat: false
     property int precision: 2
-    property real defaults: 0.0
-
-    Component.onCompleted: {
-        defaults = controlValue;
-    }
 
     ColumnLayout {
         spacing: 5
@@ -133,13 +128,6 @@ RowLayout {
             AlgLabel {
                 text: maxValue
             }
-        }
-    }
-    
-    SPButton {
-        text: "Reset"
-        onClicked: {
-            controlValue = defaults;
         }
     }
 }

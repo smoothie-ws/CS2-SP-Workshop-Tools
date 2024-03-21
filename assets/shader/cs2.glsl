@@ -4,6 +4,11 @@ import lib-utils.glsl
 import lib-sampler.glsl
 import lib-normal.glsl
 
+//: metadata {
+//   "custom-ui": "cs2/main.qml"
+//: }
+
+// asdasd asdasdsad
 //- Finish styles:
 #define SO 0 // Solid Color
 #define HY 1 // Hydrographic
@@ -56,7 +61,7 @@ uniform float u_nm_rgb_max;
 uniform float u_wear;
 //: param custom { "default": 1, "visible": false }
 uniform vec3 u_base_metal;
-//: param custom { "default": 1, "visible": false }
+//: param custom { "default": 1, "visible": "false" }
 uniform vec3 u_patina_tint;
 //: param custom { "default": 1, "visible": false }
 uniform vec3 u_patina_wear;
