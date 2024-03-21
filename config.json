@@ -1,0 +1,47 @@
+{
+  "info": {
+    "name": "CS2 Workshop Tools",
+    "author": "smoothie",
+    "version": "1.0",
+    "link": "https://github.com/smoothie-ws/CS2-SP-Workshop-Tools",
+    "description": "The CS2 Workshop Tools plugin enhances your workflow of creating custom CS2 weapon finishes by integrating some useful features and tools to the Adobe Substance Painter."
+  },
+  "dependencies": {
+      "substance_painter": ">= 8.1.2"
+  },
+  "defaults": {
+    "weapon_finish": {
+      "common": {
+        "finish_style": "Gunsmith",
+        "weapon": "ak47",
+        "ignore_weapon_size_scale": true,
+        "texture_scale": 1.00
+      },
+      "texture_coordinates": {
+        "rotation": [ 0.00, 0.00 ],
+        "offset_x": [ 0.00, 0.00 ],
+        "offset_y": [ 0.00, 0.00 ]
+
+      },
+      "color": {
+        "base_metal": [ 255, 255, 255 ],
+        "patina_tint": [ 255, 255, 255 ],
+        "patina_wear": [ 255, 255, 255 ],
+        "grime": [ 255, 255, 255 ]
+
+      },
+      "effects": {
+        "paint_roughness": 0.3,
+        "pearlescent_scale": 0.0
+      
+      },
+      "advanced": {
+        "use_custom_ao": true,
+        "use_custom_material_mask": true,
+        "use_custom_normal_map": true,
+        "use_pearlescence_mask": true,
+        "use_custom_roughness": true
+      }
+    }
+  }
+}

@@ -4,7 +4,6 @@ import QtQuick.Controls 2.7
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
-import "SPWidgets"
 
 
 ScrollView {
