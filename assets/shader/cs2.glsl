@@ -4,11 +4,6 @@ import lib-utils.glsl
 import lib-sampler.glsl
 import lib-normal.glsl
 
-//: metadata {
-//   "custom-ui": "cs2/main.qml"
-//: }
-
-// asdasd asdasdsad
 //- Finish styles:
 #define SO 0 // Solid Color
 #define HY 1 // Hydrographic

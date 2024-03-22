@@ -13,7 +13,6 @@ ScrollView {
     visible: true
     width: parent.width
     height: parent.height
-    padding: 10
     ScrollBar.vertical.policy: root.contentHeight > root.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
     ScrollBar.horizontal.policy: root.contentWidth > root.width ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
 
@@ -28,8 +27,11 @@ ScrollView {
         shaderParams.opacity = is_enabled ? 1.0 : 0.5;
     }
 
-    Item {
+    Rectangle {
+        anchors.fill: parent
         id: shaderParams
+        color: AlgStyle.background.color.mainWindow
+
         Component.onCompleted: {
             var parameters = [
                 { element: enableLivePreview, property: "checked", uniform: "u_enable_live_preview" },
@@ -47,7 +49,8 @@ ScrollView {
 
         ColumnLayout {
             id: settingsLayout
-            width: root.availableWidth
+            anchors.margins: 10
+            anchors.fill: parent
             spacing: 15
 
             Rectangle {
@@ -283,5 +286,5 @@ ScrollView {
                 }
             }
         }
-    }
+    } 
 }
