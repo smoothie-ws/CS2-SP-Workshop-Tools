@@ -16,7 +16,7 @@ Window {
     height: 250
     minimumHeight: 225
     maximumHeight: 500
-    
+
     property color color: "#000"
     property var arrayColor: [color.r, color.g, color.b]
 
@@ -185,7 +185,7 @@ Window {
                 property real value
 
                 onValueChanged: {
-                    currentColor.hue = value
+                    currentColor.hue = 1.0 - value
                 }
 
                 LinearGradient {
@@ -194,13 +194,13 @@ Window {
                     end: Qt.point(0, 0)
                     cached: true
                     gradient: Gradient {
-                        GradientStop { position: 6 / 6; color: Qt.rgba(1, 0, 0, 1) }
-                        GradientStop { position: 5 / 6; color: Qt.rgba(1, 1, 0, 1) }
-                        GradientStop { position: 4 / 6; color: Qt.rgba(0, 1, 0, 1) }
-                        GradientStop { position: 3 / 6; color: Qt.rgba(0, 1, 1, 1) }
-                        GradientStop { position: 2 / 6; color: Qt.rgba(0, 0, 1, 1) }
-                        GradientStop { position: 1 / 6; color: Qt.rgba(1, 0, 1, 1) }
                         GradientStop { position: 0 / 6; color: Qt.rgba(1, 0, 0, 1) }
+                        GradientStop { position: 1 / 6; color: Qt.rgba(1, 1, 0, 1) }
+                        GradientStop { position: 2 / 6; color: Qt.rgba(0, 1, 0, 1) }
+                        GradientStop { position: 3 / 6; color: Qt.rgba(0, 1, 1, 1) }
+                        GradientStop { position: 4 / 6; color: Qt.rgba(0, 0, 1, 1) }
+                        GradientStop { position: 5 / 6; color: Qt.rgba(1, 0, 1, 1) }
+                        GradientStop { position: 6 / 6; color: Qt.rgba(1, 0, 0, 1) }
                     }
                 }
 
