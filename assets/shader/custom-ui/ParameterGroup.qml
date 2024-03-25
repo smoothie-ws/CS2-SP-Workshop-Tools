@@ -98,7 +98,7 @@ AlgGroupWidget {
             id: colorButton
 
             RowLayout {
-                AlgColorButton {
+                SPColorButton {
                     id: control
                     Layout.fillWidth: true
                     arrayColor: defaults

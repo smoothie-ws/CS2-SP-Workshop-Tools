@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.7
+import AlgWidgets.Style 2.0
 import "SPWidgets"
 
 Rectangle {
@@ -18,8 +19,8 @@ Rectangle {
 
         Rectangle {
             Layout.fillHeight: true
-            implicitWidth: 34
-            color: "#252525"
+            implicitWidth: 38
+            color: "#212121"
 
             ColumnLayout {
                 property int padding: parent.width * 0.1
@@ -29,19 +30,21 @@ Rectangle {
                 Layout.alignment: Qt.AlignTop
 
                 SPTabButton {
+                    backgroundColor: AlgStyle.background.color.mainWindow
                     Layout.fillWidth: true
                     checked: true
                     icon.source: "../../icons/icon_folder.png"
-                    icon.width: 20
-                    icon.height: 20
+                    icon.width: 22
+                    icon.height: 22
                     onSelected: loader.sourceComponent = redSquare
                 }
 
                 SPTabButton {
+                    backgroundColor: AlgStyle.background.color.mainWindow
                     Layout.fillWidth: true
                     icon.source: "../../icons/icon_eye.png"
-                    icon.width: 20
-                    icon.height: 20
+                    icon.width: 22
+                    icon.height: 22
                     onSelected: loader.sourceComponent = shaderParams
                 }
             }
@@ -64,15 +67,8 @@ Rectangle {
 
     Component {
         id: shaderParams
-        Rectangle {
-            color: "#818181"
-            property int padding: 1
-            ShaderParameters {
-                x: parent.padding
-                y: parent.padding
-                width: loader.width - parent.padding * 2
-                height: loader.height - parent.padding * 2
-            }
+        ShaderParameters {
+            
         }
     }
 }
