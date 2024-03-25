@@ -1,7 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Layouts 1.3
-import AlgWidgets 2.0
-import QtQuick.Dialogs 1.3
+import QtQuick.Window 2.15
 
 RowLayout {
     id: root
@@ -21,7 +20,9 @@ RowLayout {
 
         onClicked: {
             var screenPosition = parent.mapToGlobal(mouseArea.mouseX, mouseArea.mouseY);
-            colorPicker.show(screenPosition);
+            colorPicker.show();
+            colorPicker.x = screenPosition.x;
+            colorPicker.y = screenPosition.y;
         }
 
         Rectangle {
@@ -39,21 +40,20 @@ RowLayout {
         }
     }
 
-    // AlgColorPicker {
-    //     id: colorPicker
-    //     linearMode: true
-    //     property var arrayColor: []
+    SPColorPicker {
+        id: colorPicker
+        visible: false
 
-    //     Component.onCompleted: {
-    //         color = (Qt.rgba(arrayColor[0], arrayColor[1], arrayColor[2], 1))
-    //     }
+        Component.onCompleted: {
+            color = Qt.rgba(arrayColor[0], arrayColor[1], arrayColor[2]);
+        }
 
-    //     onArrayColorChanged: {
-    //         color = Qt.rgba(arrayColor[0], arrayColor[1], arrayColor[2]);
-    //     }
+        onArrayColorChanged: {
+            color = Qt.rgba(arrayColor[0], arrayColor[1], arrayColor[2]);
+        }
 
-    //     onColorChanged: {
-    //         arrayColor = [color.r, color.g, color.b];
-    //     }
-    // }
+        onColorChanged: {
+            arrayColor = [color.r, color.g, color.b];
+        }
+    }
 }

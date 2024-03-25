@@ -2,11 +2,21 @@ import QtQuick 2.7
 import QtQuick.Controls 2.7
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.15
+import QtQuick.Window 2.15
 
-Item {
+
+Window {
     id: root
-    anchors.fill: parent
-
+    visible: true
+    modality: Qt.ApplicationModal
+    title: qsTr("Color Picker")
+    width: 300
+    minimumWidth: 225
+    maximumWidth: 500
+    height: 250
+    minimumHeight: 225
+    maximumHeight: 500
+    
     property color color: "#000"
     property var arrayColor: [color.r, color.g, color.b]
 
@@ -62,11 +72,16 @@ Item {
 
     Component.onCompleted: {
         updateColor(color);
-        previousColor.color = color;
+        colorTextInput.text = color;
         currentColor["colorChanged"].connect(function() { 
             root.color = currentColor.color;
             colorTextInput.text = currentColor.color;
         });
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#313131"
     }
 
     ColumnLayout {
@@ -232,25 +247,10 @@ Item {
 
                 Rectangle {
                     id: currentColor
-
+                    radius: 5
                     Layout.fillWidth: true
                     Layout.minimumWidth: 50
                     Layout.maximumWidth: 100
-                    Layout.minimumHeight: 25
-
-                    property real hue
-                    property real saturation
-                    property real value
-
-                    color: Qt.hsva(hue, saturation, value)
-                }
-
-                Rectangle {
-                    id: previousColor
-
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 25
-                    Layout.maximumWidth: 50
                     Layout.minimumHeight: 25
 
                     property real hue
@@ -264,28 +264,27 @@ Item {
             Item {
                 Layout.fillWidth: true
             }
-            
-            SPTextInput  {
+
+            Label {
+                text: "#"
+                color: "#999999"
+                font.pixelSize: 15
+            }
+
+            SPTextInput {
                 id: colorTextInput
-                Layout.preferredWidth: 75
+                Layout.preferredWidth: 65
                 Layout.minimumHeight: 25
                 color: "#999999"
 
+                property color colorInput: "#" + text
+                
                 onTextChanged: {
-                    text = text.replace(/[^#a-fA-F0-9]/g, "")
-                    if (text.length > 0 && text[0] !== "#") {
-                        text = "#" + text
-                    }
-                    if (text.length > 7) {
-                        text = text.substring(0, 7)
-                    }
+                    text = text.replace(/[^a-fA-F0-9]/g, "").toUpperCase()
                 }
 
                 onEditingFinished: {
-                    if (text.length < 6) {
-                        text = text.padStart(6, '0')
-                    }
-                    updateColor(text)
+                    updateColor(colorInput);
                 }
             }
         }
