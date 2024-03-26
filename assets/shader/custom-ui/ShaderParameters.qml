@@ -123,7 +123,6 @@ ScrollView {
             activeScopeBorder: true
             text: "Default Material Textures"
             visible: true
-            toggled: true
 
             GridLayout {
                 columns: 2
@@ -236,10 +235,10 @@ ScrollView {
                 },
                 { label: "Color",
                     parameters: [
-                        { label: "Base Metal", widget: "colorButton", defaults: [1.0, 1.0, 1.0], uniform: "u_base_metal" },
-                        { label: "Patina Tint", widget: "colorButton", defaults: [1.0, 1.0, 1.0], uniform: "u_patina_tint" },
-                        { label: "Patina Wear", widget: "colorButton", defaults: [1.0, 1.0, 1.0], uniform: "u_patina_wear" },
-                        { label: "Grime", widget: "colorButton", defaults: [1.0, 1.0, 1.0], uniform: "u_grime" }
+                        { label: "Base Metal", widget: "colorButton", defaults: Qt.hsva(1, 0, 1), uniform: "u_base_metal" },
+                        { label: "Patina Tint", widget: "colorButton", defaults: Qt.hsva(1, 0, 1), uniform: "u_patina_tint" },
+                        { label: "Patina Wear", widget: "colorButton", defaults: Qt.hsva(1, 0, 1), uniform: "u_patina_wear" },
+                        { label: "Grime", widget: "colorButton", defaults: Qt.hsva(1, 0, 1), uniform: "u_grime" }
                     ]
                 },
                 { label: "Texture Placement",

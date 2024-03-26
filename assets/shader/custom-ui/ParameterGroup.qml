@@ -101,7 +101,7 @@ AlgGroupWidget {
                 SPColorButton {
                     id: control
                     Layout.fillWidth: true
-                    arrayColor: defaults
+                    color: defaults
                     onArrayColorChanged: {
                         shader_bridge.set_parameter_value(uniform, "[" + arrayColor + "]");
                     }
@@ -110,7 +110,7 @@ AlgGroupWidget {
                 SPButton {
                     text: "Reset"
                     onClicked: {
-                        control.arrayColor = defaults;
+                        control.color = defaults;
                     }
                 }
             }

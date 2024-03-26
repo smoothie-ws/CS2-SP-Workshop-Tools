@@ -36,7 +36,7 @@ Rectangle {
                     icon.source: "../../icons/icon_folder.png"
                     icon.width: 22
                     icon.height: 22
-                    onSelected: loader.sourceComponent = redSquare
+                    onSelected: loader.sourceComponent = projectManager
                 }
 
                 SPTabButton {
@@ -54,14 +54,14 @@ Rectangle {
             id: loader
             Layout.fillWidth: true
             Layout.fillHeight: true
-            sourceComponent: shaderParams
+            sourceComponent: projectManager
         }
     }
 
     Component {
-        id: redSquare
-        Rectangle {
-            color: "red"
+        id: projectManager
+        ProjectManager {
+
         }
     }
 
