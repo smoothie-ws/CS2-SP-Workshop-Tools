@@ -10,7 +10,7 @@ Rectangle {
     height: parent.height
 
     function set_enabled(is_enabled) {
-        shaderParams.enabled = is_enabled;
+        loader.enabled = is_enabled;
     }
 
     RowLayout {
@@ -33,7 +33,7 @@ Rectangle {
                     backgroundColor: AlgStyle.background.color.mainWindow
                     Layout.fillWidth: true
                     checked: true
-                    icon.source: "../../icons/icon_folder.png"
+                    icon.source: "../icons/icon_folder.png"
                     icon.width: 22
                     icon.height: 22
                     onSelected: loader.sourceComponent = projectManager
@@ -42,7 +42,7 @@ Rectangle {
                 SPTabButton {
                     backgroundColor: AlgStyle.background.color.mainWindow
                     Layout.fillWidth: true
-                    icon.source: "../../icons/icon_eye.png"
+                    icon.source: "../icons/icon_eye.png"
                     icon.width: 22
                     icon.height: 22
                     onSelected: loader.sourceComponent = shaderParams

@@ -27,7 +27,7 @@ class CS2Plugin:
         self.ui = QQuickWidget()
         self.ui.rootContext().setContextProperty("shader_bridge", self.shader_bridge)
         icon = QIcon(self.get_asset_path("icons", "logo.png"))
-        qml = QUrl.fromLocalFile(self.get_asset_path("shader", "custom-ui", "main.qml"))
+        qml = QUrl.fromLocalFile(self.get_asset_path("ui", "main.qml"))
         self.ui.setWindowTitle("CS2 Workshop Tools")
         self.ui.setWindowIcon(icon)
         self.ui.setSource(qml)
@@ -37,7 +37,8 @@ class CS2Plugin:
         self.connections = {
             spevent.ProjectOpened: self.on_project_opened,
             spevent.ProjectCreated: self.on_project_created,
-            spevent.ProjectAboutToSave: self.on_project_about_to_save
+            spevent.ProjectAboutToSave: self.on_project_about_to_save,
+            spevent.ProjectAboutToClose: self.on_project_about_to_close,
         }
         for event, callback in self.connections.items():
             spevent.DISPATCHER.connect(event, callback)
@@ -45,11 +46,8 @@ class CS2Plugin:
         self.run()
 
     def run(self):
-        self.shader_bridge.set_shader_instance(spproject.is_open())
-        if self.shader_bridge.shader_id is not None:
-            self.ui.rootObject().set_enabled(True)
-        else:
-            self.ui.rootObject().set_enabled(False)
+        self.shader_bridge.set_shader_instance()
+        self.ui.rootObject().set_enabled(self.shader_bridge.is_enabled)
 
     def stop(self):
         spui.delete_ui_element(self.dock_widget)
@@ -58,6 +56,9 @@ class CS2Plugin:
         self.run()
 
     def on_project_created(self, e):
+        self.run()
+
+    def on_project_about_to_close(self, e):
         self.run()
 
     def on_project_about_to_save(self, e):
