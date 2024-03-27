@@ -1,6 +1,6 @@
 from PySide2 import QtCore
 from substance_painter import js as spjs
-
+from substance_painter import project as spproject
 
 class ShaderBridge(QtCore.QObject):
     """A bridge class that allows communication between PySide2
@@ -9,28 +9,37 @@ class ShaderBridge(QtCore.QObject):
     def __init__(self) -> None:
         super().__init__()
         self.shader_id = None
+        self.project = None
 
     @property
     def is_enabled(self):
         return self.shader_id is not None
-    
+
     def set_shader_instance(self):
-        self.shader_id = None
-        try:
-            for shader_instance in spjs.evaluate("alg.shaders.instances();"):
+        if spproject.is_open():
+            print(spjs.evaluate("alg.shaders.parameters(0);"))
+            for shader_instance in spjs.evaluate("alg.shaders.instances()"):
                 if shader_instance["shader"] == "cs2":
                     self.shader_id = shader_instance["id"]
-        except RuntimeError:
-            pass
+                    return
 
+        self.shader_id = None
+
+    
     @QtCore.Slot(str, str)
     def set_parameter_value(self, shader_parameter, value):
-        if self.shader_id is not None:
-            spjs.evaluate(f"alg.shaders.parameter({self.shader_id}, '{shader_parameter}').value = {value};")
-
+        if self.is_enabled:
+            try:
+                spjs.evaluate(f"alg.shaders.parameter({self.shader_id}, '{shader_parameter}').value = {value};")
+            except RuntimeError:
+                pass
+            
     def _get_parameter_value(self, shader_parameter):
-        if self.shader_id is not None:
-            return spjs.evaluate(f"alg.shaders.parameter({self.shader_id}, '{shader_parameter}').value;")
+        if self.is_enabled:
+            try:
+                return spjs.evaluate(f"alg.shaders.parameter({self.shader_id}, '{shader_parameter}').value;")
+            except RuntimeError:
+                pass
 
     @QtCore.Slot(str, result=bool)
     def get_bool(self, shader_parameter):

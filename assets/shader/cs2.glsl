@@ -120,11 +120,11 @@ void shade(V2F inputs) {
 
     vec3 rORM = vec3(0.0);
     vec3 rColor = vec3(0.0);
-    float cutoffMask = 1.0;
     vec3 uBaseMetal = vec3(1.0);
     vec3 uPatinaTint = vec3(1.0);
     vec3 uPatinaWear = vec3(1.0);
     vec3 uGrime = vec3(1.0);
+    float cutoffMask = 1.0;
 
     if (u_enable_live_preview) {
         // fetch default weapon model material maps

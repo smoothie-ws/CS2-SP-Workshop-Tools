@@ -49,7 +49,7 @@ AlgGroupWidget {
 
         Component {
             id: checkBox
-
+        
             RowLayout {
                 AlgCheckBox {
                     id: control
@@ -129,13 +129,6 @@ AlgGroupWidget {
                     firstValue: defaults[0]
                     secondValue: defaults[1]
                     step: (maxValue - minValue) / 20
-
-                    onFirstValueChanged: {
-
-                    }
-                    onSecondValueChanged: {
-                        
-                    }
                 }
 
                 SPButton {

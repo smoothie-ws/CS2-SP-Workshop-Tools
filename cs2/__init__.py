@@ -1,13 +1,11 @@
 import os
 
-import substance_painter.project as spproject
 from PySide2.QtCore import QUrl
 from PySide2.QtGui import QIcon
 from PySide2.QtQuickWidgets import QQuickWidget
 from substance_painter import event as spevent
 from substance_painter import ui as spui
 
-from .log import Log
 from .shader import ShaderBridge
 
 
@@ -43,23 +41,23 @@ class CS2Plugin:
         for event, callback in self.connections.items():
             spevent.DISPATCHER.connect(event, callback)
 
-        self.run()
+        self.reset_shader_bridge()
 
-    def run(self):
+    def reset_shader_bridge(self):
         self.shader_bridge.set_shader_instance()
-        self.ui.rootObject().set_enabled(self.shader_bridge.is_enabled)
+        self.ui.rootObject().setEnabled(self.shader_bridge.is_enabled)
 
     def stop(self):
         spui.delete_ui_element(self.dock_widget)
 
     def on_project_opened(self, e):
-        self.run()
+        self.reset_shader_bridge()
 
     def on_project_created(self, e):
-        self.run()
+        self.reset_shader_bridge()
 
     def on_project_about_to_close(self, e):
-        self.run()
+        self.reset_shader_bridge()
 
     def on_project_about_to_save(self, e):
         pass
