@@ -1,0 +1,3 @@
+[submodule "shader"]
+	path = shader
+	url = https://github.com/smoothie-ws/CS2-SP-Shader
