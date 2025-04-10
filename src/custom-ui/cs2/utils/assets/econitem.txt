@@ -1,0 +1,63 @@
+<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
+{
+	cs2_item_type = "CCS2EconNode_PaintKit"
+	CCS2EconNode_PaintKit = 
+	{
+		description_string = "#CSGO_Workshop_EmptyString"
+		description_tag = "#CSGO_Workshop"
+		rarity = "common"
+		composite_material_class = {finish_style}
+		composite_material_keys = 
+		{
+			"econ_instance.g_flPatternTexCoordRotation" = {texcoord_rotation}
+			"econ_instance.g_flWearAmount" = {wear_amount}
+			"econ_instance.g_vPatternTexCoordOffset.0" = {texcoord_offset_x}
+			"econ_instance.g_vPatternTexCoordOffset.1" = {texcoord_offset_y}
+			"exposed_params.g_bIgnoreWeaponSizeScale" = {ignore_weapon_size_scale}
+			"exposed_params.g_bOverrideAmbientOcclusion" = {use_custom_ao}
+			"exposed_params.g_bOverrideDefaultMasks" = {use_custom_material_mask}
+			"exposed_params.g_bUseNormalMap" = {use_custom_normal_map}
+			"exposed_params.g_bUsePearlescenceMask" = {use_pearlescent_mask}
+			"exposed_params.g_bUseRoughness" = {use_custom_roughness}
+			"exposed_params.g_flPaintRoughness" = {paint_roughness}
+			"exposed_params.g_flPatternTexCoordScale" = {texcoord_scale}
+			"exposed_params.g_flPearlescentScale" = {pearlescent_scale}
+			"exposed_params.g_tPattern" = {albedo_path}
+			"exposed_params.g_vColor0" = {base_metal}
+			"exposed_params.g_vColor1" = {patina_tint}
+			"exposed_params.g_vColor2" = {patina_wear}
+			"exposed_params.g_vColor3" = {grime}
+		}
+		all_composite_material_keys = 
+		{
+			"econ_instance.g_flPatternTexCoordRotation" = {texcoord_rotation}
+			"econ_instance.g_flWearAmount" = {wear_amount}
+			"econ_instance.g_vPatternTexCoordOffset.0" = {texcoord_offset_x}
+			"econ_instance.g_vPatternTexCoordOffset.1" = {texcoord_offset_y}
+			"exposed_params.g_bIgnoreWeaponSizeScale" = {ignore_weapon_size_scale}
+			"exposed_params.g_bOverrideAmbientOcclusion" = {use_custom_ao}
+			"exposed_params.g_bOverrideDefaultMasks" = {use_custom_material_mask}
+			"exposed_params.g_bUseNormalMap" = {use_custom_normal_map}
+			"exposed_params.g_bUsePearlescenceMask" = {use_pearlescent_mask}
+			"exposed_params.g_bUseRoughness" = {use_custom_roughness}
+			"exposed_params.g_flPaintRoughness" = {paint_roughness}
+			"exposed_params.g_flPatternTexCoordScale" = {texcoord_scale}
+			"exposed_params.g_flPearlescentScale" = {pearlescent_scale}
+			"exposed_params.g_tFinalAmbientOcclusion" = "materials/default/default_ao.tga"
+			"exposed_params.g_tNormal" = "items/assets/paintkits/workshop/example_gunsmith_normal.tga"
+			"exposed_params.g_tPaintByNumberMasks" = "materials/default/default_paintmask.tga"
+			"exposed_params.g_tPaintRoughness" = "materials/default/default_rough.tga"
+			"exposed_params.g_tPattern" = "items/assets/paintkits/workshop/example_gunsmith.tga"
+			"exposed_params.g_tPearlescenceMask" = "materials/default/default_mask.tga"
+			"exposed_params.g_vColor0" = {base_metal}
+			"exposed_params.g_vColor1" = {patina_tint}
+			"exposed_params.g_vColor2" = {patina_wear}
+			"exposed_params.g_vColor3" = {grime}
+		}
+		preview_weapon = {weapon}
+		associate_assets = 
+		[
+			resource_name:"weapons/paints/workshop/gs_paintkit_example.vcompmat",
+		]
+	}
+}
