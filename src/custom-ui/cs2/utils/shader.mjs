@@ -1,21 +1,21 @@
-export class Shader {
-    static connect(item, prop, param) {
-        item[prop] = param.value;
-        item[`${prop}Changed`].connect(
-            session(item, () => (param.value = item[prop]))
-        );
-        param.valueChanged.connect(
-            session(item, () => (item[prop] = param.value))
-        );
-    }
-}
-
-function session(item, f) {
+function block(item, f) {
     return () => {
         var state = item.state;
-        if (state == "sync") return;
-        item.state = "sync";
+        if (state == "block") return;
+        item.state = "block";
         f();
         item.state = state;
     };
+}
+
+export class Shader {
+    static connect(item, prop, param) {
+        item[prop] = param.value;
+        item[prop + "Changed"].connect(
+            block(item, () => (param.value = item[prop]))
+        );
+        param.valueChanged.connect(
+            block(item, () => (item[prop] = param.value))
+        );
+    }
 }

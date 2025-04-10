@@ -1,6 +1,5 @@
 import QtQuick 2.7
 import QtQuick.Layouts 1.3
-import Qt.labs.platform 1.1
 import QtQuick.Controls 2.7
 import Painter 1.0
 import AlgWidgets 2.0
@@ -13,11 +12,18 @@ Rectangle {
     color: AlgStyle.background.color.mainWindow
     height: mainLayout.height
     onHeightChanged: {
-        if (height != mainLayout.height)
+        if (height != mainLayout.height) {
             height = Qt.binding(function() {return mainLayout.height});
+        }
     }
 
     property var parameters: [
+        { parameter: "u_d_gun_grunge_sampler",     key: "url",          component: dGunGrunge },
+        { parameter: "u_d_basecolor_sampler",      key: "url",          component: dBaseColor },
+        { parameter: "u_d_normal_sampler",         key: "url",          component: dNormalMap },
+        { parameter: "u_d_orm_sampler",            key: "url",          component: dORMtex },
+        { parameter: "u_d_curv_sampler",           key: "url",          component: dCurvTex },
+        { parameter: "u_finish_style",             key: "currentIndex", component: finishStyleBox },
         { parameter: "u_enable_live_preview",      key: "checked",      component: enableLivePreview },
         { parameter: "u_enable_pbr_validation",    key: "checked",      component: enablePBRValidation },
         { parameter: "u_pbr_limits",               key: "range",        component: pbrLimits },
@@ -44,48 +50,71 @@ Rectangle {
     ]
 
     function displayShaderParameters(shaderId) {
-        try {
-            for (const param of root.parameters) {
-                param.component.key = param.key;
-                param.component.parameter = param.parameter;
-                if (param.parameter.startsWith("u_"))
-                    param.component.connectShaderParameter(shaderId);
+        for (const param of root.parameters) {
+            param.component.key = param.key;
+            param.component.parameter = param.parameter;
+            if (param.parameter.startsWith('u_')) {
+                param.component.connectShaderParameter(shaderId);
             }
         }
-        catch(e)
-            alg.log.error(e.message);
     }
 
     function readShaderParameters() {
         var params = [];
-        // first try to fetch the parameters saved inside the current opened project
-        if (alg.project.settings.contains("CS2WT")) 
-            params = alg.project.settings.value("CS2WT");
-        // if there's no parameters saved try to fetch them from the plugin settings
-        else if (alg.settings.contains("CS2WT"))
-            params = alg.settings.value("CS2WT");
 
-        for (let i = 0; i < params.length; i++)
+        // first try to fetch the parameters saved inside the current opened project
+        if (alg.project.settings.contains("CS2WT")) {
+            params = alg.project.settings.value("CS2WT");
+
+        // if there's no parameters saved try to fetch them from the plugin settings
+        } else if (alg.settings.contains("CS2WT")) {
+            params = alg.settings.value("CS2WT");
+        }
+
+        for (let i = 0; i < params.length; i++) {
             root.parameters[i].component.update(params[i].value);
+        }
     }
 
     function writeShaderParameters() {
         var params = [];
-        for (const param of root.parameters)
+        for (const param of root.parameters) {
             params.push({ parameter: param.parameter, value: param.component.control[param.key] })
+        }
         alg.project.settings.setValue("CS2WT", params);
         alg.settings.setValue("CS2WT", params);
     }
 
+    function resetWeapon(weaponName) {
+        const assetsPath = Qt.resolvedUrl('assets/materials/').slice(8);
+
+        try {
+            const baseColorRes = alg.resources.importSessionResource(assetsPath + `${weaponName}/color.jpg`, "texture");
+            const normalMapRes = alg.resources.importSessionResource(assetsPath + `${weaponName}/normal.jpg`, "texture");
+            const ormTexRes = alg.resources.importSessionResource(assetsPath + `${weaponName}/orm.jpg`, "texture");
+            const curvTexRes = alg.resources.importSessionResource(assetsPath + `${weaponName}/curvature.jpg`, "texture");
+
+            dBaseColor.update(baseColorRes);
+            dNormalMap.update(normalMapRes);
+            dORMtex.update(ormTexRes);
+            dCurvTex.update(curvTexRes);
+        } catch(err) {
+            alg.log.error("ERROR: " + err.message)
+        }
+    }
+
     Component.onCompleted: {
-        readShaderParameters();
+        readShaderParameters(); 
     }
 
     PainterPlugin {
         onComputationStatusChanged: {
-            var meshName = Utils.FileUtils.getFileName(alg.project.lastImportedMeshUrl());
-            if (weaponBox.control.currentValue != meshName)
-                weaponBox.control.currentIndex = weaponBox.control.model.findIndex(weapon => weapon.value === meshName);
+            var meshName = Utils.File.getFileName(alg.project.lastImportedMeshUrl());
+
+            if (weaponBox.control.currentValue != meshName) {
+                let weaponIndex = weaponBox.control.model.findIndex(weapon => weapon.value === meshName);
+                weaponBox.control.currentIndex = weaponIndex;
+            }
         }
 
         onProjectAboutToSave: {
@@ -144,10 +173,11 @@ Rectangle {
                 nameFilters: ["EconItem files (*.econitem)"]
 
                 onAccepted: {
-                    if (mode === SFileDialog.SaveFile) 
-                        Utils.EconItem.export(fileUrl)
-                    else 
-                        Utils.EconItem.import(fileUrl)
+                    if (mode === SFileDialog.SaveFile) {
+                        Utils.EconItem.exportTo(fileUrl)
+                    } else {
+                        Utils.EconItem.importFrom(fileUrl)
+                    }
                 }
             }
         }
@@ -156,7 +186,7 @@ Rectangle {
             Layout.fillWidth: true
         }
 
-        SParameterGroup {
+        SarameterGroup {
             Layout.fillWidth: true
             expandable: false
             padding: 10
@@ -172,27 +202,27 @@ Rectangle {
                 Layout.fillWidth: true
                 text: "Live Preview"
                 resettable: false
-                SButton {
+                SPButton {
                     checkable: true
                     text: checked ? "Enabled" : "Disabled"
                 }
             }
 
-            SParameter {
+            SPParameter {
                 id: enablePBRValidation
                 Layout.fillWidth: true
                 text: "PBR Validation"
                 resettable: false
-                SButton {
+                SPButton {
                     checkable: true
                     text: checked ? "Enabled" : "Disabled"
                 }
             }
 
-            SParameter {
+            SPParameter {
                 id: pbrLimits
                 enabled: enablePBRValidation.control.checked
-                SRangeSlider {
+                SPRangeSlider {
                     text: "PBR Limits"
                     stepSize: 1
                     from: 0
@@ -201,7 +231,59 @@ Rectangle {
             }
         }
 
-        SSeparator {
+        SPParameterGroup {
+            id: colorsParamsGroup
+            Layout.fillWidth: true
+            toggled: false
+            text: "Default Textures"
+
+            SPParameter {
+                id: dGunGrunge
+
+                SPResourcePicker {
+                    label: "Gun Grunge"
+                    filters: AlgResourcePicker.TEXTURE
+                }
+            }
+
+            SPParameter {
+                id: dBaseColor
+
+                SPResourcePicker {
+                    label: "Base Color"
+                    filters: AlgResourcePicker.TEXTURE
+                }
+            }
+
+            SPParameter {
+                id: dNormalMap
+
+                SPResourcePicker {
+                    label: "Normal Map"
+                    filters: AlgResourcePicker.TEXTURE
+                }
+            }
+
+            SPParameter {
+                id: dORMtex
+
+                SPResourcePicker {
+                    label: "ORM Texture"
+                    filters: AlgResourcePicker.TEXTURE
+                }
+            }
+
+            SPParameter {
+                id: dCurvTex
+
+                SPResourcePicker {
+                    label: "Curvature Texture"
+                    filters: AlgResourcePicker.TEXTURE
+                }
+            }
+        }
+
+        SPSeparator {
             Layout.fillWidth: true
         }
 
@@ -211,15 +293,15 @@ Rectangle {
             spacing: 10
             enabled: enableLivePreview.control.checked
 
-            SParameterGroup {
+            SPParameterGroup {
                 Layout.fillWidth: true
                 text: "Common"
 
-                SParameter {
+                SPParameter {
                     id: weaponBox
                     text: "Weapon"
 
-                    SComboBox {
+                    SPComboBox {
                         model: [
                             { text: "AK-47", value: "ak47" },
                             { text: "AUG", value: "aug" },
@@ -259,14 +341,18 @@ Rectangle {
                         ]
                         textRole: "text"
                         valueRole: "value"
+
+                        onCurrentValueChanged: {
+                            resetWeapon(currentValue);
+                        }
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: finishStyleBox
                     text: "Finish Style"
 
-                    SComboBox {
+                    SPComboBox {
                         model: [
                             { text: "Solid Color", value: 0 },
                             { text: "Hydrographic", value: 1 },
@@ -283,11 +369,11 @@ Rectangle {
                     }
                 }
 
-                SSeparator { }
+                SPSeparator { }
 
-                SParameter {
+                SPParameter {
                     id: wearAmount
-                    SSlider {
+                    SPSlider {
                         text: "Wear Amount"
                         from: wearLimits.control.minValue.toFixed(precision)
                         to: wearLimits.control.maxValue.toFixed(precision)
@@ -295,32 +381,32 @@ Rectangle {
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: texureScale
-                    SSlider {
+                    SPSlider {
                         text: "Texture Scale"
                         from: -10
                         to: 10
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: ignoreTextureSizeScale
                     text: "Ignore Weapon Size Scale:"
-                    SButton {
+                    SPButton {
                         checkable: true
                         text: checked ? "Yes" : "No"
                     }
                 }
             }
 
-            SParameterGroup {
+            SPParameterGroup {
                 Layout.fillWidth: true
                 text: "Texture Placement"
 
-                SParameter {
+                SPParameter {
                     id: textureRotation
-                    SRangeSlider {
+                    SPRangeSlider {
                         text: "Texture Rotation"
                         from: -360
                         to: 360
@@ -329,9 +415,9 @@ Rectangle {
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: textureOffsetX
-                    SRangeSlider {
+                    SPRangeSlider {
                         text: "Texture Offset X"
                         from: -1
                         to: 1
@@ -340,9 +426,9 @@ Rectangle {
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: textureOffsetY
-                    SRangeSlider {
+                    SPRangeSlider {
                         text: "Texture Offset Y"
                         from: -1
                         to: 1
@@ -352,46 +438,46 @@ Rectangle {
                 }
             }
 
-            SParameterGroup {
+            SPParameterGroup {
                 Layout.fillWidth: true
                 visible: finishStyleBox.control.currentIndex != 6
                 text: "Color"
 
-                SParameter {
+                SPParameter {
                     id: color0
                     text: finishStyleBox.control.currentIndex > 6 ? "Base Metal" : "Base Coat"
-                    SColorButton { }
+                    SPColorButton { }
                 }
 
-                SParameter {
+                SPParameter {
                     id: color1
                     visible: finishStyleBox.control.currentIndex != 3
                     text: finishStyleBox.control.currentIndex > 6 ? "Patina Tint" : "Red Channel"
-                    SColorButton { }
+                    SPColorButton { }
                 }
 
-                SParameter {
+                SPParameter {
                     id: color2
                     visible: finishStyleBox.control.currentIndex != 3
                     text: finishStyleBox.control.currentIndex > 6 ? "Patina Wear" : "Green Channel"
-                    SColorButton { }
+                    SPColorButton { }
                 }
 
-                SParameter {
+                SPParameter {
                     id: color3
                     visible: finishStyleBox.control.currentIndex != 3
                     text: finishStyleBox.control.currentIndex > 6 ? "Grime" : "Blue Channel"
-                    SColorButton { }
+                    SPColorButton { }
                 }
             }
 
-            SParameterGroup {
+            SPParameterGroup {
                 Layout.fillWidth: true
                 text: "Effects"
 
-                SParameter {
+                SPParameter {
                     id: wearLimits
-                    SRangeSlider {
+                    SPRangeSlider {
                         text: "Wear Limits"
                         from: 0
                         to: 1
@@ -401,33 +487,33 @@ Rectangle {
                     }
                 }
 
-                SSeparator { }
+                SPSeparator { }
 
-                SParameter {
+                SPParameter {
                     id: usePearlescentMask
                     text: "Pearlescent Mask"
-                    SButton {
+                    SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: pearlescentScale
-                    SSlider {
+                    SPSlider {
                         text: "Pearlescent Scale"
                         from: -6
                         to: 6
                     }
                 }
 
-                SSeparator { }
+                SPSeparator { }
 
-                SParameter {
+                SPParameter {
                     id: useRoughnessTexture
                     property bool checked: true
                     text: "Roughness Texture"
-                    SButton {
+                    SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
 
@@ -437,10 +523,10 @@ Rectangle {
                     }
                 }
                 
-                SParameter {
+                SPParameter {
                     id: paintRoughness
                     visible: !useRoughnessTexture.checked
-                    SSlider {
+                    SPSlider {
                         text: "Paint Roughness"
                         from: 0
                         to: 1
@@ -448,47 +534,57 @@ Rectangle {
                 }
             }
 
-            SParameterGroup {
+            SPParameterGroup {
                 Layout.fillWidth: true
                 
                 text: "Advanced"
                 toggled: false
 
-                SParameter {
+                SPParameter {
                     id: useNormalMap
                     text: "Normal Map"
-                    SButton {
+                    SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: useMaterialMask
                     text: "Material Mask"
-                    SButton {
+                    SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
                     }
                 }
 
-                SParameter {
+                SPParameter {
                     id: useAmbientOcclusion
                     text: "Ambient Occlusion"
-                    SButton {
+                    SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
                     }
                 }
             }
+        }
+        
+        SPSeparator {
+            Layout.fillWidth: true
+        }
+        
+        Text {
+            id: footer
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
+            textFormat: Text.RichText
 
-            Item {
-                id: footer
+            color: Qt.rgba(0.8, 0.8, 0.8, 1.0)
+            text: "Created by <a href=\"https://steamcommunity.com/id/smoothie-ws/\">smoothie</a>"
 
-                Text {
-                    text: "**Hello** *World!*"
-                }
-            }
+            font.pixelSize: 11
+
+            onLinkActivated: Qt.openUrlExternally(link)
         }
     }
 }

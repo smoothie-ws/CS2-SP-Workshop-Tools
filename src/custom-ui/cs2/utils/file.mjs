@@ -16,8 +16,28 @@ export class File {
         if (req.status !== 201 && req.status !== 204)
             throw new Error("Error writing file: ", req.status, req.statusText);
     }
-    
+
     static getFileName(url) {
         return url.toString().split("/").pop().split(".")[0];
+    }
+
+    static exists(url) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("HEAD", url, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.status === 200 || xhr.status === 304) resolve(true);
+                    else if (xhr.status === 404) resolve(false);
+                    else
+                        reject(
+                            new Error(
+                                `Error checking file existence: ${xhr.status} ${xhr.statusText}`
+                            )
+                        );
+                }
+            };
+            xhr.send();
+        });
     }
 }

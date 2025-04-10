@@ -4,7 +4,6 @@ import lib-utils.glsl
 import lib-sampler.glsl
 import lib-normal.glsl
 
-// finish styles
 #define SO 0 // Solid Color
 #define HY 1 // Hydrographic
 #define SP 2 // Spray-Paint
