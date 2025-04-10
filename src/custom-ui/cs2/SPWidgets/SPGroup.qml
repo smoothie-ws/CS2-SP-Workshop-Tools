@@ -69,19 +69,19 @@ ColumnLayout {
                     var child = __contentItem.children[i];
                     child.Layout.fillWidth = true;
 
-                    if (child.toString().indexOf("SPParameter") !== -1 && child.__separatorX !== 0) {
+                    if (child.toString().indexOf("SPParameter") !== -1 && child.scopeWidth !== 0) {
                         currentGroup.push(child);
                     } else if (currentGroup.length > 0) {
                         maxSeparatorXForGroup = 0;
                         for (var j = 0; j < currentGroup.length; ++j) {
                             var groupChild = currentGroup[j];
-                            if (groupChild.__separatorX > maxSeparatorXForGroup) {
-                                maxSeparatorXForGroup = groupChild.__separatorX;
+                            if (groupChild.scopeWidth > maxSeparatorXForGroup) {
+                                maxSeparatorXForGroup = groupChild.scopeWidth;
                             }
                         }
                         for (var j = 0; j < currentGroup.length; ++j) {
                             var groupChild = currentGroup[j];
-                            groupChild.__separatorX = maxSeparatorXForGroup;
+                            groupChild.scopeWidth = maxSeparatorXForGroup;
                         }
                         currentGroup = [];
                     }
@@ -91,13 +91,13 @@ ColumnLayout {
                     maxSeparatorXForGroup = 0;
                     for (var j = 0; j < currentGroup.length; ++j) {
                         var groupChild = currentGroup[j];
-                        if (groupChild.__separatorX > maxSeparatorXForGroup) {
-                            maxSeparatorXForGroup = groupChild.__separatorX;
+                        if (groupChild.scopeWidth > maxSeparatorXForGroup) {
+                            maxSeparatorXForGroup = groupChild.scopeWidth;
                         }
                     }
                     for (var j = 0; j < currentGroup.length; ++j) {
                         var groupChild = currentGroup[j];
-                        groupChild.__separatorX = maxSeparatorXForGroup;
+                        groupChild.scopeWidth = maxSeparatorXForGroup;
                     }
                 }
             }

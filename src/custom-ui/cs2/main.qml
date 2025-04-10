@@ -4,7 +4,7 @@ import QtQuick.Controls 2.7
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
-import "SWidgets"
+import "./SPWidgets"
 import "utils.mjs" as Utils
 
 Rectangle {
@@ -12,77 +12,73 @@ Rectangle {
     color: AlgStyle.background.color.mainWindow
     height: mainLayout.height
     onHeightChanged: {
-        if (height != mainLayout.height) {
-            height = Qt.binding(function() {return mainLayout.height});
-        }
+        if (height != mainLayout.height)
+            height = Qt.binding(() => mainLayout.height);
     }
 
-    property var parameters: [
-        { parameter: "u_d_gun_grunge_sampler",     key: "url",          component: dGunGrunge },
-        { parameter: "u_d_basecolor_sampler",      key: "url",          component: dBaseColor },
-        { parameter: "u_d_normal_sampler",         key: "url",          component: dNormalMap },
-        { parameter: "u_d_orm_sampler",            key: "url",          component: dORMtex },
-        { parameter: "u_d_curv_sampler",           key: "url",          component: dCurvTex },
-        { parameter: "u_finish_style",             key: "currentIndex", component: finishStyleBox },
-        { parameter: "u_enable_live_preview",      key: "checked",      component: enableLivePreview },
-        { parameter: "u_enable_pbr_validation",    key: "checked",      component: enablePBRValidation },
-        { parameter: "u_pbr_limits",               key: "range",        component: pbrLimits },
-        { parameter: "weapon",                     key: "currentIndex", component: weaponBox },
-        { parameter: "u_finish_style",             key: "currentIndex", component: finishStyleBox },
-        { parameter: "u_wear_amount",              key: "value",        component: wearAmount },
-        { parameter: "u_tex_scale",                key: "value",        component: texureScale },
-        { parameter: "u_ignore_weapon_size_scale", key: "checked",      component: ignoreTextureSizeScale },
-        { parameter: "tex_rotation",               key: "range",        component: textureRotation },
-        { parameter: "tex_offset_x",               key: "range",        component: textureOffsetX },
-        { parameter: "tex_offset_y",               key: "range",        component: textureOffsetY },
-        { parameter: "u_col0",                     key: "arrayColor",   component: color0 },
-        { parameter: "u_col1",                     key: "arrayColor",   component: color1 },
-        { parameter: "u_col2",                     key: "arrayColor",   component: color2 },
-        { parameter: "u_col3",                     key: "arrayColor",   component: color3 },
-        { parameter: "wear_limits",                key: "range",        component: wearLimits },
-        { parameter: "u_use_pearl_mask",           key: "checked",      component: usePearlescentMask },
-        { parameter: "u_pearl_scale",              key: "value",        component: pearlescentScale },
-        { parameter: "u_use_roughness_tex",        key: "checked",      component: useRoughnessTexture },
-        { parameter: "u_paint_roughness",          key: "value",        component: paintRoughness },
-        { parameter: "u_use_normal_map",           key: "checked",      component: useNormalMap },
-        { parameter: "u_use_material_mask",        key: "checked",      component: useMaterialMask },
-        { parameter: "u_use_ao_tex",               key: "checked",      component: useAmbientOcclusion }
-    ]
+    property var parameters: {
+        "u_d_gun_grunge_sampler":     dGunGrunge,
+        "u_d_basecolor_sampler":      dBaseColor,
+        "u_d_normal_sampler":         dNormalMap,
+        "u_d_orm_sampler":            dORMtex,
+        "u_d_curv_sampler":           dCurvTex,
+        "u_finish_style":             finishStyleBox,
+        "u_enable_live_preview":      enableLivePreview,
+        "u_enable_pbr_validation":    enablePBRValidation,
+        "u_pbr_limits":               pbrLimits,
+        "weapon":                     weaponBox,
+        "u_finish_style":             finishStyleBox,
+        "u_wear_amount":              wearAmount,
+        "u_tex_scale":                texureScale,
+        "u_ignore_weapon_size_scale": ignoreTextureSizeScale,
+        "tex_rotation":               textureRotation,
+        "tex_offset_x":               textureOffsetX,
+        "tex_offset_y":               textureOffsetY,
+        "u_col0":                     color0,
+        "u_col1":                     color1,
+        "u_col2":                     color2,
+        "u_col3":                     color3,
+        "wear_limits":                wearLimits,
+        "u_use_pearl_mask":           usePearlescentMask,
+        "u_pearl_scale":              pearlescentScale,
+        "u_use_roughness_tex":        useRoughnessTexture,
+        "u_paint_roughness":          paintRoughness,
+        "u_use_normal_map":           useNormalMap,
+        "u_use_material_mask":        useMaterialMask,
+        "u_use_ao_tex":               useAmbientOcclusion
+    }
 
     function displayShaderParameters(shaderId) {
-        for (const param of root.parameters) {
-            param.component.key = param.key;
-            param.component.parameter = param.parameter;
-            if (param.parameter.startsWith('u_')) {
-                param.component.connectShaderParameter(shaderId);
-            }
+        for (const [param, item] of Object.entries(root.parameters))
+            if (param.startsWith('u_'))
+                item.connect(shaderId);
+    }
+
+    function readDefaults() {
+        if (alg.project.settings.contains("CS2WT")) 
+            return alg.project.settings.value("CS2WT");
+        else if (alg.settings.contains("CS2WT"))
+            return alg.settings.value("CS2WT");
+        else 
+            return {};
+    }
+
+    function setDefaults(defaults) {
+        alg.log.info(defaults);
+        for (const [param, value] of Object.entries(defaults)) {
+            root.parameters[param].defaultValue = value;
         }
     }
 
-    function readShaderParameters() {
-        var params = [];
-
-        // first try to fetch the parameters saved inside the current opened project
-        if (alg.project.settings.contains("CS2WT")) {
-            params = alg.project.settings.value("CS2WT");
-
-        // if there's no parameters saved try to fetch them from the plugin settings
-        } else if (alg.settings.contains("CS2WT")) {
-            params = alg.settings.value("CS2WT");
-        }
-
-        for (let i = 0; i < params.length; i++) {
-            root.parameters[i].component.update(params[i].value);
-        }
-    }
-
-    function writeShaderParameters() {
-        var params = [];
-        for (const param of root.parameters) {
-            params.push({ parameter: param.parameter, value: param.component.control[param.key] })
-        }
-        alg.project.settings.setValue("CS2WT", params);
-        alg.settings.setValue("CS2WT", params);
+    function writeDefaults() {
+        var defaults = [];
+        for (const [param, item] of Object.entries(root.parameters))
+            defaults.push({ 
+                param: param, 
+                value: item.value
+            });
+        alg.project.settings.setValue("CS2WT", defaults);
+        setDefaults(readDefaults());
     }
 
     function resetWeapon(weaponName) {
@@ -94,32 +90,28 @@ Rectangle {
             const ormTexRes = alg.resources.importSessionResource(assetsPath + `${weaponName}/orm.jpg`, "texture");
             const curvTexRes = alg.resources.importSessionResource(assetsPath + `${weaponName}/curvature.jpg`, "texture");
 
-            dBaseColor.update(baseColorRes);
-            dNormalMap.update(normalMapRes);
-            dORMtex.update(ormTexRes);
-            dCurvTex.update(curvTexRes);
+            dBaseColor.value = baseColorRes;
+            dNormalMap.value = normalMapRes;
+            dORMtex.value = ormTexRes;
+            dCurvTex.value = curvTexRes;
         } catch(err) {
             alg.log.error("ERROR: " + err.message)
         }
     }
 
     Component.onCompleted: {
-        readShaderParameters(); 
+        setDefaults(readDefaults());
     }
 
     PainterPlugin {
         onComputationStatusChanged: {
-            var meshName = Utils.File.getFileName(alg.project.lastImportedMeshUrl());
-
-            if (weaponBox.control.currentValue != meshName) {
-                let weaponIndex = weaponBox.control.model.findIndex(weapon => weapon.value === meshName);
-                weaponBox.control.currentIndex = weaponIndex;
-            }
+            const name = Utils.File.getFileName(alg.project.lastImportedMeshUrl());
+            const item = weaponBox.control;
+            if (item.currentValue != name)
+                item.currentIndex = item.model.findIndex(w => w.value === name);
         }
 
-        onProjectAboutToSave: {
-            writeShaderParameters();
-        }
+        onProjectAboutToSave: writeDefaults()
     }
 
     ColumnLayout {
@@ -136,57 +128,56 @@ Rectangle {
                 anchors.margins: 10
                 spacing: 10
 
-                SButton {
+                SPButton {
                     id: exportButton
                     Layout.alignment: Qt.AlignHCenter
                     text: "Export to .econitem"
-                    icon.source: "./SWidgets/icons/icon_export.png"
+                    icon.source: "./assets/icons/icon_export.png"
                     icon.width: 18
                     icon.height: 18
 
                     onClicked: {
-                        fileDialog.mode = FileDialog.SaveFile
+                        fileDialog.mode = SPFileDialog.SaveFile
                         fileDialog.title = "Export to .econitem"
                         fileDialog.open()
                     }
                 }
 
-                SButton {
+                SPButton {
                     id: importButton
                     Layout.alignment: Qt.AlignHCenter
                     text: "Import from .econitem"
-                    icon.source: "./SWidgets/icons/icon_import.png"
+                    icon.source: "./assets/icons/icon_import.png"
                     icon.width: 18
                     icon.height: 18
 
                     onClicked: {
-                        fileDialog.mode = FileDialog.OpenFile
+                        fileDialog.mode = SPFileDialog.OpenFile
                         fileDialog.title = "Import from .econitem"
                         fileDialog.open()
                     }
                 }
             }
 
-            SFileDialog {
+            SPFileDialog {
                 id: fileDialog
                 folder: Qt.resolvedUrl("file:///C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive/content/csgo")
                 nameFilters: ["EconItem files (*.econitem)"]
 
                 onAccepted: {
-                    if (mode === SFileDialog.SaveFile) {
+                    if (mode === SPFileDialog.SaveFile)
                         Utils.EconItem.exportTo(fileUrl)
-                    } else {
+                    else
                         Utils.EconItem.importFrom(fileUrl)
-                    }
                 }
             }
         }
 
-        SSeparator {
+        SPSeparator {
             Layout.fillWidth: true
         }
 
-        SarameterGroup {
+        SPGroup {
             Layout.fillWidth: true
             expandable: false
             padding: 10
@@ -197,31 +188,36 @@ Rectangle {
                 radius: 10
             }
 
-            SParameter {
+            ShaderParameter {
                 id: enableLivePreview
                 Layout.fillWidth: true
                 text: "Live Preview"
+                prop: "checked"
                 resettable: false
+
                 SPButton {
                     checkable: true
                     text: checked ? "Enabled" : "Disabled"
                 }
             }
 
-            SPParameter {
+            ShaderParameter {
                 id: enablePBRValidation
                 Layout.fillWidth: true
                 text: "PBR Validation"
+                prop: "checked"
                 resettable: false
+
                 SPButton {
                     checkable: true
                     text: checked ? "Enabled" : "Disabled"
                 }
             }
 
-            SPParameter {
+            ShaderParameter {
                 id: pbrLimits
                 enabled: enablePBRValidation.control.checked
+                
                 SPRangeSlider {
                     text: "PBR Limits"
                     stepSize: 1
@@ -231,14 +227,15 @@ Rectangle {
             }
         }
 
-        SPParameterGroup {
+        SPGroup {
             id: colorsParamsGroup
             Layout.fillWidth: true
             toggled: false
             text: "Default Textures"
 
-            SPParameter {
+            ShaderParameter {
                 id: dGunGrunge
+                prop: "url"
 
                 SPResourcePicker {
                     label: "Gun Grunge"
@@ -246,8 +243,9 @@ Rectangle {
                 }
             }
 
-            SPParameter {
+            ShaderParameter {
                 id: dBaseColor
+                prop: "url"
 
                 SPResourcePicker {
                     label: "Base Color"
@@ -255,8 +253,9 @@ Rectangle {
                 }
             }
 
-            SPParameter {
+            ShaderParameter {
                 id: dNormalMap
+                prop: "url"
 
                 SPResourcePicker {
                     label: "Normal Map"
@@ -264,8 +263,9 @@ Rectangle {
                 }
             }
 
-            SPParameter {
+            ShaderParameter {
                 id: dORMtex
+                prop: "url"
 
                 SPResourcePicker {
                     label: "ORM Texture"
@@ -273,8 +273,9 @@ Rectangle {
                 }
             }
 
-            SPParameter {
+            ShaderParameter {
                 id: dCurvTex
+                prop: "url"
 
                 SPResourcePicker {
                     label: "Curvature Texture"
@@ -293,13 +294,14 @@ Rectangle {
             spacing: 10
             enabled: enableLivePreview.control.checked
 
-            SPParameterGroup {
+            SPGroup {
                 Layout.fillWidth: true
                 text: "Common"
 
-                SPParameter {
+                ShaderParameter {
                     id: weaponBox
                     text: "Weapon"
+                    prop: "currentIndex"
 
                     SPComboBox {
                         model: [
@@ -348,9 +350,10 @@ Rectangle {
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: finishStyleBox
                     text: "Finish Style"
+                    prop: "currentIndex"
 
                     SPComboBox {
                         model: [
@@ -371,8 +374,10 @@ Rectangle {
 
                 SPSeparator { }
 
-                SPParameter {
+                ShaderParameter {
                     id: wearAmount
+                    prop: "value"
+
                     SPSlider {
                         text: "Wear Amount"
                         from: wearLimits.control.minValue.toFixed(precision)
@@ -381,8 +386,10 @@ Rectangle {
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: texureScale
+                    prop: "value"
+
                     SPSlider {
                         text: "Texture Scale"
                         from: -10
@@ -390,9 +397,11 @@ Rectangle {
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: ignoreTextureSizeScale
                     text: "Ignore Weapon Size Scale:"
+                    prop: "checked"
+
                     SPButton {
                         checkable: true
                         text: checked ? "Yes" : "No"
@@ -400,12 +409,13 @@ Rectangle {
                 }
             }
 
-            SPParameterGroup {
+            SPGroup {
                 Layout.fillWidth: true
                 text: "Texture Placement"
 
-                SPParameter {
+                ShaderParameter {
                     id: textureRotation
+
                     SPRangeSlider {
                         text: "Texture Rotation"
                         from: -360
@@ -415,8 +425,9 @@ Rectangle {
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: textureOffsetX
+
                     SPRangeSlider {
                         text: "Texture Offset X"
                         from: -1
@@ -426,8 +437,9 @@ Rectangle {
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: textureOffsetY
+
                     SPRangeSlider {
                         text: "Texture Offset Y"
                         from: -1
@@ -438,45 +450,94 @@ Rectangle {
                 }
             }
 
-            SPParameterGroup {
+            SPGroup {
                 Layout.fillWidth: true
                 visible: finishStyleBox.control.currentIndex != 6
                 text: "Color"
 
-                SPParameter {
+                ShaderParameter {
                     id: color0
                     text: finishStyleBox.control.currentIndex > 6 ? "Base Metal" : "Base Coat"
-                    SPColorButton { }
+
+                    SPColorButton { 
+                        Component.onCompleted: {
+                            colorChanged.connect(() => color0.update(() => color0.value = [color.r, color.g, color.b]));
+                            color0.valueChanged.connect(() => 
+                                color0.update(() => {
+                                    color.r = color0.value[0]
+                                    color.g = color0.value[1]
+                                    color.b = color0.value[2]
+                                })
+                            );
+                        }
+                    }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: color1
                     visible: finishStyleBox.control.currentIndex != 3
                     text: finishStyleBox.control.currentIndex > 6 ? "Patina Tint" : "Red Channel"
-                    SPColorButton { }
+
+                    SPColorButton { 
+                        Component.onCompleted: {
+                            colorChanged.connect(() => color1.update(() => color1.value = [color.r, color.g, color.b]));
+                            color1.valueChanged.connect(() => 
+                                color1.update(() => {
+                                    color.r = color1.value[0]
+                                    color.g = color1.value[1]
+                                    color.b = color1.value[2]
+                                })
+                            );
+                        }
+                    }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: color2
                     visible: finishStyleBox.control.currentIndex != 3
                     text: finishStyleBox.control.currentIndex > 6 ? "Patina Wear" : "Green Channel"
-                    SPColorButton { }
+                    
+                    SPColorButton { 
+                        Component.onCompleted: {
+                            colorChanged.connect(() => color2.update(() => color2.value = [color.r, color.g, color.b]));
+                            color2.valueChanged.connect(() => 
+                                color2.update(() => {
+                                    color.r = color2.value[0]
+                                    color.g = color2.value[1]
+                                    color.b = color2.value[2]
+                                })
+                            );
+                        }
+                    }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: color3
                     visible: finishStyleBox.control.currentIndex != 3
                     text: finishStyleBox.control.currentIndex > 6 ? "Grime" : "Blue Channel"
-                    SPColorButton { }
+                    
+                    SPColorButton { 
+                        Component.onCompleted: {
+                            colorChanged.connect(() => color3.update(() => color3.value = [color.r, color.g, color.b]));
+                            color3.valueChanged.connect(() => 
+                                color3.update(() => {
+                                    color.r = color3.value[0]
+                                    color.g = color3.value[1]
+                                    color.b = color3.value[2]
+                                })
+                            );
+                        }
+                    }
                 }
             }
 
-            SPParameterGroup {
+            SPGroup {
                 Layout.fillWidth: true
                 text: "Effects"
 
-                SPParameter {
+                ShaderParameter {
                     id: wearLimits
+
                     SPRangeSlider {
                         text: "Wear Limits"
                         from: 0
@@ -489,17 +550,21 @@ Rectangle {
 
                 SPSeparator { }
 
-                SPParameter {
+                ShaderParameter {
                     id: usePearlescentMask
                     text: "Pearlescent Mask"
+                    prop: "checked"
+
                     SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: pearlescentScale
+                    prop: "value"
+
                     SPSlider {
                         text: "Pearlescent Scale"
                         from: -6
@@ -509,10 +574,13 @@ Rectangle {
 
                 SPSeparator { }
 
-                SPParameter {
+                ShaderParameter {
                     id: useRoughnessTexture
-                    property bool checked: true
+                    prop: "checked"
                     text: "Roughness Texture"
+
+                    property bool checked: true
+
                     SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
@@ -523,9 +591,11 @@ Rectangle {
                     }
                 }
                 
-                SPParameter {
+                ShaderParameter {
                     id: paintRoughness
+                    prop: "checked"
                     visible: !useRoughnessTexture.checked
+
                     SPSlider {
                         text: "Paint Roughness"
                         from: 0
@@ -534,33 +604,39 @@ Rectangle {
                 }
             }
 
-            SPParameterGroup {
+            SPGroup {
                 Layout.fillWidth: true
                 
                 text: "Advanced"
                 toggled: false
 
-                SPParameter {
+                ShaderParameter {
                     id: useNormalMap
+                    prop: "checked"
                     text: "Normal Map"
+                    
                     SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: useMaterialMask
+                    prop: "checked"
                     text: "Material Mask"
+
                     SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"
                     }
                 }
 
-                SPParameter {
+                ShaderParameter {
                     id: useAmbientOcclusion
+                    prop: "checked"
                     text: "Ambient Occlusion"
+                    
                     SPButton {
                         checkable: true
                         text: checked ? "Use" : "Do not use"

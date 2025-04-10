@@ -87,14 +87,8 @@ RowLayout {
                             end: Qt.point(parent.width, 0)
                             
                             gradient: Gradient {
-                                GradientStop {
-                                    position: 0.0
-                                    color: "#d0d0d0"
-                                }
-                                GradientStop {
-                                    position: 1.0
-                                    color: control.pressed ? "#1a8dff" : "#d0d0d0"
-                                }
+                                GradientStop { position: 0.0; color: "#d0d0d0" }
+                                GradientStop { position: 1.0; color: control.pressed ? "#1a8dff" : "#d0d0d0" }
                             }
                         }
                     }

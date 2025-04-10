@@ -50,7 +50,7 @@ uniform_specialization bool u_enable_pbr_validation;
 uniform_specialization int u_finish_style;
 
 //: param custom { "default": [90, 250] }
-uniform ivec2 u_pbr_limits;
+uniform vec2 u_pbr_limits;
 //: param custom { "default": 0.00 }
 uniform float u_wear_amount;
 //: param custom { "default": true }
