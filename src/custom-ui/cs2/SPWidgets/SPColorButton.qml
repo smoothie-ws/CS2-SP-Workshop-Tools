@@ -3,6 +3,7 @@ import QtQuick.Layouts 1.3
 
 RowLayout {
     id: root
+    
     property alias color: colorPicker.color
 
     SPButton {

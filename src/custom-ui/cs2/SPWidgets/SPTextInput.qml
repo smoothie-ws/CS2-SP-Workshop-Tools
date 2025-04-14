@@ -3,27 +3,28 @@ import QtQuick 2.7
 TextInput {
     id: root
     color: "#d0d0d0"
+    clip: true
     selectionColor: "#1a8dff"
     selectedTextColor: "#fff"
     selectByMouse: true
     horizontalAlignment: Text.AlignHCenter
     verticalAlignment: Text.AlignVCenter
-    topPadding: 2
-    bottomPadding: 2
-    leftPadding: 2
-    rightPadding: 2
+    topPadding: padding
+    bottomPadding: padding
+    leftPadding: padding
+    rightPadding: padding
 
-    Rectangle {
-        id: background
-        z: parent.z - 1
-        anchors.fill: parent
-        color: "#2d2d2d"
-        border.color: Qt.rgba(1, 1, 1, 0.15)
-        border.width: 1
-        radius: 5
+    property real padding: 2.0
+    property Component background: Rectangle {
+        color: "#282828"
+        radius: 15
     }
 
-    onActiveFocusChanged: {
-        focus = activeFocus;
+    onActiveFocusChanged: focus = activeFocus
+
+    Loader {
+        z: parent.z - 1
+        anchors.fill: parent
+        sourceComponent: root.background
     }
 }

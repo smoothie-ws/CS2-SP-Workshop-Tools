@@ -1,103 +1,117 @@
-import QtQuick 2.7
-import QtGraphicalEffects 1.15
-import QtQuick.Controls 2.1
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.3
-import AlgWidgets 2.0
-import AlgWidgets.Style 2.0
+import QtGraphicalEffects 1.0
+import "math.js" as MathUtils
 
-RowLayout {
+ColumnLayout {
     id: root
-    spacing: 10
-    opacity: enabled ? 1.0 : 0.3
+    opacity: enabled ? 1.0 : 0.5
 
+    property alias mouseArea: mouseArea
     property alias text: label.text
-    property alias from: control.from
-    property alias to: control.to
-    property alias value: control.value
-    property alias stepSize: control.stepSize
-    property int precision: stepSize.toString().includes('.') ? stepSize.toString().split('.').pop().length : 0
+    property alias pressed: mouseArea.pressed
+    property alias hovered: mouseArea.hovered
 
-    ColumnLayout {
-        spacing: 5
-        
-        RowLayout {
+    property real from: 0.0
+    property real to: 1.0
+    property real value: 0.5
+
+    readonly property real visualPosition: MathUtils.norm(value, from, to)
+    
+    RowLayout {
+        id: sliderParameters
+        Layout.fillWidth: true
+
+        Label {
+            id: label
+            color: "#d0d0d0"
             Layout.fillWidth: true
-            spacing: 10
-
-            AlgLabel {
-                Layout.fillWidth: true
-                id: label
-            }
-
-            SPTextInput {
-                Layout.preferredWidth: 40
-                text: parseFloat(value).toFixed(precision)
-                validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
-                horizontalAlignment: TextInput.AlignRight
-                onEditingFinished: root.value = parseFloat(text)
-            }
         }
 
-        RowLayout {
-            Layout.fillWidth: true
+        SPTextInput {
+            Layout.preferredWidth: 45
+            text: root.value.toFixed(2)
+            validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
 
-            AlgLabel {
-                text: root.from
+            onEditingFinished: root.value = MathUtils.clamp(parseFloat(text), from, to);
+        }
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        height: 20.0
+        spacing: 10.0
+
+        Label {
+            color: "#d0d0d0"
+            text: root.from
+        }
+
+        MouseArea {
+            id: mouseArea
+            hoverEnabled: true
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            property bool hovered: false
+
+            onEntered: hovered = true
+            onExited: hovered = false
+            onPressed: sync()
+            onPositionChanged: if (pressed) sync()
+
+            function sync() {
+                const position = MathUtils.norm(mouseX - line.x, 0.0, line.width);
+                root.value = MathUtils.mapNorm(MathUtils.clamp(position, 0.0, 1.0), root.from, root.to);
             }
 
-            Slider {
-                id: control
-                Layout.fillWidth: true
-                snapMode: RangeSlider.SnapAlways
-                stepSize: 0.01
+            Rectangle {
+                id: line
+                height: 2.0
+                color: "#707070"
+                radius: Math.min(width, height) * 0.5
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: handler.width * 0.5
+                anchors.rightMargin: handler.width * 0.5
                 
-                handle: Item {
-                    x: control.visualPosition * control.availableWidth
-                    y: control.topPadding + ((control.availableHeight - height) / 2)
-                    width: 10
-                    height: 10
+                readonly property color handlerColor: Qt.hsva(0.55 + 0.45 * root.visualPosition, 0.5, 1.0)
 
-                    Rectangle {
-                        width: parent.width
-                        height: parent.height
-                        scale: control.pressed ? 1.3 : 1
-                        color: control.pressed ? "#1a8dff" : "#d0d0d0"
-                        border.color: "#1a8dff"
-                        border.width: control.pressed ? 2 : 0
-                        radius: 180
-                    }
-                }
+                LinearGradient {
+                    width: root.visualPosition * parent.width
+                    height: parent.height
+                    start: Qt.point(0, 0)
+                    end: Qt.point(width, 0)
 
-                background: Rectangle {
-                    width: control.availableWidth
-                    height: 2
-                    radius: Math.round(Math.min(width/2, height/2))
-                    color: control.pressed ? "#d0d0d0" : "#666666"
-                    anchors.centerIn: parent
-
-                    Item {
-                        x: 0
-                        y: 0
-                        width: control.visualPosition * parent.width
-                        height: 2
-
-                        LinearGradient {
-                            anchors.fill: parent
-                            start: Qt.point(0, 0)
-                            end: Qt.point(parent.width, 0)
-                            
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#d0d0d0" }
-                                GradientStop { position: 1.0; color: control.pressed ? "#1a8dff" : "#d0d0d0" }
-                            }
+                    gradient: Gradient {
+                        GradientStop { 
+                            position: 0.0
+                            color: "#d0d0d0" 
+                        }
+                        GradientStop { 
+                            position: 1.0
+                            color: root.pressed ? line.handlerColor : "#d0d0d0"
                         }
                     }
                 }
-            }
 
-            AlgLabel {
-                text: root.to
+                SPSliderHandler {
+                    id: handler
+                    z: 1
+                    x: root.visualPosition * parent.width - width * 0.5
+                    anchors.verticalCenter: parent.verticalCenter
+                    pressed: root.pressed
+                    hovered: root.hovered
+                    color: pressed ? line.handlerColor : "#d0d0d0"
+                }
             }
+        }
+
+        Label {
+            color: "#d0d0d0"
+            text: root.to
         }
     }
 }

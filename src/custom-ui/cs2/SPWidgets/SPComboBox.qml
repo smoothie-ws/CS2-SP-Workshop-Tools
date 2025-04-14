@@ -6,14 +6,14 @@ import AlgWidgets.Style 2.0
 
 ComboBox {
     id: root
-    height: 25
+    implicitHeight: 25
 
     background: Rectangle {
         anchors.fill: parent
         color: root.hovered ? "#333333" : "#2d2d2d"
         border.color: root.checked ? "#378ef0" : "#4e4e4e"
         border.width: 1
-        radius: 15
+        radius: Math.min(height, width) / 2
     }
 
     contentItem: Label {
@@ -44,7 +44,7 @@ ComboBox {
             color: "#333333"
             border.color: "#4e4e4e"
             border.width: 1
-            radius: 13
+            radius: Math.min(root.height, root.width) / 2
         }
 
         ListView {

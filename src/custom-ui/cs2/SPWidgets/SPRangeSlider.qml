@@ -1,140 +1,223 @@
-import QtQuick 2.7
-import QtGraphicalEffects 1.15
-import QtQuick.Controls 2.1
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.3
-import AlgWidgets 2.0
-import AlgWidgets.Style 2.0
+import QtGraphicalEffects 1.0
+import "math.js" as MathUtils
 
-RowLayout {
+ColumnLayout {
     id: root
-    spacing: 10
-    opacity: enabled ? 1.0 : 0.3
-    
+    opacity: enabled ? 1.0 : 0.5
+
+    property alias mouseArea: mouseArea
     property alias text: label.text
-    property alias from: control.from
-    property alias to: control.to
-    property alias minValue: control.first.value
-    property alias maxValue: control.second.value
-    property alias stepSize: control.stepSize
-    property int precision: stepSize.toString().includes('.') ? stepSize.toString().split('.').pop().length : 0
+    property alias pressed: mouseArea.pressed
+    property alias hovered: mouseArea.hovered
+
+    property real from: 0.0
+    property real to: 1.0
+    property real minValue: 0.0
+    property real value: 0.5
+    property real maxValue: 1.0
     property var range: [minValue, maxValue]
 
-    ColumnLayout {
-        spacing: 5
-        
-        RowLayout {
+    readonly property real minVisualPosition: MathUtils.norm(minValue, from, to)
+    readonly property real visualPosition: MathUtils.norm(value, from, to)
+    readonly property real maxVisualPosition: MathUtils.norm(maxValue, from, to)
+
+    property bool pickValue: true
+
+    QtObject {
+        id: internal
+
+        property bool updating: false
+
+        function update(f) {
+            return () => {
+                if (!updating) {
+                    updating = true;
+                    f();
+                    updating = false;
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: {
+        rangeChanged.connect(internal.update(() => {
+            minValue = range[0];
+            maxValue = range[1];
+        }));
+        minValueChanged.connect(internal.update(() => {
+            range[0] = minValue;
+        }));
+        maxValueChanged.connect(internal.update(() => {
+            range[1] = maxValue;
+        }));
+    }
+
+    RowLayout {
+        id: sliderParameters
+        Layout.fillWidth: true
+
+        Label {
+            id: label
+            color: "#d0d0d0"
             Layout.fillWidth: true
-            spacing: 10
-
-            AlgLabel {
-                id: label
-                Layout.fillWidth: true
-            }
-
-            Row {
-                spacing: 10
-
-                SPTextInput {
-                    width: 40
-                    text: parseFloat(root.minValue).toFixed(precision)
-                    validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
-                    horizontalAlignment: TextInput.AlignRight
-                    onEditingFinished: root.minValue = parseFloat(text)
-                }
-
-                SPTextInput {
-                    width: 40
-                    text: parseFloat(root.maxValue).toFixed(precision)
-                    validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
-                    horizontalAlignment: TextInput.AlignRight
-                    onEditingFinished: root.maxValue = parseFloat(text)
-                }
-            }
-
         }
 
-        RowLayout {
-            Layout.fillWidth: true
+        Repeater {
+            model: ["minValue", "value", "maxValue"]
+            delegate: SPTextInput {
+                Layout.preferredWidth: 45
+                text: root[modelData].toFixed(2)
+                visible: index == 1 ? root.pickValue : true
+                validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
 
-            AlgLabel {
-                text: root.from
+                Component.onCompleted: {
+                    if (index == 0)
+                        editingFinished.connect(() => 
+                            root[modelData] = MathUtils.clamp(parseFloat(text), from, root.pickValue ? root.value : root.maxValue)
+                        );
+                    else if (index == 1)
+                        editingFinished.connect(() => 
+                            root[modelData] = MathUtils.clamp(parseFloat(text), root.minValue, root.maxValue)
+                        );
+                    else
+                        editingFinished.connect(() => 
+                            root[modelData] = MathUtils.clamp(parseFloat(text), root.pickValue ? root.value : root.minValue, to)
+                        );
+                }
+            }
+        }
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        height: 20.0
+        spacing: 10.0
+
+        Label {
+            color: "#d0d0d0"
+            text: root.from
+        }
+
+        MouseArea {
+            id: mouseArea
+            hoverEnabled: true
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            property bool hovered: false
+
+            property int closest: -1
+
+            onEntered: hovered = true
+            onExited: hovered = false
+            onPressed: syncMousePosition()
+            onPositionChanged: {
+                if (pressed)
+                    syncMousePosition();
+                else
+                    pickClosest();
             }
 
-            RangeSlider {
-                id: control
-                Layout.fillWidth: true
-                snapMode: RangeSlider.SnapAlways
+            function pickClosest() {
+                const position = MathUtils.norm(mouseX - line.x, 0.0, line.width);
+                const d = visualPosition - position;
+                const mind = minVisualPosition - position;
+                const maxd = maxVisualPosition - position;
+                if (root.pickValue) {
+                    if (d + mind >= 0)
+                        closest = 0;
+                    else if (d + maxd > 0)
+                        closest = 1;
+                    else
+                        closest = 2;
+                } else {
+                    if (mind + maxd >= 0)
+                        closest = 0;
+                    else
+                        closest = 2;
+                }
+            }
+
+            function syncMousePosition() {
+                const position = MathUtils.norm(mouseX - line.x, 0.0, line.width);
+                if (mouseArea.closest == 0) {
+                    const clamped = MathUtils.clamp(position, 0.0, root.pickValue ? root.visualPosition : root.maxVisualPosition);
+                    root.minValue = MathUtils.mapNorm(clamped, root.from, root.to);
+                }
+                else if (mouseArea.closest == 1) {
+                    const clamped = MathUtils.clamp(position, root.minVisualPosition, root.maxVisualPosition);
+                    root.value = MathUtils.mapNorm(clamped, root.from, root.to);
+                }
+                else if (mouseArea.closest == 2) {
+                    const clamped = MathUtils.clamp(position, root.pickValue ? root.visualPosition : root.minVisualPosition, 1.0);
+                    root.maxValue = MathUtils.mapNorm(clamped, root.from, root.to);
+                }
+            }
+
+            Rectangle {
+                id: line
+                height: 2.0
+                color: "#707070"
+                radius: Math.min(width, height) * 0.5
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: 6
+                anchors.rightMargin: 6
                 
-                first.handle: Item {
-                    x: control.first.visualPosition * control.availableWidth
-                    y: control.topPadding + ((control.availableHeight - height) / 2)
-                    width: 10
-                    height: 10
+                readonly property color minHandlerColor: Qt.hsva(0.55 + 0.45 * root.minVisualPosition, 0.5, 1.0)
+                readonly property color handlerColor: Qt.hsva(0.55 + 0.45 * root.visualPosition, 0.5, 1.0)
+                readonly property color maxHandlerColor: Qt.hsva(0.55 + 0.45 * root.maxVisualPosition, 0.5, 1.0)
 
-                    Rectangle {
-                        width: parent.width
-                        height: parent.height
-                        scale: control.first.pressed ? 1.3 : 1
-                        color: control.first.pressed ? "#1a8dff" : "#d0d0d0"
-                        border.color: "#1a8dff"
-                        border.width: control.first.pressed ? 2 : 0
-                        radius: width
-                    }
-                }
+                LinearGradient {
+                    x: root.minVisualPosition * parent.width
+                    width: (root.maxVisualPosition - root.minVisualPosition) * parent.width
+                    height: parent.height
+                    start: Qt.point(0, 0)
+                    end: Qt.point(width, 0)
 
-                second.handle: Item {
-                    x: control.second.visualPosition * control.availableWidth
-                    y: control.topPadding + ((control.availableHeight - height) / 2)
-                    width: 10
-                    height: 10
-
-                    Rectangle {
-                        width: parent.width
-                        height: parent.height
-                        scale: control.second.pressed ? 1.3 : 1
-                        color: control.second.pressed ? "#1a8dff" : "#d0d0d0"
-                        border.color: "#1a8dff"
-                        border.width: control.second.pressed ? 2 : 0
-                        radius: width
-                    }
-                }
-
-                background: Rectangle {
-                    width: control.availableWidth
-                    height: 2
-                    radius: Math.round(Math.min(width/2, height/2))
-                    color: (control.first.pressed | control.second.pressed) ? "#d0d0d0" : "#666666"
-                    anchors.centerIn: parent
-
-                    Item {
-                        x: control.first.visualPosition * parent.width
-                        y: 0
-                        width: (control.second.visualPosition - control.first.visualPosition) * parent.width
-                        height: 2
-
-                        LinearGradient {
-                            anchors.fill: parent
-                            start: Qt.point(0, 0)
-                            end: Qt.point(parent.width, 0)
-                            
-                            gradient: Gradient {
-                                GradientStop {
-                                    position: 0.0
-                                    color: control.first.pressed ? "#1a8dff" : "#d0d0d0"
-                                }
-                                GradientStop {
-                                    position: 1.0
-                                    color: control.second.pressed ? "#1a8dff" : "#d0d0d0"
-                                }
+                    gradient: Gradient {
+                        GradientStop { 
+                            position: 0.0
+                            color: root.pressed && mouseArea.closest == 0 ? line.minHandlerColor : "#d0d0d0" 
+                        }
+                        GradientStop { 
+                            position: {
+                                if (root.pickValue)
+                                    MathUtils.norm(root.visualPosition, root.minVisualPosition, root.maxVisualPosition);
+                                else
+                                    mouseArea.closest == 0 ? 0.0 : 1.0;
                             }
+                            color: root.pressed && mouseArea.closest == 1 ? line.handlerColor : "#d0d0d0" 
+                        }
+                        GradientStop { 
+                            position: 1.0
+                            color: root.pressed && mouseArea.closest == 2 ? line.maxHandlerColor : "#d0d0d0" 
                         }
                     }
                 }
-            }
 
-            AlgLabel {
-                text: root.to
+                Repeater {
+                    model: ["min", "", "max"]
+                    delegate: SPSliderHandler {
+                        z: 1
+                        x: root[modelData + (modelData.length == 0 ? "visualPosition" : "VisualPosition")] * parent.width - width * 0.5
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: index == 1 ? root.pickValue : true
+                        pressed: root.pressed && mouseArea.closest == index
+                        hovered: root.hovered && mouseArea.closest == index
+                        color: pressed ? line[`${modelData + (modelData.length == 0 ? "handler" : "Handler")}Color`] : "#d0d0d0"
+                    }
+                }
             }
+        }
+
+        Label {
+            color: "#d0d0d0"
+            text: root.to
         }
     }
 }

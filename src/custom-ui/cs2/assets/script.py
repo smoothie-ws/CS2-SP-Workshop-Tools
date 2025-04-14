@@ -5,8 +5,8 @@ from PIL import ImageChops
 
 
 if __name__ == "__main__":
-    dir_path = 'assets/weapons/models/'
-    tgt_path = 'assets/materials/'
+    dir_path = 'weapons/models/'
+    tgt_path = 'materials/'
 
     for weapon in os.listdir(dir_path):
         weapon_path = os.path.join(dir_path, weapon, 'materials/')

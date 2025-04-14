@@ -5,7 +5,6 @@ import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
 import "../utils.mjs" as Utils
 
-
 Item {
     id: root
     height: 32
@@ -40,12 +39,10 @@ Item {
         onUrlChanged: {
             var imgPath = alg.resources.getResourceInfo(url).filePath;
             if (Utils.File.exists(imgPath)) {
-                if (imgPath.endsWith('.jpg') | imgPath.endsWith('.jpeg') | imgPath.endsWith('.png')) {
+                if (imgPath.endsWith('.jpg') | imgPath.endsWith('.jpeg') | imgPath.endsWith('.png'))
                     preview.source = 'file:///' + imgPath;
-                }
-            } else {
-                preview.source = 'image://resources/' +  url;
-            }
+            } else
+                preview.source = 'image://resources/' + url;
         }
     }
 
@@ -107,7 +104,7 @@ Item {
             id: widgetLabel
             antialiasing: true
             x: 16
-            y: background.height / 2 - height / 2
+            y: background.height * 0.5 - height * 0.5
             text: internal.label
             color: Qt.rgba(0.75, 0.75, 0.75, 1.0)
 
@@ -122,10 +119,12 @@ Item {
 
             transform: Scale {
                 id: textScale
-                origin.x: parent.x
-                origin.y: parent.height / 2
+                xScale: factor
+                yScale: factor
+                origin.x: widgetLabel.x
+                origin.y: widgetLabel.height * 0.5
 
-                property real factor: 1
+                property real factor: 1.0
 
                 Behavior on factor {
                     NumberAnimation { 
@@ -133,9 +132,6 @@ Item {
                         easing.type: Easing.OutQuart
                     }
                 }
-
-                xScale: factor
-                yScale: factor
             }
         }
     }

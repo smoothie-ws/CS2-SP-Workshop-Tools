@@ -64,7 +64,7 @@ uniform vec3 u_col2;
 //: param custom { "default": 1 }
 uniform vec3 u_col3;
 //: param custom { "default": 1.00 }
-uniform float u_tex_scale;
+uniform vec4 u_tex_transform; // packed values: [scale, rotation, offsetX, offsetY]
 //: param custom { "default": 0.00 }
 uniform float u_pearl_scale;
 //: param custom { "default": true }
@@ -135,8 +135,8 @@ void shade(V2F inputs) {
             vectors.normal = tangentSpaceToWorldSpace(dNormal, inputs);
         }
 
-        // apply texture scale parameter
-        inputs.sparse_coord.tex_coord *= u_tex_scale;
+        // transform texture
+        inputs.sparse_coord.tex_coord *= u_tex_transform.x;
 
         // fetch material maps
         vec3 pColor = getBaseColor(basecolor_tex, inputs.sparse_coord);

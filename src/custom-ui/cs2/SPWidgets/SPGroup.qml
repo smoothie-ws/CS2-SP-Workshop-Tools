@@ -7,24 +7,27 @@ import AlgWidgets.Style 2.0
 ColumnLayout {
     id: root
     opacity: enabled ? 1.0 : 0.5
-    spacing: 5
-    property Component background: Rectangle {
-        radius: 10
-        clip: true
-        gradient: Gradient {
-            GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.05) }
-            GradientStop { position: 20 / height; color: Qt.rgba(1, 1, 1, 0.05) }
-            GradientStop { position: 150 / height; color: Qt.rgba(0, 0, 0, 0) }
+    spacing: 7
+
+    property var labels: []
+    property alias background: loader.sourceComponent
+
+    Loader {
+        id: loader
+        width: root.width
+        height: root.height
+        sourceComponent: Rectangle {
+            radius: 10
+            clip: true
+            gradient: Gradient {
+                GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.05) }
+                GradientStop { position: 20 / height; color: Qt.rgba(1, 1, 1, 0.05) }
+                GradientStop { position: 150 / height; color: Qt.rgba(0, 0, 0, 0) }
+            }
         }
     }
 
-    Loader {
-        width: root.width
-        height: root.height
-        sourceComponent: background 
-    }
-
-    default property alias children: __contentItem.children
+    default property alias children: content.children
     property alias activeScopeBorder: scopeLine.visible
     property alias toggled: groupButton.toggled
     property alias expandable: groupButton.visible
@@ -58,49 +61,8 @@ ColumnLayout {
         }
 
         ColumnLayout {
-            id: __contentItem
+            id: content
             Layout.fillWidth: true
-
-            Component.onCompleted: {
-                var currentGroup = [];
-                var maxSeparatorXForGroup = 0;
-
-                for (var i = 0; i < __contentItem.children.length; ++i) {
-                    var child = __contentItem.children[i];
-                    child.Layout.fillWidth = true;
-
-                    if (child.toString().indexOf("SPParameter") !== -1 && child.scopeWidth !== 0) {
-                        currentGroup.push(child);
-                    } else if (currentGroup.length > 0) {
-                        maxSeparatorXForGroup = 0;
-                        for (var j = 0; j < currentGroup.length; ++j) {
-                            var groupChild = currentGroup[j];
-                            if (groupChild.scopeWidth > maxSeparatorXForGroup) {
-                                maxSeparatorXForGroup = groupChild.scopeWidth;
-                            }
-                        }
-                        for (var j = 0; j < currentGroup.length; ++j) {
-                            var groupChild = currentGroup[j];
-                            groupChild.scopeWidth = maxSeparatorXForGroup;
-                        }
-                        currentGroup = [];
-                    }
-                }
-
-                if (currentGroup.length > 0) {
-                    maxSeparatorXForGroup = 0;
-                    for (var j = 0; j < currentGroup.length; ++j) {
-                        var groupChild = currentGroup[j];
-                        if (groupChild.scopeWidth > maxSeparatorXForGroup) {
-                            maxSeparatorXForGroup = groupChild.scopeWidth;
-                        }
-                    }
-                    for (var j = 0; j < currentGroup.length; ++j) {
-                        var groupChild = currentGroup[j];
-                        groupChild.scopeWidth = maxSeparatorXForGroup;
-                    }
-                }
-            }
         }
     }
 }
