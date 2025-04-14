@@ -5,6 +5,35 @@ RowLayout {
     id: root
     
     property alias color: colorPicker.color
+    property var arrayColor: [color.r, color.g, color.b]
+
+    QtObject {
+        id: internal
+
+        property bool updating: false
+
+        function update(f) {
+            if (!updating) {
+                updating = true;
+                f();
+                updating = false;
+            }
+        }
+    }
+    
+    onArrayColorChanged: internal.update(() => {
+        color.r = arrayColor[0];
+        color.g = arrayColor[1];
+        color.b = arrayColor[2];
+    })
+
+    onColorChanged: internal.update(() => {
+        arrayColor = [
+            color.r, 
+            color.g, 
+            color.b
+        ];
+    })
 
     SPButton {
         id: control

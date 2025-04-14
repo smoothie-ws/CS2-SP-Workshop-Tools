@@ -5,6 +5,7 @@ import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
 import "./SPWidgets"
+import "./SPWidgets/math.js" as MathUtils
 import "utils.mjs" as Utils
 
 Rectangle {
@@ -20,8 +21,6 @@ Rectangle {
         shader.connect();
         if (alg.project.settings.contains("CS2WT")) 
             shader.setValues(alg.project.settings.value("CS2WT"));
-        else if (alg.settings.contains("CS2WT"))
-            shader.setValues(alg.settings.value("CS2WT"));
     }
 
     PainterPlugin {
@@ -30,10 +29,7 @@ Rectangle {
             if (weaponBox.currentValue != name)
                 weaponBox.currentIndex = weaponBox.model.findIndex(w => w.value === name);
         }
-
-        onProjectAboutToSave: {
-            alg.project.settings.setValue("CS2WT", shader.getValues());
-        }
+        onProjectAboutToSave: writeDefaults()
     }
 
     QtObject {
@@ -45,7 +41,7 @@ Rectangle {
             "u_finish_style":             { item: finishStyleBox,         prop: "currentIndex" },
             "u_enable_live_preview":      { item: enableLivePreview,      prop: "checked"      },
             "u_enable_pbr_validation":    { item: enablePBRValidation,    prop: "checked"      },
-            "u_pbr_limits":               { item: pbrLimits,              prop: "range"        },
+            "u_pbr_range":                { item: pbrRange,               prop: "range"        },
             "u_wear_amount":              { item: wearAmount,             prop: "value"        },
             "u_tex_transform":            { item: texTransform,           prop: "transform"    },
             "u_ignore_weapon_size_scale": { item: ignoreTextureSizeScale, prop: "checked"      },
@@ -53,7 +49,7 @@ Rectangle {
             "u_pearl_scale":              { item: pearlescentScale,       prop: "value"        },
             "u_use_roughness_tex":        { item: useRoughnessTexture,    prop: "checked"      },
             "u_paint_roughness":          { item: paintRoughness,         prop: "value"        },
-            // dynamically generated components:
+            // dynamically generated components
             "u_d_gun_grunge_sampler":     { item: null,                   prop: "url"          },
             "u_d_basecolor_sampler":      { item: null,                   prop: "url"          },
             "u_d_normal_sampler":         { item: null,                   prop: "url"          },
@@ -65,26 +61,35 @@ Rectangle {
             "u_col3":                     { item: null,                   prop: "arrayColor"   },
             "u_use_normal_map":           { item: null,                   prop: "checked"      },
             "u_use_material_mask":        { item: null,                   prop: "checked"      },
-            "u_use_ao_tex":               { item: null,                   prop: "checked"      }
+            "u_use_ao_tex":               { item: null,                   prop: "checked"      },
+            // not shader related
+            "wear_range":                 { item: wearRange,              prop: "range"        },
+            "tex_rotation_range":         { item: texRotation,            prop: "range"        },
+            "tex_offsetx_range":          { item: texOffsetX,             prop: "range"        },
+            "tex_offsety_range":          { item: texOffsetY,             prop: "range"        }
         }
 
         function connect() {
-            for (const [param, component] of Object.entries(parameters)) {
-                const cl = alg.shaders.parameter(shaderId, param);
-                component.item[component.prop] = Qt.binding(() => cl.value);
-                cl.value = Qt.binding(() => component.item[component.prop]);
-            }
+            for (const [param, component] of Object.entries(parameters)) 
+                if (param.startsWith("u_")) {
+                    const cl = alg.shaders.parameter(shaderId, param);
+                    component.item[component.prop] = Qt.binding(() => cl.value);
+                    cl.value = Qt.binding(() => component.item[component.prop]);
+                }
         }
 
         function getValues() {
-            var values = {}
+            var values = []
             for (const [param, component] of Object.entries(parameters))
-                values[param] = component.item[component.prop];
+                values.push({
+                    param: param, 
+                    value: component.item[component.prop]
+                });
             return values;
         }
 
-        function setValues(values) {
-            for (const v in values) {
+        function setValues(values:asdasd) {
+            for (const v of values) {
                 const component = parameters[v.param];
                 component.item[component.prop] = v.value;
             }
@@ -99,6 +104,10 @@ Rectangle {
         return alg.resources.importSessionResource(url, "texture");
     }
 
+    function writeDefaults() {
+        alg.project.settings.setValue("CS2WT", shader.getValues());
+    }
+    
     function resetWeapon(weaponName) {
         const path = Qt.resolvedUrl('assets/materials/').slice(8);
         try {
@@ -114,19 +123,33 @@ Rectangle {
     QtObject {
         id: texTransform
 
-        // packed values: [scale, rotation, offsetX, offsetY]
-        property var transform: [
-            texureScale.value, 
-            textureRotation.value, 
-            textureOffsetX.value, 
-            textureOffsetY.value
-        ]
+        property bool updating: false
+        property var transform: [0.0, 0.0, 1.0, 0.0]
 
-        onTransformChanged: {
-            texureScale.value = transform[0];
-            textureRotation.value = transform[1];
-            textureOffsetX.value = transform[2];
-            textureOffsetY.value = transform[3];
+        onTransformChanged: update(() => {
+            texOffsetX.value = transform[0];
+            texOffsetY.value = transform[1];
+            texScale.value = transform[2];
+            texRotation.value = transform[3] * 180.0 / Math.PI;
+        })
+
+        function update(f) {
+            if (!updating) {
+                updating = true;
+                f();
+                updating = false;
+            }
+        }
+
+        function sync() {
+            update(() => {
+                transform = [
+                    texOffsetX.value, 
+                    texOffsetY.value,
+                    texScale.value, 
+                    texRotation.value * Math.PI / 180.0
+                ];
+            });
         }
     }
 
@@ -182,9 +205,9 @@ Rectangle {
 
                 onAccepted: {
                     if (mode === SPFileDialog.SaveFile)
-                        Utils.EconItem.exportTo(fileUrl)
+                        Utils.EconItem.export(fileUrl)
                     else
-                        Utils.EconItem.importFrom(fileUrl)
+                        Utils.EconItem.import(fileUrl)
                 }
             }
         }
@@ -196,11 +219,21 @@ Rectangle {
             Layout.fillWidth: true
             expandable: false
             padding: 10
+            
+            property int seed: 0
+
             background: Rectangle {
                 color: Qt.rgba(1, 1, 1, 0.05)
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.1)
                 radius: 10
+            }
+
+           onSeedChanged: {
+                wearAmount.value = MathUtils.mapNorm(MathUtils.random(seed + 1), wearRange.minValue, wearRange.maxValue);
+                texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
+                texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
+                texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
             }
 
             RowLayout {
@@ -222,8 +255,8 @@ Rectangle {
             }
 
             SPRangeSlider {
-                id: pbrLimits
-                text: "PBR Limits"
+                id: pbrRange
+                text: "PBR Range"
                 enabled: enablePBRValidation.checked
                 from: 0
                 to: 255
@@ -349,23 +382,42 @@ Rectangle {
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
                 }
 
-                SPSeparator { }
+                SPLabeled {
+                    text: "Seed"
+                    Layout.fillWidth: true
+
+                    SPSeparator { Layout.fillWidth: true }
+
+                    SPTextInput {
+                        Layout.preferredWidth: 45
+                        text: general.seed
+                        validator: RegExpValidator { regExp: /^-?[0-9]*/ }
+                        onEditingFinished: general.seed = MathUtils.clamp(parseInt(text), 0, 9999);
+                    }
+
+                    SPButton {
+                        id: randomButton
+                        text: "Random"
+                        anchors.right: parent.right
+
+                        onPressed: general.seed = Math.floor(Math.random() * 10000)
+                    }
+                }
 
                 SPSlider {
                     id: wearAmount
                     text: "Wear Amount"
-                    from: wearLimits.minValue.toFixed(2)
-                    to: wearLimits.maxValue.toFixed(2)
-                    onValueChanged: wearLimits.value = value
+                    from: wearRange.minValue.toFixed(2)
+                    to: wearRange.maxValue.toFixed(2)
+                    onValueChanged: wearRange.value = value
                 }
 
                 SPSlider {
-                    id: texureScale
+                    id: texScale
                     text: "Texture Scale"
                     from: -10
                     to: 10
-
-                    onValueChanged: texTransform.transform[0] = value
+                    onValueChanged: texTransform.sync()
                 }
 
                 SPButton {
@@ -381,30 +433,27 @@ Rectangle {
                 text: "Texture Placement"
 
                 SPRangeSlider {
-                    id: textureRotation
+                    id: texRotation
                     text: "Texture Rotation"
                     from: -360
                     to: 360
-
-                    onValueChanged: texTransform.transform[1] = value
+                    onValueChanged: texTransform.sync()
                 }
 
                 SPRangeSlider {
-                    id: textureOffsetX
+                    id: texOffsetX
                     text: "Texture Offset X"
                     from: -1
                     to: 1
-
-                    onValueChanged: texTransform.transform[2] = value
+                    onValueChanged: texTransform.sync()
                 }
 
                 SPRangeSlider {
-                    id: textureOffsetY
+                    id: texOffsetY
                     text: "Texture Offset Y"
                     from: -1
                     to: 1
-
-                    onValueChanged: texTransform.transform[3] = value
+                    onValueChanged: texTransform.sync()
                 }
             }
 
@@ -417,20 +466,20 @@ Rectangle {
                 property real scopeWidth: 0.0
 
                 Repeater {
-                    model: finishStyleBox.currentIndex > 6 ? [
-                        "Base Metal",
-                        "Patina Tint", 
-                        "Patina Wear", 
-                        "Grime"
-                    ] : [
-                        "Base Coat", 
-                        "Red Channel",
-                        "Green Channel",
-                        "Blue Channel"
+                    model: [
+                        ["Base Metal", "Base Coat"], 
+                        ["Patina Tint", "Red Channel"],
+                        ["Patina Wear", "Green Channel"],
+                        ["Grime", "Blue Channel"]
                     ]
                     delegate: SPLabeled {
-                        text: modelData
-                        SPColorButton { }
+                        text: finishStyleBox.currentIndex > 6 ? modelData[0] : modelData[1]
+                        
+                        property alias arrayColor: colorPicker.arrayColor
+
+                        SPColorButton { 
+                            id: colorPicker
+                        }
                     }
 
                     onItemAdded: (i, item) => {
@@ -446,8 +495,8 @@ Rectangle {
                 text: "Effects"
 
                 SPRangeSlider {
-                    id: wearLimits
-                    text: "Wear Limits"
+                    id: wearRange
+                    text: "Wear Range"
                     from: 0.0
                     to: 1.0
                     onValueChanged: wearAmount.value = value

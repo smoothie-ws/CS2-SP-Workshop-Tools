@@ -6,7 +6,7 @@ import AlgWidgets 2.0
 RowLayout {
     property alias text: label.text
     property real scopeWidth: label.width
-
+    
     onVisibleChanged: scale = visible
 
     Behavior on scale {

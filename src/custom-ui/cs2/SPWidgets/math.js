@@ -13,3 +13,8 @@ function mapNorm(value, xmin, xmax) {
 function map(value, x0min, x0max, x1min, x1max) {
     return mapNorm(norm(value, x0min, x0max), x1min, x1max);
 }
+
+function random(seed) {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+}

@@ -26,35 +26,33 @@ ColumnLayout {
 
     property bool pickValue: true
 
+    onRangeChanged: internal.update(() => {
+        minValue = range[0];
+        maxValue = range[1];
+    })
+
+    onMinValueChanged: internal.update(() => {
+        range = [minValue, maxValue];
+    })
+    
+    onMaxValueChanged: internal.update(() => {
+        range = [minValue, maxValue];
+    })
+    
     QtObject {
         id: internal
 
         property bool updating: false
 
         function update(f) {
-            return () => {
-                if (!updating) {
-                    updating = true;
-                    f();
-                    updating = false;
-                }
+            if (!updating) {
+                updating = true;
+                f();
+                updating = false;
             }
         }
     }
-
-    Component.onCompleted: {
-        rangeChanged.connect(internal.update(() => {
-            minValue = range[0];
-            maxValue = range[1];
-        }));
-        minValueChanged.connect(internal.update(() => {
-            range[0] = minValue;
-        }));
-        maxValueChanged.connect(internal.update(() => {
-            range[1] = maxValue;
-        }));
-    }
-
+    
     RowLayout {
         id: sliderParameters
         Layout.fillWidth: true

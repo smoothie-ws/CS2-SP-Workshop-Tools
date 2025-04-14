@@ -50,7 +50,7 @@ uniform_specialization bool u_enable_pbr_validation;
 uniform_specialization int u_finish_style;
 
 //: param custom { "default": [90, 250] }
-uniform vec2 u_pbr_limits;
+uniform vec2 u_pbr_range;
 //: param custom { "default": 0.00 }
 uniform float u_wear_amount;
 //: param custom { "default": true }
@@ -63,8 +63,8 @@ uniform vec3 u_col1;
 uniform vec3 u_col2;
 //: param custom { "default": 1 }
 uniform vec3 u_col3;
-//: param custom { "default": 1.00 }
-uniform vec4 u_tex_transform; // packed values: [scale, rotation, offsetX, offsetY]
+//: param custom { "default": [0.0, 0.0, 1.0, 0.0] }
+uniform vec4 u_tex_transform; // packed values: [offsetX, offsetY, scale, rotation]
 //: param custom { "default": 0.00 }
 uniform float u_pearl_scale;
 //: param custom { "default": true }
@@ -136,7 +136,11 @@ void shade(V2F inputs) {
         }
 
         // transform texture
-        inputs.sparse_coord.tex_coord *= u_tex_transform.x;
+        float s = sin(u_tex_transform.w);
+        float c = cos(u_tex_transform.w);
+        inputs.sparse_coord.tex_coord *= mat2(c, s, -s, c);
+        inputs.sparse_coord.tex_coord += u_tex_transform.xy;
+        inputs.sparse_coord.tex_coord *= u_tex_transform.z;
 
         // fetch material maps
         vec3 pColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
@@ -146,14 +150,12 @@ void shade(V2F inputs) {
         pORM.b = 0.0;
 
         if (u_use_material_mask) {
-            if (u_finish_style == AQ || u_finish_style == AM) {
+            if (u_finish_style == AQ || u_finish_style == AM)
                 pORM.b = 1.0;
-            } else if (u_finish_style == GS) {
+            else if (u_finish_style == GS)
                 pORM.b = getMetallic(metallic_tex, inputs.sparse_coord);
-            }
-        } else {
+        } else
             pORM.b = dORM.b;
-        }
 
         // cutoff mask calculation
         vec3 gunGrunge = texture(u_d_gun_grunge_sampler, inputs.tex_coord).rgb;
@@ -186,7 +188,7 @@ void shade(V2F inputs) {
     }
 
     if (u_enable_pbr_validation) {
-        vec3 res = valPBR(rColor, u_pbr_limits.x, u_pbr_limits.y);
+        vec3 res = valPBR(rColor, u_pbr_range.x, u_pbr_range.y);
         rColor = mix((res.r > 0.0 || res.b > 0.0) ? vec3(0.0) : rColor, rColor, cutoffMask);
         emissiveColorOutput(mix(res, vec3(0.0), cutoffMask));
     }
