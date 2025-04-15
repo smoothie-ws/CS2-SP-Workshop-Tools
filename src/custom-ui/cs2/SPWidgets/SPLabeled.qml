@@ -4,6 +4,8 @@ import QtQuick.Layouts 1.3
 import AlgWidgets 2.0
 
 RowLayout {
+    opacity: enabled ? 1.0 : 0.5
+    
     property alias text: label.text
     property real scopeWidth: label.width
     

@@ -3,7 +3,6 @@ import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.15
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
-import "../utils.mjs" as Utils
 
 Item {
     id: root
@@ -38,7 +37,7 @@ Item {
 
         onUrlChanged: {
             var imgPath = alg.resources.getResourceInfo(url).filePath;
-            if (Utils.File.exists(imgPath)) {
+            if (alg.fileIO.exists(imgPath)) {
                 if (imgPath.endsWith('.jpg') | imgPath.endsWith('.jpeg') | imgPath.endsWith('.png'))
                     preview.source = 'file:///' + imgPath;
             } else
@@ -159,11 +158,8 @@ Item {
             
             onDropped: {
                 var data = null;
-
-                if (drop.hasUrls) {
+                if (drop.hasUrls)
                     data = drop.urls[0];
-                }
-
                 internal.url = data;
                 drop.accept();
             }
@@ -177,5 +173,18 @@ Item {
             internal.url = previewID;
             internal.resourceName = name;
         }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+
+        onPressed: (e) => e.accepted = false
+        onReleased: (e) => e.accepted = false
+        onClicked: (e) => e.accepted = false
+        onDoubleClicked: (e) => e.accepted = false
+        onPressAndHold: (e) => e.accepted = false
+        onWheel: (e) => e.accepted = false
+        onPositionChanged: (e) => e.accepted = false
     }
 }

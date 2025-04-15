@@ -30,7 +30,7 @@ ColumnLayout {
         }
 
         SPTextInput {
-            Layout.preferredWidth: 45
+            Layout.preferredWidth: 50
             text: root.value.toFixed(2)
             validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
 
@@ -51,6 +51,7 @@ ColumnLayout {
         MouseArea {
             id: mouseArea
             hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -104,6 +105,7 @@ ColumnLayout {
                     anchors.verticalCenter: parent.verticalCenter
                     pressed: root.pressed
                     hovered: root.hovered
+                    text: root.value.toFixed(2)
                     color: pressed ? line.handlerColor : "#d0d0d0"
                 }
             }

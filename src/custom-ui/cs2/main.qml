@@ -6,7 +6,6 @@ import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
 import "./SPWidgets"
 import "./SPWidgets/math.js" as MathUtils
-import "utils.mjs" as Utils
 
 Rectangle {
     id: root
@@ -21,14 +20,15 @@ Rectangle {
         shader.connect();
         if (alg.project.settings.contains("CS2WT")) 
             shader.setValues(alg.project.settings.value("CS2WT"));
+        const name = alg.project.lastImportedMeshUrl();
+        if (weaponBox.currentValue != name) {
+            const index = weaponBox.model.findIndex(w => w.value === name);
+            if (index != -1)
+                weaponBox.currentIndex = index;
+        }
     }
 
     PainterPlugin {
-        onComputationStatusChanged: {
-            const name = Utils.File.getFileName(alg.project.lastImportedMeshUrl());
-            if (weaponBox.currentValue != name)
-                weaponBox.currentIndex = weaponBox.model.findIndex(w => w.value === name);
-        }
         onProjectAboutToSave: writeDefaults()
     }
 
@@ -64,6 +64,7 @@ Rectangle {
             "u_use_ao_tex":               { item: null,                   prop: "checked"      },
             // not shader related
             "wear_range":                 { item: wearRange,              prop: "range"        },
+            "tex_scale":                  { item: texScale,               prop: "value"        },
             "tex_rotation_range":         { item: texRotation,            prop: "range"        },
             "tex_offsetx_range":          { item: texOffsetX,             prop: "range"        },
             "tex_offsety_range":          { item: texOffsetY,             prop: "range"        }
@@ -73,8 +74,12 @@ Rectangle {
             for (const [param, component] of Object.entries(parameters)) 
                 if (param.startsWith("u_")) {
                     const cl = alg.shaders.parameter(shaderId, param);
-                    component.item[component.prop] = Qt.binding(() => cl.value);
-                    cl.value = Qt.binding(() => component.item[component.prop]);
+                    cl.valueChanged.connect(() => 
+                        component.item[component.prop] = cl.value
+                    );
+                    component.item[component.prop + "Changed"].connect(() => 
+                        cl.value = component.item[component.prop]
+                    );
                 }
         }
 
@@ -88,7 +93,7 @@ Rectangle {
             return values;
         }
 
-        function setValues(values:asdasd) {
+        function setValues(values) {
             for (const v of values) {
                 const component = parameters[v.param];
                 component.item[component.prop] = v.value;
@@ -107,7 +112,17 @@ Rectangle {
     function writeDefaults() {
         alg.project.settings.setValue("CS2WT", shader.getValues());
     }
-    
+
+    function reset(param) {
+        if (alg.project.settings.contains("CS2WT"))
+            for (const d of alg.project.settings.value("CS2WT"))
+                if (param == d.param) {
+                    const component = shader.parameters[d.param];
+                    component.item[component.prop] = d.value;
+                    break;
+                }
+    }
+
     function resetWeapon(weaponName) {
         const path = Qt.resolvedUrl('assets/materials/').slice(8);
         try {
@@ -115,9 +130,7 @@ Rectangle {
             shader.parameters["u_d_normal_sampler"].item.url = importTexture(`${path}${weaponName}/normal.jpg`);
             shader.parameters["u_d_orm_sampler"].item.url = importTexture(`${path}${weaponName}/orm.jpg`);
             shader.parameters["u_d_curv_sampler"].item.url = importTexture(`${path}${weaponName}/curvature.jpg`);
-        } catch(err) {
-            alg.log.warning("Failed to fetch default weapon textures: " + err.message)
-        }
+        } catch(err) { }
     }
 
     QtObject {
@@ -169,6 +182,7 @@ Rectangle {
 
                 SPButton {
                     id: exportButton
+                    Layout.fillWidth: true
                     Layout.alignment: Qt.AlignHCenter
                     text: "Export to .econitem"
                     icon.source: "./assets/icons/export.png"
@@ -184,6 +198,7 @@ Rectangle {
 
                 SPButton {
                     id: importButton
+                    Layout.fillWidth: true
                     Layout.alignment: Qt.AlignHCenter
                     text: "Import from .econitem"
                     icon.source: "./assets/icons/import.png"
@@ -204,63 +219,94 @@ Rectangle {
                 nameFilters: ["EconItem files (*.econitem)"]
 
                 onAccepted: {
-                    if (mode === SPFileDialog.SaveFile)
-                        Utils.EconItem.export(fileUrl)
-                    else
-                        Utils.EconItem.import(fileUrl)
+                    const file = alg.fileIO.open(fileUrl);
+                    // if (mode === SPFileDialog.SaveFile)
+                    //     econExport(file.readAll());
+                    // else
+                    //     econImport(file.readAll())
+                    file.close();
                 }
             }
         }
 
         SPSeparator { Layout.fillWidth: true }
 
-        SPGroup {
+        Rectangle {
             id: general
+            color: Qt.rgba(1, 1, 1, 0.05)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.1)
+            radius: 10
             Layout.fillWidth: true
-            expandable: false
-            padding: 10
-            
+            height: 100
+
             property int seed: 0
 
-            background: Rectangle {
-                color: Qt.rgba(1, 1, 1, 0.05)
-                border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.1)
-                radius: 10
-            }
-
-           onSeedChanged: {
-                wearAmount.value = MathUtils.mapNorm(MathUtils.random(seed + 1), wearRange.minValue, wearRange.maxValue);
+            onSeedChanged: {
                 texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
                 texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
                 texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
             }
 
-            RowLayout {
-                width: parent.width
+            ColumnLayout {
+                id: generalLayout
+                anchors.fill: parent
+                anchors.margins: 10
 
-                SPButton {
-                    id: enableLivePreview
-                    Layout.fillWidth: true
-                    checkable: true
-                    text: "Live Preview"
+                RowLayout {
+                    SPButton {
+                        id: enableLivePreview
+                        text: "Live Preview"
+                        checkable: true
+                        implicitWidth: 150
+                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                    }
+
+                    SPLabeled {
+                        text: "Seed"
+                        enabled: enableLivePreview.checked
+                        Layout.fillWidth: true
+
+                        SPSeparator { Layout.fillWidth: true }
+
+                        SPTextInput {
+                            Layout.preferredWidth: 45
+                            text: general.seed
+                            validator: RegExpValidator { regExp: /^-?[0-9]*/ }
+                            onEditingFinished: general.seed = MathUtils.clamp(parseInt(text), 0, 9999);
+                        }
+
+                        SPButton {
+                            id: randomButton
+                            text: "Random"
+                            tooltipText: "Generate random seed number"
+
+                            onPressed: general.seed = Math.floor(Math.random() * 1000)
+                        }
+                    }
                 }
 
-                SPButton {
-                    id: enablePBRValidation
-                    Layout.fillWidth: true
-                    checkable: true
-                    text: "PBR Validation"
-                }
-            }
+                RowLayout {
+                    SPButton {
+                        id: enablePBRValidation
+                        text: "PBR Validation"
+                        checkable: true
+                        implicitWidth: 150
+                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                    }
 
-            SPRangeSlider {
-                id: pbrRange
-                text: "PBR Range"
-                enabled: enablePBRValidation.checked
-                from: 0
-                to: 255
-                pickValue: false
+                    SPParameter {
+                        SPRangeSlider {
+                            id: pbrRange
+                            text: "PBR Range"
+                            enabled: enablePBRValidation.checked
+                            from: 0
+                            to: 255
+                            pickValue: false
+                        }
+                        onResetRequested: root.reset("u_pbr_range")
+                    }
+                }
             }
         }
 
@@ -382,49 +428,37 @@ Rectangle {
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
                 }
 
-                SPLabeled {
-                    text: "Seed"
-                    Layout.fillWidth: true
-
-                    SPSeparator { Layout.fillWidth: true }
-
-                    SPTextInput {
-                        Layout.preferredWidth: 45
-                        text: general.seed
-                        validator: RegExpValidator { regExp: /^-?[0-9]*/ }
-                        onEditingFinished: general.seed = MathUtils.clamp(parseInt(text), 0, 9999);
+                SPParameter {
+                    SPSlider {
+                        id: wearAmount
+                        text: "Wear Amount"
+                        from: wearRange.minValue.toFixed(2)
+                        to: wearRange.maxValue.toFixed(2)
+                        onValueChanged: wearRange.value = value
                     }
+                    onResetRequested: root.reset("u_wear_amount")
+                }
 
+                SPParameter {
+                    SPSlider {
+                        id: texScale
+                        text: "Texture Scale"
+                        from: -10
+                        to: 10
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: root.reset("tex_scale")
+                }
+
+                SPParameter {
                     SPButton {
-                        id: randomButton
-                        text: "Random"
-                        anchors.right: parent.right
-
-                        onPressed: general.seed = Math.floor(Math.random() * 10000)
+                        id: ignoreTextureSizeScale
+                        text: "Ignore Weapon Size Scale"
+                        Layout.fillWidth: true
+                        checkable: true
+                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                }
-
-                SPSlider {
-                    id: wearAmount
-                    text: "Wear Amount"
-                    from: wearRange.minValue.toFixed(2)
-                    to: wearRange.maxValue.toFixed(2)
-                    onValueChanged: wearRange.value = value
-                }
-
-                SPSlider {
-                    id: texScale
-                    text: "Texture Scale"
-                    from: -10
-                    to: 10
-                    onValueChanged: texTransform.sync()
-                }
-
-                SPButton {
-                    Layout.fillWidth: true
-                    id: ignoreTextureSizeScale
-                    checkable: true
-                    text: "Ignore Weapon Size Scale"
+                    onResetRequested: root.reset("u_ignore_weapon_size_scale")
                 }
             }
 
@@ -432,28 +466,37 @@ Rectangle {
                 Layout.fillWidth: true
                 text: "Texture Placement"
 
-                SPRangeSlider {
-                    id: texRotation
-                    text: "Texture Rotation"
-                    from: -360
-                    to: 360
-                    onValueChanged: texTransform.sync()
+                SPParameter {
+                    SPRangeSlider {
+                        id: texRotation
+                        text: "Texture Rotation"
+                        from: -360
+                        to: 360
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: root.reset("tex_rotation_range")
                 }
 
-                SPRangeSlider {
-                    id: texOffsetX
-                    text: "Texture Offset X"
-                    from: -1
-                    to: 1
-                    onValueChanged: texTransform.sync()
+                SPParameter {
+                    SPRangeSlider {
+                        id: texOffsetX
+                        text: "Texture Offset X"
+                        from: -1
+                        to: 1
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: root.reset("tex_offsetx_range")
                 }
 
-                SPRangeSlider {
-                    id: texOffsetY
-                    text: "Texture Offset Y"
-                    from: -1
-                    to: 1
-                    onValueChanged: texTransform.sync()
+                SPParameter {
+                    SPRangeSlider {
+                        id: texOffsetY
+                        text: "Texture Offset Y"
+                        from: -1
+                        to: 1
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: root.reset("tex_offsety_range")
                 }
             }
 
@@ -472,14 +515,19 @@ Rectangle {
                         ["Patina Wear", "Green Channel"],
                         ["Grime", "Blue Channel"]
                     ]
-                    delegate: SPLabeled {
-                        text: finishStyleBox.currentIndex > 6 ? modelData[0] : modelData[1]
-                        
+                    delegate: SPParameter {
+                        property alias scopeWidth: colorPickerWidget.scopeWidth
                         property alias arrayColor: colorPicker.arrayColor
 
-                        SPColorButton { 
-                            id: colorPicker
+                        SPLabeled {
+                            id: colorPickerWidget
+                            text: finishStyleBox.currentIndex > 6 ? modelData[0] : modelData[1]
+                            SPColorButton { 
+                                id: colorPicker
+                                tooltipText: parent.text + " color"
+                            }
                         }
+                        onResetRequested: root.reset(`u_col${index}`)
                     }
 
                     onItemAdded: (i, item) => {
@@ -494,45 +542,65 @@ Rectangle {
                 Layout.fillWidth: true
                 text: "Effects"
 
-                SPRangeSlider {
-                    id: wearRange
-                    text: "Wear Range"
-                    from: 0.0
-                    to: 1.0
-                    onValueChanged: wearAmount.value = value
+                SPParameter {
+                    SPRangeSlider {
+                        id: wearRange
+                        text: "Wear Range"
+                        from: 0.0
+                        to: 1.0
+                        onValueChanged: wearAmount.value = value
+                    }
+                    onResetRequested: {
+                        root.reset("wear_range"); 
+                        root.reset("u_wear_amount");
+                    }
                 }
 
                 SPSeparator { Layout.fillWidth: true }
 
-                SPButton {
-                    Layout.fillWidth: true
-                    id: usePearlescentMask
-                    checkable: true
-                    text: "Custom Pearlescent Mask"
+                SPParameter {
+                    SPButton {
+                        id: usePearlescentMask
+                        text: "Custom Pearlescent Mask"
+                        Layout.fillWidth: true
+                        checkable: true
+                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                    }
+                    onResetRequested: root.reset("u_use_pearl_mask")
                 }
 
-                SPSlider {
-                    id: pearlescentScale
-                    text: "Pearlescent Scale"
-                    from: -6
-                    to: 6
+                SPParameter {
+                    SPSlider {
+                        id: pearlescentScale
+                        text: "Pearlescent Scale"
+                        from: -6
+                        to: 6
+                    }
+                    onResetRequested: root.reset("u_pearl_scale")
                 }
 
                 SPSeparator { Layout.fillWidth: true }
 
-                SPButton {
-                    id: useRoughnessTexture
-                    Layout.fillWidth: true
-                    checkable: true
-                    text: "Custom Roughness Texture"
+                SPParameter {
+                    SPButton {
+                        id: useRoughnessTexture
+                        text: "Custom Roughness Texture"
+                        Layout.fillWidth: true
+                        checkable: true
+                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                    }
+                    onResetRequested: root.reset("u_use_roughness_tex")
                 }
-                
-                SPSlider {
-                    id: paintRoughness
-                    text: "Paint Roughness"
+                    
+                SPParameter {
                     visible: !useRoughnessTexture.checked
-                    from: 0
-                    to: 1
+                    SPSlider {
+                        id: paintRoughness
+                        text: "Paint Roughness"
+                        from: 0
+                        to: 1
+                    }
+                    onResetRequested: root.reset("u_paint_roughness")
                 }
             }
 
@@ -548,14 +616,23 @@ Rectangle {
                         { param: "u_use_material_mask", text: "Custom Material Mask"     },
                         { param: "u_use_ao_tex",        text: "Custom Ambient Occlusion" }
                     ]
-                    delegate: SPButton {
-                        checkable: true
-                        text: modelData.text
-                        Layout.fillWidth: true
+                    delegate: SPParameter {
+                        property alias control: advancedControl
+
+                        SPButton {
+                            id: advancedControl
+                            checkable: true
+                            text: modelData.text
+                            tooltipText: `Whether to use ${text.toLowerCase()}. Otherwise, the default weapon ${text.substring(7).toLowerCase()} is used`
+                            Layout.fillWidth: true
+                            contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                        }
+
+                        onResetRequested: root.reset(modelData.param)
                     }
 
                     onItemAdded: (i, item) => {
-                        shader.parameters[model[i].param].item = item;
+                        shader.parameters[model[i].param].item = item.control;
                     }
                 }
             }

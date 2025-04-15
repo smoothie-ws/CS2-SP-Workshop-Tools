@@ -20,9 +20,14 @@ ColumnLayout {
             radius: 10
             clip: true
             gradient: Gradient {
-                GradientStop { position: 0; color: Qt.rgba(1, 1, 1, 0.05) }
-                GradientStop { position: 20 / height; color: Qt.rgba(1, 1, 1, 0.05) }
-                GradientStop { position: 150 / height; color: Qt.rgba(0, 0, 0, 0) }
+                GradientStop { 
+                    position: 0.0
+                    color: Qt.rgba(1, 1, 1, 0.05) 
+                }
+                GradientStop { 
+                    position: 1.0
+                    color: groupButton.toggled ? Qt.rgba(0, 0, 0, 0) : Qt.rgba(1, 1, 1, 0.05) 
+                }
             }
         }
     }

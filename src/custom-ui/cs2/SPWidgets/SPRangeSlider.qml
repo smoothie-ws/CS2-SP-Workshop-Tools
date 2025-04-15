@@ -26,23 +26,34 @@ ColumnLayout {
 
     property bool pickValue: true
 
-    onRangeChanged: internal.update(() => {
-        minValue = range[0];
-        maxValue = range[1];
+    onRangeChanged: {
+        internal.update(() => {
+            minValue = range[0];
+            maxValue = range[1];
+        });
+        internal.syncValue();
+    }
+
+    onValueChanged: internal.update(() => {
+        internal.normPosition = MathUtils.norm(value, minValue, maxValue)
     })
 
-    onMinValueChanged: internal.update(() => {
-        range = [minValue, maxValue];
-    })
+    onMinValueChanged: {
+        internal.update(() => range = [minValue, maxValue]);
+        internal.syncValue();
+    }
     
-    onMaxValueChanged: internal.update(() => {
-        range = [minValue, maxValue];
-    })
+    onMaxValueChanged: {
+        internal.update(() => range = [minValue, maxValue]);
+        internal.syncValue();
+    }
     
     QtObject {
         id: internal
 
         property bool updating: false
+        property bool syncing: false
+        property real normPosition: 0.5
 
         function update(f) {
             if (!updating) {
@@ -50,6 +61,18 @@ ColumnLayout {
                 f();
                 updating = false;
             }
+        }
+
+        function sync(f) {
+            if (!syncing) {
+                syncing = true;
+                f();
+                syncing = false;
+            }
+        }
+
+        function syncValue() {
+            sync(() => value = MathUtils.mapNorm(normPosition, minValue, maxValue));
         }
     }
     
@@ -63,10 +86,28 @@ ColumnLayout {
             Layout.fillWidth: true
         }
 
+        SPButton {
+            id: clampButton
+            padding: 5
+            visible: root.pickValue
+            implicitWidth: 30
+            icon.source: "./icons/clamp.png"
+            icon.width: 20
+            icon.height: 20
+            tooltipText: "Shrink range to current value"
+
+            onClicked: {
+                internal.sync(() => {
+                    root.minValue = root.value;
+                    root.maxValue = root.value;
+                });
+            }
+        }
+
         Repeater {
             model: ["minValue", "value", "maxValue"]
             delegate: SPTextInput {
-                Layout.preferredWidth: 45
+                Layout.preferredWidth: 50
                 text: root[modelData].toFixed(2)
                 visible: index == 1 ? root.pickValue : true
                 validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
@@ -74,7 +115,7 @@ ColumnLayout {
                 Component.onCompleted: {
                     if (index == 0)
                         editingFinished.connect(() => 
-                            root[modelData] = MathUtils.clamp(parseFloat(text), from, root.pickValue ? root.value : root.maxValue)
+                            root[modelData] = MathUtils.clamp(parseFloat(text), from, root.maxValue)
                         );
                     else if (index == 1)
                         editingFinished.connect(() => 
@@ -82,7 +123,7 @@ ColumnLayout {
                         );
                     else
                         editingFinished.connect(() => 
-                            root[modelData] = MathUtils.clamp(parseFloat(text), root.pickValue ? root.value : root.minValue, to)
+                            root[modelData] = MathUtils.clamp(parseFloat(text), root.minValue, to)
                         );
                 }
             }
@@ -102,6 +143,7 @@ ColumnLayout {
         MouseArea {
             id: mouseArea
             hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -142,7 +184,7 @@ ColumnLayout {
             function syncMousePosition() {
                 const position = MathUtils.norm(mouseX - line.x, 0.0, line.width);
                 if (mouseArea.closest == 0) {
-                    const clamped = MathUtils.clamp(position, 0.0, root.pickValue ? root.visualPosition : root.maxVisualPosition);
+                    const clamped = MathUtils.clamp(position, 0.0, root.maxVisualPosition);
                     root.minValue = MathUtils.mapNorm(clamped, root.from, root.to);
                 }
                 else if (mouseArea.closest == 1) {
@@ -150,7 +192,7 @@ ColumnLayout {
                     root.value = MathUtils.mapNorm(clamped, root.from, root.to);
                 }
                 else if (mouseArea.closest == 2) {
-                    const clamped = MathUtils.clamp(position, root.pickValue ? root.visualPosition : root.minVisualPosition, 1.0);
+                    const clamped = MathUtils.clamp(position, root.minVisualPosition, 1.0);
                     root.maxValue = MathUtils.mapNorm(clamped, root.from, root.to);
                 }
             }
@@ -202,6 +244,7 @@ ColumnLayout {
                     model: ["min", "", "max"]
                     delegate: SPSliderHandler {
                         z: 1
+                        text: root[modelData + (modelData.length == 0 ? "value" : "Value")].toFixed(2)
                         x: root[modelData + (modelData.length == 0 ? "visualPosition" : "VisualPosition")] * parent.width - width * 0.5
                         anchors.verticalCenter: parent.verticalCenter
                         visible: index == 1 ? root.pickValue : true

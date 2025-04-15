@@ -1,5 +1,6 @@
 function norm(x, xmin, xmax) {
-    return (x - xmin) / (xmax - xmin);
+    const d = xmax - xmin;
+    return d != 0.0 ? (x - xmin) / d : d;
 }
 
 function clamp(x, xmin, xmax) {
