@@ -19,84 +19,83 @@ import lib-normal.glsl
 //: }
 
 //: param auto channel_basecolor
-uniform SamplerSparse basecolor_tex;
+uniform SamplerSparse baseChannel;
 //: param auto channel_roughness
-uniform SamplerSparse roughness_tex;
+uniform SamplerSparse roughChannel;
 //: param auto channel_metallic
-uniform SamplerSparse metallic_tex;
+uniform SamplerSparse metalChannel;
 //: param auto channel_specularlevel
-uniform SamplerSparse specularlevel_tex;
+uniform SamplerSparse specChannel;
 //: param auto channel_user0
-uniform SamplerSparse pearlescent_tex;
+uniform SamplerSparse pearlChannel;
 //: param auto channel_user1
-uniform SamplerSparse alpha_tex;
+uniform SamplerSparse alphaChannel;
 
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D u_d_gun_grunge_sampler;
+uniform sampler2D dGrungeTex;
 //: param custom { "default": "", "default_color": [0.2, 0.2, 0.2] }
-uniform sampler2D u_d_basecolor_sampler;
+uniform sampler2D dBaseTex;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
-uniform sampler2D u_d_normal_sampler;
+uniform sampler2D dNormalTex;
 //: param custom { "default": "", "default_color": [1.0, 0.3, 1.0] }
-uniform sampler2D u_d_orm_sampler;
+uniform sampler2D dORMTex;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D u_d_curv_sampler;
+uniform sampler2D dCurvTex;
 
 //: param custom { "default": true }
-uniform_specialization bool u_enable_live_preview;
+uniform_specialization bool uLivePreview;
 //: param custom { "default": true }
-uniform_specialization bool u_enable_pbr_validation;
+uniform_specialization bool uPBRValidation;
 //: param custom { "default": 4 }
-uniform_specialization int u_finish_style;
+uniform_specialization int uFinishStyle;
 
 //: param custom { "default": [90, 250] }
-uniform vec2 u_pbr_range;
+uniform vec2 uPBRRange;
 //: param custom { "default": 0.00 }
-uniform float u_wear_amount;
+uniform float uWearAmount;
 //: param custom { "default": true }
-uniform bool u_ignore_weapon_size_scale;
+uniform bool uIgnoreWeaponSizeScale;
 //: param custom { "default": 1 }
-uniform vec3 u_col0;
+uniform vec3 uCol0;
 //: param custom { "default": 1 }
-uniform vec3 u_col1;
+uniform vec3 uCol1;
 //: param custom { "default": 1 }
-uniform vec3 u_col2;
+uniform vec3 uCol2;
 //: param custom { "default": 1 }
-uniform vec3 u_col3;
+uniform vec3 uCol3;
 //: param custom { "default": [0.0, 0.0, 1.0, 0.0] }
-uniform vec4 u_tex_transform; // packed values: [offsetX, offsetY, scale, rotation]
+uniform vec4 uTexTransform; // packed values: [offsetX, offsetY, scale, rotation]
 //: param custom { "default": 0.00 }
-uniform float u_pearl_scale;
+uniform float uPearlScale;
 //: param custom { "default": true }
-uniform bool u_use_pearl_mask;
+uniform bool uPearlMask;
 //: param custom { "default": 0.6 }
-uniform float u_paint_roughness;
+uniform float uPaintRoughness;
 //: param custom { "default": true }
-uniform bool u_use_roughness_tex;
+uniform bool uCustomRoughness;
 //: param custom { "default": true }
-uniform bool u_use_normal_map;
+uniform bool uCustomNormal;
 //: param custom { "default": true }
-uniform bool u_use_material_mask;
+uniform bool uCustomMatMask;
 //: param custom { "default": true }
-uniform bool u_use_ao_tex;
+uniform bool uCustomAOTex;
 
 vec3 hueShift(vec3 col, float factor) {
     const vec3 w = vec3(0.5, 0.5, 0.5);
-
-    float cosa = cos(factor);
+    float c = cos(factor);
     vec3 res = col;
-    res *= cosa;
+    res *= c;
     res += cross(w, col) * sin(factor);
-    res += w * dot(w, col) * (1.0 - cosa);
+    res += w * dot(w, col) * (1.0 - c);
     return res;
 }
 
 float computeCutoffMask(float curvature, float factor, float alt, float grunge) {
-    float mask = grunge * pow(curvature, 2.4);
-    mask *= factor * 6.0 + 1.0;
-    mask *= smoothstep(0.0, 0.5, alt);
-    mask += smoothstep(0.5, 0.6, alt) * smoothstep(1.0, 0.9, alt);
-    return smoothstep(0.58, 0.68, mask);
+    float m = grunge * pow(curvature, 2.4);
+    m *= factor * 6.0 + 1.0;
+    m *= smoothstep(0.0, 0.5, alt);
+    m += smoothstep(0.5, 0.6, alt) * smoothstep(1.0, 0.9, alt);
+    return smoothstep(0.58, 0.68, m);
 }
 
 vec3 valPBR(vec3 col, float l_min, float l_max) {
@@ -112,94 +111,89 @@ vec3 valPBR(vec3 col, float l_min, float l_max) {
 void shade(V2F inputs) {
     LocalVectors vectors = computeLocalFrame(inputs);
 
-    vec3 rORM = vec3(0.0);
-    vec3 rColor = vec3(0.0);
+    vec3 resultORM = vec3(0.0);
+    vec3 resultCol = vec3(0.0);
     vec3 uBaseMetal = vec3(1.0);
     vec3 uPatinaTint = vec3(1.0);
     vec3 uPatinaWear = vec3(1.0);
     vec3 uGrime = vec3(1.0);
     float cutoffMask = 1.0;
 
-    if (u_enable_live_preview) {
+    if (uLivePreview) {
         // fetch default weapon model material maps
-        vec3 dORM = texture(u_d_orm_sampler, inputs.tex_coord).rgb;
-        vec3 dColor = sRGB2linear(texture(u_d_basecolor_sampler, inputs.tex_coord).rgb);
+        vec3 defaultORM = texture(dORMTex, inputs.tex_coord).rgb;
+        vec3 defaultCol = sRGB2linear(texture(dBaseTex, inputs.tex_coord).rgb);
 
-        if (!u_use_normal_map) {
-            vec3 dNormal = sRGB2linear(texture(u_d_normal_sampler, inputs.tex_coord).rgb);
-
-            // tweak a normal map to work correctly with the local vectors
-            dNormal *= 1.8;
-            dNormal -= 0.4;
-
-            vectors.normal = tangentSpaceToWorldSpace(dNormal, inputs);
+        if (!uCustomNormal) {
+            vec3 defaultNormal = sRGB2linear(texture(dNormalTex, inputs.tex_coord).rgb);
+            vectors.normal = tangentSpaceToWorldSpace(defaultNormal, inputs);
         }
 
         // transform texture
-        float s = sin(u_tex_transform.w);
-        float c = cos(u_tex_transform.w);
+        float s = sin(uTexTransform.w);
+        float c = cos(uTexTransform.w);
         inputs.sparse_coord.tex_coord *= mat2(c, s, -s, c);
-        inputs.sparse_coord.tex_coord += u_tex_transform.xy;
-        inputs.sparse_coord.tex_coord *= u_tex_transform.z;
+        inputs.sparse_coord.tex_coord += uTexTransform.xy;
+        inputs.sparse_coord.tex_coord *= uTexTransform.z;
 
         // fetch material maps
-        vec3 pColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
-        vec3 pORM = vec3(0.5);
-        pORM.r = u_use_ao_tex ? getAO(inputs.sparse_coord, true) : dORM.r;
-        pORM.g = u_use_roughness_tex ? getRoughness(roughness_tex, inputs.sparse_coord) : u_paint_roughness;
-        pORM.b = 0.0;
+        vec3 paintCol = getBaseColor(baseChannel, inputs.sparse_coord);
+        vec3 paintORM = vec3(0.5);
+        paintORM.r = uCustomAOTex ? getAO(inputs.sparse_coord, true) : defaultORM.r;
+        paintORM.g = uCustomRoughness ? getRoughness(roughChannel, inputs.sparse_coord) : uPaintRoughness;
+        paintORM.b = 0.0;
 
-        if (u_use_material_mask) {
-            if (u_finish_style == AQ || u_finish_style == AM)
-                pORM.b = 1.0;
-            else if (u_finish_style == GS)
-                pORM.b = getMetallic(metallic_tex, inputs.sparse_coord);
+        if (uCustomMatMask) {
+            if (uFinishStyle == AQ || uFinishStyle == AM)
+                paintORM.b = 1.0;
+            else if (uFinishStyle == GS)
+                paintORM.b = getMetallic(metalChannel, inputs.sparse_coord);
         } else
-            pORM.b = dORM.b;
+            paintORM.b = defaultORM.b;
 
         // cutoff mask calculation
-        vec3 gunGrunge = texture(u_d_gun_grunge_sampler, inputs.tex_coord).rgb;
-        float curvature = texture(u_d_curv_sampler, inputs.tex_coord).x;
-        float alpha = textureSparse(alpha_tex, inputs.sparse_coord).x;
-        cutoffMask = computeCutoffMask(curvature, u_wear_amount, alpha, gunGrunge.b);
+        vec3 gunGrunge = texture(dGrungeTex, inputs.tex_coord).rgb;
+        float curvature = texture(dCurvTex, inputs.tex_coord).x;
+        float alpha = textureSparse(alphaChannel, inputs.sparse_coord).x;
+        cutoffMask = computeCutoffMask(curvature, uWearAmount, alpha, gunGrunge.b);
 
         // apply wear effect
-        pColor *= clamp(pow(gunGrunge.r, 2.0 * u_wear_amount), 0.0, 1.0);
-        pORM.g += gunGrunge.g * clamp(2 * u_wear_amount - 1.0, 0.0, 1.0);
+        paintCol *= clamp(pow(gunGrunge.r, 2.0 * uWearAmount), 0.0, 1.0);
+        paintORM.g += gunGrunge.g * clamp(2 * uWearAmount - 1.0, 0.0, 1.0);
         // TODO: make wear also affect specular color
 
-        float pearlMask = u_use_pearl_mask ? textureSparse(pearlescent_tex, inputs.sparse_coord).x : 1.0;
-        float hueShiftFactor = (1.0 - dot(vectors.normal, vectors.eye)) * u_pearl_scale * pearlMask;
+        float pearlMask = uPearlMask ? textureSparse(pearlChannel, inputs.sparse_coord).x : 1.0;
+        float hueShiftFactor = (1.0 - dot(vectors.normal, vectors.eye)) * uPearlScale * pearlMask;
 
         // apply pearlescent effect
-        pColor = hueShift(pColor, hueShiftFactor);
+        paintCol = hueShift(paintCol, hueShiftFactor);
 
         // cut out the paint material
-        rColor = mix(pColor, dColor, cutoffMask);
-        rORM = mix(pORM, dORM, cutoffMask);
+        resultCol = mix(paintCol, defaultCol, cutoffMask);
+        resultORM = mix(paintORM, defaultORM, cutoffMask);
 
         // compute extra colors
-        uPatinaTint = clamp(u_col1, u_wear_amount, 1.0);
+        uPatinaTint = clamp(uCol1, uWearAmount, 1.0);
     } else {
-        rColor = getBaseColor(basecolor_tex, inputs.sparse_coord);
-        rORM.r = getAO(inputs.sparse_coord, true);
-        rORM.g = getRoughness(roughness_tex, inputs.sparse_coord);
-        rORM.b = getMetallic(metallic_tex, inputs.sparse_coord);
+        resultCol = getBaseColor(baseChannel, inputs.sparse_coord);
+        resultORM.r = getAO(inputs.sparse_coord, true);
+        resultORM.g = getRoughness(roughChannel, inputs.sparse_coord);
+        resultORM.b = getMetallic(metalChannel, inputs.sparse_coord);
     }
 
-    if (u_enable_pbr_validation) {
-        vec3 res = valPBR(rColor, u_pbr_range.x, u_pbr_range.y);
-        rColor = mix((res.r > 0.0 || res.b > 0.0) ? vec3(0.0) : rColor, rColor, cutoffMask);
+    if (uPBRValidation) {
+        vec3 res = valPBR(resultCol, uPBRRange.x, uPBRRange.y);
+        resultCol = mix((res.r > 0.0 || res.b > 0.0) ? vec3(0.0) : resultCol, resultCol, cutoffMask);
         emissiveColorOutput(mix(res, vec3(0.0), cutoffMask));
     }
 
-    float specLevel = getSpecularLevel(specularlevel_tex, inputs.sparse_coord);
-    vec3 diffColor = generateDiffuseColor(rColor, rORM.b);
-    vec3 specColor = generateSpecularColor(specLevel, rColor, rORM.b);
+    float specLevel = getSpecularLevel(specChannel, inputs.sparse_coord);
+    vec3 diffColor = generateDiffuseColor(resultCol, resultORM.b);
+    vec3 specColor = generateSpecularColor(specLevel, resultCol, resultORM.b);
     float shadowFactor = getShadowFactor();
-    float specOcclusion = specularOcclusionCorrection(rORM.r * shadowFactor, rORM.b, rORM.g);
+    float specOcclusion = specularOcclusionCorrection(resultORM.r * shadowFactor, resultORM.b, resultORM.g);
 
     albedoOutput(diffColor);
-    diffuseShadingOutput(rORM.r * shadowFactor * envIrradiance(vectors.normal));
-    specularShadingOutput(pbrComputeSpecular(vectors, specColor * uPatinaTint, rORM.g));
+    diffuseShadingOutput(resultORM.r * shadowFactor * envIrradiance(vectors.normal));
+    specularShadingOutput(pbrComputeSpecular(vectors, specColor * uPatinaTint, resultORM.g));
 }

@@ -20,6 +20,8 @@ Rectangle {
         shader.connect();
         if (alg.project.settings.contains("CS2WT")) 
             shader.setValues(alg.project.settings.value("CS2WT"));
+        else
+            writeDefaults();
         const name = alg.project.lastImportedMeshUrl();
         if (weaponBox.currentValue != name) {
             const index = weaponBox.model.findIndex(w => w.value === name);
@@ -38,36 +40,36 @@ Rectangle {
         property string shaderId: ""
 
         property var parameters: {
-            "u_finish_style":             { item: finishStyleBox,         prop: "currentIndex" },
-            "u_enable_live_preview":      { item: enableLivePreview,      prop: "checked"      },
-            "u_enable_pbr_validation":    { item: enablePBRValidation,    prop: "checked"      },
-            "u_pbr_range":                { item: pbrRange,               prop: "range"        },
-            "u_wear_amount":              { item: wearAmount,             prop: "value"        },
-            "u_tex_transform":            { item: texTransform,           prop: "transform"    },
-            "u_ignore_weapon_size_scale": { item: ignoreTextureSizeScale, prop: "checked"      },
-            "u_use_pearl_mask":           { item: usePearlescentMask,     prop: "checked"      },
-            "u_pearl_scale":              { item: pearlescentScale,       prop: "value"        },
-            "u_use_roughness_tex":        { item: useRoughnessTexture,    prop: "checked"      },
-            "u_paint_roughness":          { item: paintRoughness,         prop: "value"        },
+            "uFinishStyle":           { item: finishStyleBox,         prop: "currentIndex" },
+            "uLivePreview":           { item: enableLivePreview,      prop: "checked"      },
+            "uPBRValidation":         { item: enablePBRValidation,    prop: "checked"      },
+            "uPBRRange":              { item: pbrRange,               prop: "range"        },
+            "uWearAmount":            { item: wearAmount,             prop: "value"        },
+            "uTexTransform":          { item: texTransform,           prop: "transform"    },
+            "uIgnoreWeaponSizeScale": { item: ignoreTextureSizeScale, prop: "checked"      },
+            "uPearlMask":             { item: usePearlescentMask,     prop: "checked"      },
+            "uPearlScale":            { item: pearlescentScale,       prop: "value"        },
+            "uCustomRoughness":       { item: useRoughnessTexture,    prop: "checked"      },
+            "uPaintRoughness":        { item: paintRoughness,         prop: "value"        },
             // dynamically generated components
-            "u_d_gun_grunge_sampler":     { item: null,                   prop: "url"          },
-            "u_d_basecolor_sampler":      { item: null,                   prop: "url"          },
-            "u_d_normal_sampler":         { item: null,                   prop: "url"          },
-            "u_d_orm_sampler":            { item: null,                   prop: "url"          },
-            "u_d_curv_sampler":           { item: null,                   prop: "url"          },
-            "u_col0":                     { item: null,                   prop: "arrayColor"   },
-            "u_col1":                     { item: null,                   prop: "arrayColor"   },
-            "u_col2":                     { item: null,                   prop: "arrayColor"   },
-            "u_col3":                     { item: null,                   prop: "arrayColor"   },
-            "u_use_normal_map":           { item: null,                   prop: "checked"      },
-            "u_use_material_mask":        { item: null,                   prop: "checked"      },
-            "u_use_ao_tex":               { item: null,                   prop: "checked"      },
+            "dGrungeTex":             { item: null,                   prop: "url"          },
+            "dBaseTex":               { item: null,                   prop: "url"          },
+            "dNormalTex":             { item: null,                   prop: "url"          },
+            "dORMTex":                { item: null,                   prop: "url"          },
+            "dCurvTex":               { item: null,                   prop: "url"          },
+            "uCol0":                  { item: null,                   prop: "arrayColor"   },
+            "uCol1":                  { item: null,                   prop: "arrayColor"   },
+            "uCol2":                  { item: null,                   prop: "arrayColor"   },
+            "uCol3":                  { item: null,                   prop: "arrayColor"   },
+            "uCustomNormal":          { item: null,                   prop: "checked"      },
+            "uCustomMatMask":         { item: null,                   prop: "checked"      },
+            "uCustomAOTex":           { item: null,                   prop: "checked"      },
             // not shader related
-            "wear_range":                 { item: wearRange,              prop: "range"        },
-            "tex_scale":                  { item: texScale,               prop: "value"        },
-            "tex_rotation_range":         { item: texRotation,            prop: "range"        },
-            "tex_offsetx_range":          { item: texOffsetX,             prop: "range"        },
-            "tex_offsety_range":          { item: texOffsetY,             prop: "range"        }
+            "wearRange":              { item: wearRange,              prop: "range"        },
+            "texScale":               { item: texScale,               prop: "value"        },
+            "texRotationRange":       { item: texRotation,            prop: "range"        },
+            "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
+            "texOffsetYRange":        { item: texOffsetY,             prop: "range"        }
         }
 
         function connect() {
@@ -126,10 +128,10 @@ Rectangle {
     function resetWeapon(weaponName) {
         const path = Qt.resolvedUrl('assets/materials/').slice(8);
         try {
-            shader.parameters["u_d_basecolor_sampler"].item.url = importTexture(`${path}${weaponName}/color.jpg`);
-            shader.parameters["u_d_normal_sampler"].item.url = importTexture(`${path}${weaponName}/normal.jpg`);
-            shader.parameters["u_d_orm_sampler"].item.url = importTexture(`${path}${weaponName}/orm.jpg`);
-            shader.parameters["u_d_curv_sampler"].item.url = importTexture(`${path}${weaponName}/curvature.jpg`);
+            shader.parameters["dBaseTex"].item.url = importTexture(`${path}${weaponName}/color.jpg`);
+            shader.parameters["dNormalTex"].item.url = importTexture(`${path}${weaponName}/normal.jpg`);
+            shader.parameters["dORMTex"].item.url = importTexture(`${path}${weaponName}/orm.jpg`);
+            shader.parameters["dCurvTex"].item.url = importTexture(`${path}${weaponName}/curvature.jpg`);
         } catch(err) { }
     }
 
@@ -304,7 +306,7 @@ Rectangle {
                             to: 255
                             pickValue: false
                         }
-                        onResetRequested: root.reset("u_pbr_range")
+                        onResetRequested: root.reset("uPBRRange")
                     }
                 }
             }
@@ -317,11 +319,11 @@ Rectangle {
             
             Repeater {
                 model: [
-                    { param: "u_d_gun_grunge_sampler", text: "Gun Grunge"        },
-                    { param: "u_d_basecolor_sampler",  text: "Base Color"        },
-                    { param: "u_d_normal_sampler",     text: "Normal Map"        },
-                    { param: "u_d_orm_sampler",        text: "ORM Texture"       },
-                    { param: "u_d_curv_sampler",       text: "Curvature Texture" }
+                    { param: "dGrungeTex", text: "Gun Grunge"        },
+                    { param: "dBaseTex",  text: "Base Color"        },
+                    { param: "dNormalTex",     text: "Normal Map"        },
+                    { param: "dORMTex",        text: "ORM Texture"       },
+                    { param: "dCurvTex",       text: "Curvature Texture" }
                 ]
                 delegate: SPResourcePicker {
                     label: modelData.text
@@ -436,7 +438,7 @@ Rectangle {
                         to: wearRange.maxValue.toFixed(2)
                         onValueChanged: wearRange.value = value
                     }
-                    onResetRequested: root.reset("u_wear_amount")
+                    onResetRequested: root.reset("uWearAmount")
                 }
 
                 SPParameter {
@@ -447,7 +449,7 @@ Rectangle {
                         to: 10
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_scale")
+                    onResetRequested: root.reset("texScale")
                 }
 
                 SPParameter {
@@ -458,7 +460,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: root.reset("u_ignore_weapon_size_scale")
+                    onResetRequested: root.reset("uIgnoreWeaponSizeScale")
                 }
             }
 
@@ -474,7 +476,7 @@ Rectangle {
                         to: 360
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_rotation_range")
+                    onResetRequested: root.reset("texRotationRange")
                 }
 
                 SPParameter {
@@ -485,7 +487,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_offsetx_range")
+                    onResetRequested: root.reset("texOffsetXRange")
                 }
 
                 SPParameter {
@@ -496,7 +498,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_offsety_range")
+                    onResetRequested: root.reset("texOffsetYRange")
                 }
             }
 
@@ -527,13 +529,13 @@ Rectangle {
                                 tooltipText: parent.text + " color"
                             }
                         }
-                        onResetRequested: root.reset(`u_col${index}`)
+                        onResetRequested: root.reset(`uCol${index}`)
                     }
 
                     onItemAdded: (i, item) => {
                         colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, item.scopeWidth);
                         item.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
-                        shader.parameters[`u_col${i}`].item = item;
+                        shader.parameters[`uCol${i}`].item = item;
                     }
                 }
             }
@@ -551,8 +553,8 @@ Rectangle {
                         onValueChanged: wearAmount.value = value
                     }
                     onResetRequested: {
-                        root.reset("wear_range"); 
-                        root.reset("u_wear_amount");
+                        root.reset("wearRange"); 
+                        root.reset("uWearAmount");
                     }
                 }
 
@@ -566,7 +568,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: root.reset("u_use_pearl_mask")
+                    onResetRequested: root.reset("uPearlMask")
                 }
 
                 SPParameter {
@@ -576,7 +578,7 @@ Rectangle {
                         from: -6
                         to: 6
                     }
-                    onResetRequested: root.reset("u_pearl_scale")
+                    onResetRequested: root.reset("uPearlScale")
                 }
 
                 SPSeparator { Layout.fillWidth: true }
@@ -589,7 +591,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: root.reset("u_use_roughness_tex")
+                    onResetRequested: root.reset("uCustomRoughness")
                 }
                     
                 SPParameter {
@@ -600,7 +602,7 @@ Rectangle {
                         from: 0
                         to: 1
                     }
-                    onResetRequested: root.reset("u_paint_roughness")
+                    onResetRequested: root.reset("uPaintRoughness")
                 }
             }
 
@@ -612,9 +614,9 @@ Rectangle {
 
                 Repeater {
                     model: [
-                        { param: "u_use_normal_map",    text: "Custom Normal Map"        },
-                        { param: "u_use_material_mask", text: "Custom Material Mask"     },
-                        { param: "u_use_ao_tex",        text: "Custom Ambient Occlusion" }
+                        { param: "uCustomNormal",    text: "Custom Normal Map"        },
+                        { param: "uCustomMatMask", text: "Custom Material Mask"     },
+                        { param: "uCustomAOTex",        text: "Custom Ambient Occlusion" }
                     ]
                     delegate: SPParameter {
                         property alias control: advancedControl
