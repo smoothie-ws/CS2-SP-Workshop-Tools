@@ -57,7 +57,9 @@ uniform SamplerSparse uMatPearl;
 
 //: param custom { "default": true }
 uniform_specialization bool uLivePreview;
+uniform_specialization bool uLivePreview;
 //: param custom { "default": true }
+uniform_specialization bool uPBRValidation;
 uniform_specialization bool uPBRValidation;
 //: param custom { "default": 4 }
 uniform_specialization int uFinishStyle;
@@ -65,6 +67,7 @@ uniform_specialization int uFinishStyle;
 // Common
 
 //: param custom { "default": [90, 250] }
+uniform vec2 uPBRRange;
 uniform vec2 uPBRRange;
 //: param custom { "default": 0.00 }
 uniform float uWearAmt;
@@ -80,7 +83,9 @@ uniform vec3 uCol2;
 uniform vec3 uCol3;
 //: param custom { "default": [0.0, 0.0, 1.0, 0.0] }
 uniform vec4 uTexTransform; // packed values: [offsetX, offsetY, scale, rotation]
+uniform vec4 uTexTransform; // packed values: [offsetX, offsetY, scale, rotation]
 //: param custom { "default": 0.00 }
+uniform float uPearlScale;
 uniform float uPearlScale;
 //: param custom { "default": true }
 uniform bool uUsePearlMask;
@@ -102,9 +107,12 @@ uniform bool uUseCustomAOTex;
 vec3 hueShift(vec3 col, float factor) {
     const vec3 w = vec3(0.5, 0.5, 0.5);
     float c = cos(factor);
+    float c = cos(factor);
     vec3 res = col;
     res *= c;
+    res *= c;
     res += cross(w, col) * sin(factor);
+    res += w * dot(w, col) * (1.0 - c);
     res += w * dot(w, col) * (1.0 - c);
     return res;
 }

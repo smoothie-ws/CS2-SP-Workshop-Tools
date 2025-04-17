@@ -78,6 +78,11 @@ Rectangle {
             "texRotationRange":       { item: texRotation,            prop: "range"        },
             "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
             "texOffsetYRange":        { item: texOffsetY,             prop: "range"        }
+            "wearRange":              { item: wearRange,              prop: "range"        },
+            "texScale":               { item: texScale,               prop: "value"        },
+            "texRotationRange":       { item: texRotation,            prop: "range"        },
+            "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
+            "texOffsetYRange":        { item: texOffsetY,             prop: "range"        }
         }
 
         function connect() {
@@ -579,6 +584,7 @@ Rectangle {
                     onItemAdded: (i, item) => {
                         colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, item.scopeWidth);
                         item.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
+                        shader.parameters[`uCol${i}`].item = item;
                         shader.parameters[`uCol${i}`].item = item;
                     }
                 }
