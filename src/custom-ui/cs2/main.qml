@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.7
+import QtQuick.Window 2.15
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
@@ -20,12 +21,19 @@ Rectangle {
         shader.connect();
         if (alg.project.settings.contains("CS2WT")) 
             shader.setValues(alg.project.settings.value("CS2WT"));
+        else
+            writeDefaults();
+
         const name = alg.project.lastImportedMeshUrl();
         if (weaponBox.currentValue != name) {
             const index = weaponBox.model.findIndex(w => w.value === name);
             if (index != -1)
                 weaponBox.currentIndex = index;
         }
+
+        const matPath = `${alg.plugin_root_directory}assets/materials`;
+        shader.parameters["uGrungeTex"].item.url = importTexture(`${matPath}/grunge.png`);
+        shader.parameters["uScratchesTex"].item.url = importTexture(`${matPath}/scratches.png`);
     }
 
     PainterPlugin {
@@ -35,51 +43,62 @@ Rectangle {
     QtObject {
         id: shader
 
-        property string shaderId: ""
+        property int shaderId: 0
 
         property var parameters: {
-            "u_finish_style":             { item: finishStyleBox,         prop: "currentIndex" },
-            "u_enable_live_preview":      { item: enableLivePreview,      prop: "checked"      },
-            "u_enable_pbr_validation":    { item: enablePBRValidation,    prop: "checked"      },
-            "u_pbr_range":                { item: pbrRange,               prop: "range"        },
-            "u_wear_amount":              { item: wearAmount,             prop: "value"        },
-            "u_tex_transform":            { item: texTransform,           prop: "transform"    },
-            "u_ignore_weapon_size_scale": { item: ignoreTextureSizeScale, prop: "checked"      },
-            "u_use_pearl_mask":           { item: usePearlescentMask,     prop: "checked"      },
-            "u_pearl_scale":              { item: pearlescentScale,       prop: "value"        },
-            "u_use_roughness_tex":        { item: useRoughnessTexture,    prop: "checked"      },
-            "u_paint_roughness":          { item: paintRoughness,         prop: "value"        },
+            "uFinishStyle":           { item: finishStyleBox,         prop: "currentIndex" },
+            "uLivePreview":           { item: enableLivePreview,      prop: "checked"      },
+            "uPBRValidation":         { item: enablePBRValidation,    prop: "checked"      },
+            "uPBRRange":              { item: pbrRange,               prop: "range"        },
+            "uWearAmt":               { item: wearAmount,             prop: "value"        },
+            "uTexTransform":          { item: texTransform,           prop: "transform"    },
+            "uIgnoreWeaponSizeScale": { item: ignoreTextureSizeScale, prop: "checked"      },
+            "uUsePearlMask":          { item: usePearlescentMask,     prop: "checked"      },
+            "uPearlScale":            { item: pearlescentScale,       prop: "value"        },
+            "uUseCustomRough":        { item: useRoughnessTexture,    prop: "checked"      },
+            "uPaintRoughness":        { item: paintRoughness,         prop: "value"        },
             // dynamically generated components
-            "u_d_gun_grunge_sampler":     { item: null,                   prop: "url"          },
-            "u_d_basecolor_sampler":      { item: null,                   prop: "url"          },
-            "u_d_normal_sampler":         { item: null,                   prop: "url"          },
-            "u_d_orm_sampler":            { item: null,                   prop: "url"          },
-            "u_d_curv_sampler":           { item: null,                   prop: "url"          },
-            "u_col0":                     { item: null,                   prop: "arrayColor"   },
-            "u_col1":                     { item: null,                   prop: "arrayColor"   },
-            "u_col2":                     { item: null,                   prop: "arrayColor"   },
-            "u_col3":                     { item: null,                   prop: "arrayColor"   },
-            "u_use_normal_map":           { item: null,                   prop: "checked"      },
-            "u_use_material_mask":        { item: null,                   prop: "checked"      },
-            "u_use_ao_tex":               { item: null,                   prop: "checked"      },
+            "uGrungeTex":             { item: null,                   prop: "url"          },
+            "uScratchesTex":          { item: null,                   prop: "url"          },
+            "uBaseColor":             { item: null,                   prop: "url"          },
+            "uBaseRough":             { item: null,                   prop: "url"          },
+            "uBaseNormal":            { item: null,                   prop: "url"          },
+            "uBaseMasks":             { item: null,                   prop: "url"          },
+            "uBaseCavity":            { item: null,                   prop: "url"          },
+            "uCol0":                  { item: null,                   prop: "arrayColor"   },
+            "uCol1":                  { item: null,                   prop: "arrayColor"   },
+            "uCol2":                  { item: null,                   prop: "arrayColor"   },
+            "uCol3":                  { item: null,                   prop: "arrayColor"   },
+            "uUseCustomNormal":       { item: null,                   prop: "checked"      },
+            "uUseCustomMasks":        { item: null,                   prop: "checked"      },
+            "uUseCustomAOTex":        { item: null,                   prop: "checked"      },
             // not shader related
-            "wear_range":                 { item: wearRange,              prop: "range"        },
-            "tex_scale":                  { item: texScale,               prop: "value"        },
-            "tex_rotation_range":         { item: texRotation,            prop: "range"        },
-            "tex_offsetx_range":          { item: texOffsetX,             prop: "range"        },
-            "tex_offsety_range":          { item: texOffsetY,             prop: "range"        }
+            "wearRange":              { item: wearRange,              prop: "range"        },
+            "texScale":               { item: texScale,               prop: "value"        },
+            "texRotationRange":       { item: texRotation,            prop: "range"        },
+            "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
+            "texOffsetYRange":        { item: texOffsetY,             prop: "range"        }
         }
 
         function connect() {
             for (const [param, component] of Object.entries(parameters)) 
-                if (param.startsWith("u_")) {
+                if (param.startsWith("u")) {
                     const cl = alg.shaders.parameter(shaderId, param);
-                    cl.valueChanged.connect(() => 
-                        component.item[component.prop] = cl.value
-                    );
-                    component.item[component.prop + "Changed"].connect(() => 
-                        cl.value = component.item[component.prop]
-                    );
+                    var updating = false;
+                    cl.valueChanged.connect(() => {
+                        if (!updating) {
+                            updating = true;
+                            component.item[component.prop] = cl.value;
+                            updating = false;
+                        }
+                    });
+                    component.item[component.prop + "Changed"].connect(() => {
+                        if (!updating) {
+                            updating = true;
+                            cl.value = component.item[component.prop];
+                            updating = false;
+                        }
+                    });
                 }
         }
 
@@ -99,6 +118,16 @@ Rectangle {
                 component.item[component.prop] = v.value;
             }
         }
+        
+        function reset(param) {
+            if (alg.project.settings.contains("CS2WT"))
+                for (const d of alg.project.settings.value("CS2WT"))
+                    if (param == d.param) {
+                        const component = shader.parameters[d.param];
+                        component.item[component.prop] = d.value;
+                        break;
+                    }
+        }
     }
 
     function displayShaderParameters(shaderId) {
@@ -113,24 +142,16 @@ Rectangle {
         alg.project.settings.setValue("CS2WT", shader.getValues());
     }
 
-    function reset(param) {
-        if (alg.project.settings.contains("CS2WT"))
-            for (const d of alg.project.settings.value("CS2WT"))
-                if (param == d.param) {
-                    const component = shader.parameters[d.param];
-                    component.item[component.prop] = d.value;
-                    break;
-                }
-    }
-
     function resetWeapon(weaponName) {
-        const path = Qt.resolvedUrl('assets/materials/').slice(8);
+        const path = `${alg.plugin_root_directory}assets/materials/${weaponName}`;
         try {
-            shader.parameters["u_d_basecolor_sampler"].item.url = importTexture(`${path}${weaponName}/color.jpg`);
-            shader.parameters["u_d_normal_sampler"].item.url = importTexture(`${path}${weaponName}/normal.jpg`);
-            shader.parameters["u_d_orm_sampler"].item.url = importTexture(`${path}${weaponName}/orm.jpg`);
-            shader.parameters["u_d_curv_sampler"].item.url = importTexture(`${path}${weaponName}/curvature.jpg`);
-        } catch(err) { }
+            shader.parameters["uBaseColor"].item.url = importTexture(`${path}/color.jpg`);
+            shader.parameters["uBaseRough"].item.url = importTexture(`${path}/rough.jpg`);
+            shader.parameters["uBaseNormal"].item.url = importTexture(`${path}/normal.jpg`);
+            shader.parameters["uBaseMasks"].item.url = importTexture(`${path}/masks.jpg`);
+            shader.parameters["uBaseCavity"].item.url = importTexture(`${path}/curvature.jpg`);
+        } catch(err) {
+        }
     }
 
     QtObject {
@@ -190,6 +211,7 @@ Rectangle {
                     icon.height: 18
 
                     onClicked: {
+                        window.show();
                         fileDialog.mode = SPFileDialog.SaveFile
                         fileDialog.title = "Export to .econitem"
                         fileDialog.open()
@@ -304,7 +326,7 @@ Rectangle {
                             to: 255
                             pickValue: false
                         }
-                        onResetRequested: root.reset("u_pbr_range")
+                        onResetRequested: shader.reset("uPBRRange")
                     }
                 }
             }
@@ -317,20 +339,31 @@ Rectangle {
             
             Repeater {
                 model: [
-                    { param: "u_d_gun_grunge_sampler", text: "Gun Grunge"        },
-                    { param: "u_d_basecolor_sampler",  text: "Base Color"        },
-                    { param: "u_d_normal_sampler",     text: "Normal Map"        },
-                    { param: "u_d_orm_sampler",        text: "ORM Texture"       },
-                    { param: "u_d_curv_sampler",       text: "Curvature Texture" }
+                    { param: "uGrungeTex",        text: "Grunge"            },
+                    { param: "uScratchesTex",     text: "Scratches"         },
+                    { param: "uBaseColor",        text: "Base Color"        },
+                    { param: "uBaseRough",        text: "Roughness"         },
+                    { param: "uBaseMasks",        text: "Masks"             },
+                    { param: "uBaseNormal",       text: "Normal Map"        },
+                    { param: "uBaseCavity",       text: "Curvature Texture" }
                 ]
-                delegate: SPResourcePicker {
-                    label: modelData.text
-                    filters: AlgResourcePicker.TEXTURE
+                delegate: SPParameter { 
                     Layout.fillWidth: true
+
+                    property alias control: resourcePicker
+
+                    SPResourcePicker {
+                        id: resourcePicker
+                        label: modelData.text
+                        filters: AlgResourcePicker.TEXTURE
+                        Layout.fillWidth: true
+                    }
+                    
+                    onResetRequested: shader.reset(modelData.param)
                 }
 
                 onItemAdded: (i, item) => {
-                    shader.parameters[model[i].param].item = item;
+                    shader.parameters[model[i].param].item = item.control;
                 }
             }
         }
@@ -436,7 +469,7 @@ Rectangle {
                         to: wearRange.maxValue.toFixed(2)
                         onValueChanged: wearRange.value = value
                     }
-                    onResetRequested: root.reset("u_wear_amount")
+                    onResetRequested: shader.reset("uWearAmt")
                 }
 
                 SPParameter {
@@ -447,7 +480,7 @@ Rectangle {
                         to: 10
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_scale")
+                    onResetRequested: shader.reset("texScale")
                 }
 
                 SPParameter {
@@ -456,9 +489,10 @@ Rectangle {
                         text: "Ignore Weapon Size Scale"
                         Layout.fillWidth: true
                         checkable: true
+                        tooltipText: "For some finishes, the automatic scale adjustment per-weapon is not desired"
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: root.reset("u_ignore_weapon_size_scale")
+                    onResetRequested: shader.reset("uIgnoreWeaponSizeScale")
                 }
             }
 
@@ -474,7 +508,7 @@ Rectangle {
                         to: 360
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_rotation_range")
+                    onResetRequested: shader.reset("texRotationRange")
                 }
 
                 SPParameter {
@@ -485,7 +519,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_offsetx_range")
+                    onResetRequested: shader.reset("texOffsetXRange")
                 }
 
                 SPParameter {
@@ -496,7 +530,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: root.reset("tex_offsety_range")
+                    onResetRequested: shader.reset("texOffsetYRange")
                 }
             }
 
@@ -510,10 +544,22 @@ Rectangle {
 
                 Repeater {
                     model: [
-                        ["Base Metal", "Base Coat"], 
-                        ["Patina Tint", "Red Channel"],
-                        ["Patina Wear", "Green Channel"],
-                        ["Grime", "Blue Channel"]
+                        [
+                            { text: "Base Metal", tooltip: "The metal before patina, revealed through scratches" }, 
+                            { text: "Base Coat", tooltip: "Color that covers all paintable areas of the weapon" }
+                        ], 
+                        [
+                            { text: "Patina Tint", tooltip: "Tint of the newly applied patina" }, 
+                            { text: "Red Channel", tooltip: "Color to store in the Red Channel of the texture" }
+                        ], 
+                        [
+                            { text: "Patina Wear", tooltip: "Tint of the aged patina" }, 
+                            { text: "Green Channel", tooltip: "Color to store in the Green Channel of the texture" }
+                        ], 
+                        [
+                            { text: "Grime", tooltip: "Color of the grime, oil accretion, or oxide that accumulates in cavities" }, 
+                            { text: "Blue Channel", tooltip: "Color to store in the Blue Channel of the texture" }
+                        ]
                     ]
                     delegate: SPParameter {
                         property alias scopeWidth: colorPickerWidget.scopeWidth
@@ -521,19 +567,19 @@ Rectangle {
 
                         SPLabeled {
                             id: colorPickerWidget
-                            text: finishStyleBox.currentIndex > 6 ? modelData[0] : modelData[1]
+                            text: finishStyleBox.currentIndex > 6 ? modelData[0].text : modelData[1].text
                             SPColorButton { 
                                 id: colorPicker
-                                tooltipText: parent.text + " color"
+                                tooltipText: finishStyleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
                             }
                         }
-                        onResetRequested: root.reset(`u_col${index}`)
+                        onResetRequested: shader.reset(`uCol${index}`)
                     }
 
                     onItemAdded: (i, item) => {
                         colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, item.scopeWidth);
                         item.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
-                        shader.parameters[`u_col${i}`].item = item;
+                        shader.parameters[`uCol${i}`].item = item;
                     }
                 }
             }
@@ -551,8 +597,8 @@ Rectangle {
                         onValueChanged: wearAmount.value = value
                     }
                     onResetRequested: {
-                        root.reset("wear_range"); 
-                        root.reset("u_wear_amount");
+                        shader.reset("wearRange"); 
+                        shader.reset("uWearAmt");
                     }
                 }
 
@@ -566,7 +612,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: root.reset("u_use_pearl_mask")
+                    onResetRequested: shader.reset("uUsePearlMask")
                 }
 
                 SPParameter {
@@ -576,7 +622,7 @@ Rectangle {
                         from: -6
                         to: 6
                     }
-                    onResetRequested: root.reset("u_pearl_scale")
+                    onResetRequested: shader.reset("uPearlScale")
                 }
 
                 SPSeparator { Layout.fillWidth: true }
@@ -589,7 +635,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: root.reset("u_use_roughness_tex")
+                    onResetRequested: shader.reset("uUseCustomRough")
                 }
                     
                 SPParameter {
@@ -600,7 +646,7 @@ Rectangle {
                         from: 0
                         to: 1
                     }
-                    onResetRequested: root.reset("u_paint_roughness")
+                    onResetRequested: shader.reset("uPaintRoughness")
                 }
             }
 
@@ -612,9 +658,9 @@ Rectangle {
 
                 Repeater {
                     model: [
-                        { param: "u_use_normal_map",    text: "Custom Normal Map"        },
-                        { param: "u_use_material_mask", text: "Custom Material Mask"     },
-                        { param: "u_use_ao_tex",        text: "Custom Ambient Occlusion" }
+                        { param: "uUseCustomNormal",    text: "Custom Normal Map"        },
+                        { param: "uUseCustomMasks", text: "Custom Material Mask"     },
+                        { param: "uUseCustomAOTex",        text: "Custom Ambient Occlusion" }
                     ]
                     delegate: SPParameter {
                         property alias control: advancedControl
@@ -628,7 +674,7 @@ Rectangle {
                             contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                         }
 
-                        onResetRequested: root.reset(modelData.param)
+                        onResetRequested: shader.reset(modelData.param)
                     }
 
                     onItemAdded: (i, item) => {
