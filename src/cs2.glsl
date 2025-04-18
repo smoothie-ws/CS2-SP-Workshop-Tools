@@ -31,10 +31,10 @@ uniform sampler2D uScratchesTex;
 uniform sampler2D uBaseColor;
 //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
 uniform sampler2D uBaseRough;
-//: param custom { "default": "", "default_color": [0.0, 0.0, 0.0] }
+//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
 uniform sampler2D uBaseMasks;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
-uniform sampler2D uBaseNormal;
+uniform sampler2D uBaseSurface;
 //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
 uniform sampler2D uBaseCavity;
 
@@ -57,9 +57,7 @@ uniform SamplerSparse uMatPearl;
 
 //: param custom { "default": true }
 uniform_specialization bool uLivePreview;
-uniform_specialization bool uLivePreview;
 //: param custom { "default": true }
-uniform_specialization bool uPBRValidation;
 uniform_specialization bool uPBRValidation;
 //: param custom { "default": 4 }
 uniform_specialization int uFinishStyle;
@@ -67,7 +65,6 @@ uniform_specialization int uFinishStyle;
 // Common
 
 //: param custom { "default": [90, 250] }
-uniform vec2 uPBRRange;
 uniform vec2 uPBRRange;
 //: param custom { "default": 0.00 }
 uniform float uWearAmt;
@@ -83,9 +80,7 @@ uniform vec3 uCol2;
 uniform vec3 uCol3;
 //: param custom { "default": [0.0, 0.0, 1.0, 0.0] }
 uniform vec4 uTexTransform; // packed values: [offsetX, offsetY, scale, rotation]
-uniform vec4 uTexTransform; // packed values: [offsetX, offsetY, scale, rotation]
 //: param custom { "default": 0.00 }
-uniform float uPearlScale;
 uniform float uPearlScale;
 //: param custom { "default": true }
 uniform bool uUsePearlMask;
@@ -107,22 +102,11 @@ uniform bool uUseCustomAOTex;
 vec3 hueShift(vec3 col, float factor) {
     const vec3 w = vec3(0.5, 0.5, 0.5);
     float c = cos(factor);
-    float c = cos(factor);
     vec3 res = col;
-    res *= c;
     res *= c;
     res += cross(w, col) * sin(factor);
     res += w * dot(w, col) * (1.0 - c);
-    res += w * dot(w, col) * (1.0 - c);
     return res;
-}
-
-float computeCutoffMask(float curvature, float alpha, float grunge) {
-    float m = grunge * pow(curvature, 2.4);
-    m *= uWearAmt * 6.0 + 1.0;
-    m *= smoothstep(0.0, 0.5, alpha);
-    m += smoothstep(0.5, 0.6, alpha) * smoothstep(1.0, 0.9, alpha);
-    return smoothstep(0.58, 0.68, m);
 }
 
 vec3 valPBR(vec3 col, float l_min, float l_max) {
@@ -135,62 +119,73 @@ vec3 valPBR(vec3 col, float l_min, float l_max) {
         return vec3(0.0);
 }
 
+vec4 tex2D(sampler2D tex_sampler, V2F inputs) {
+    return texture(tex_sampler, inputs.tex_coord);
+}
+
+vec4 tex2D(SamplerSparse tex_sampler, V2F inputs) {
+    return textureSparse(tex_sampler, inputs.sparse_coord);
+}
+
 void applyFinish(V2F inputs) {
-    LocalVectors vectors = computeLocalFrame(inputs);
-    // Fetch textures
+    // replace normals if needed
+    if (!uUseCustomNormal) 
+        inputs.normal = normalize(tex2D(uBaseSurface, inputs).rgb * 2.0 - 1.0);
 
-    // grunge
-    vec4 grungeCol = texture(uGrungeTex, inputs.tex_coord);
-    float paintWear = texture(uScratchesTex, inputs.tex_coord).r;
-    // material
-    vec3 matCol = getBaseColor(uMatColor, inputs.sparse_coord);
-    float alpha = textureSparse(uMatAlpha, inputs.sparse_coord).r;
-    // base
-    vec4 baseCol = texture(uBaseColor, inputs.tex_coord);
-    vec4 cavity = texture(uBaseCavity, inputs.tex_coord);
+    // coord transformation
+    float s = sin(uTexRotation);
+    float c = cos(uTexRotation);
+    inputs.sparse_coord.tex_coord *= mat2(c, -s, s, c);
+    inputs.sparse_coord.tex_coord *= uTexScale;
+    inputs.sparse_coord.tex_coord += uTexOffset;
 
-    if (!uUseCustomNormal) {
-        vec3 normal = texture(uBaseNormal, inputs.tex_coord).rgb;
-        vectors.normal = tangentSpaceToWorldSpace(normalize(normal * 2.0 - 1.0), inputs);
-        emissiveColorOutput(normal);
-    }
-    vec4 masks = uUseCustomMasks ? textureSparse(uMatMasks, inputs.sparse_coord) : texture(uBaseMasks, inputs.tex_coord); // ?
+    // grunge textures
+    vec4 grungeCol = tex2D(uGrungeTex, inputs);
+    float paintWear = tex2D(uScratchesTex, inputs).r;
 
-    float curv = cavity.r;
-    float ao = cavity.g;
-    float paintBlend = cavity.a;
+    // material textures
+    vec4 matColor = tex2D(uMatColor, inputs);
+    matColor.a = tex2D(uMatAlpha, inputs).r;
+    float matRough = uUseCustomRough ? tex2D(uMatRough, inputs).r : uPaintRoughness;
+    float matPearl = uUsePearlMask ? tex2D(uMatPearl, inputs).r : 1.0;
 
-    float paintEdge;
-    float grunge;
+    // base textures
+    vec3 baseColor = sRGB2linear(tex2D(uBaseColor, inputs).rgb);
+    vec2 baseCavity = tex2D(uBaseCavity, inputs).rg;
+    float baseRough = tex2D(uBaseRough, inputs).r;
 
+    vec3 masks = (uUseCustomMasks ? tex2D(uMatMasks, inputs) : tex2D(uBaseMasks, inputs)).rgb;
+
+    float curv = baseCavity.r;
+    float ao = baseCavity.g;
+
+    // Wear
+
+    float paintBlend = 0.0;
     if (uFinishStyle != AQ) {
-        paintBlend += paintWear * curv;
+        paintBlend = paintWear * curv;
         paintBlend *= uWearAmt * 6.0 + 1.0;
-        // Paint matCols and durability
-        if (uFinishStyle == HY || uFinishStyle == AM || uFinishStyle == CU || uFinishStyle == GS) {
-            float flCuttableArea = 1.0;
-            if (uFinishStyle == HY || uFinishStyle == AM)
-                flCuttableArea = 1.0 - clamp(masks.g + masks.b, 0.0, 1.0);
 
-            // cut through
-            paintBlend += smoothstep(0.5, 0.6, alpha) * smoothstep(1.0, 0.9, alpha);
-            // rescale the alpha to represent exponent in the range of 0-255 and let the cutout mask area fall off the top end
+        if (uFinishStyle == HY || uFinishStyle == AM || uFinishStyle == CU || uFinishStyle == GS) {
+            paintBlend += smoothstep(0.5, 0.6, matColor.a) * smoothstep(1.0, 0.9, matColor.a);
+
+            float cuttable = 1.0;
+            if (uFinishStyle == HY || uFinishStyle == AM)
+                cuttable = 1.0 - clamp(masks.g + masks.b, 0.0, 1.0);
+
             if (uFinishStyle == AM)
-                alpha = clamp(alpha * 2.0, 0.0, 1.0);
-            // rescale the alpha to represent exponent in the range of 0-255 and let the cutout mask area fall off the top end
+                matColor.a = clamp(matColor.a * 2.0, 0.0, 1.0);
             else if (uFinishStyle == GS) {
-                paintBlend *= max(1.0 - flCuttableArea, smoothstep(0.0, 0.5, alpha));
-                alpha = mix(alpha, clamp(alpha * 2.0, 0.0, 1.0), masks.r);
-            }
-            // indestructible paintCol
-            else
-                paintBlend *= max(1.0 - flCuttableArea, smoothstep(0.0, 0.5, alpha));
+                paintBlend *= max(1.0 - cuttable, smoothstep(0.0, 0.5, matColor.a));
+                matColor.a = mix(matColor.a, clamp(matColor.a * 2.0, 0.0, 1.0), masks.r);
+            } else
+                paintBlend *= max(1.0 - cuttable, smoothstep(0.0, 0.5, matColor.a));
         }
     }
 
-    if (uFinishStyle == HY || uFinishStyle == SP) { // paintCol wears off in layers
-        vec3 paintEdges = vec3(1.0, 1.0, 1.0);
-        vec3 spread = 0.06 * uWearAmt; // spread of partially worn paintCol increases as the gun becomes more worn
+    vec3 paintEdges = vec3(1.0);
+    if (uFinishStyle == HY || uFinishStyle == SP) {
+        vec3 spread = vec3(0.06 * uWearAmt);
         spread.y *= 2.0;
         spread.z *= 3.0;
 
@@ -199,140 +194,55 @@ void applyFinish(V2F inputs) {
         paintEdges.z = smoothstep(0.54 - spread.y, 0.52 - spread.z, paintBlend);
     }
 
-    if (uFinishStyle != AQ && uFinishStyle != GS)
-        paintBlend = smoothstep(0.58, 0.68, paintBlend);
-    else if (uFinishStyle == GS)
+    if (uFinishStyle == GS)
         paintBlend = mix(smoothstep(0.58, 0.68, paintBlend), paintBlend, masks.r);
+    else if (uFinishStyle != AQ)
+        paintBlend = smoothstep(0.58, 0.68, paintBlend);
 
-    if (uFinishStyle == AN || uFinishStyle == AM || uFinishStyle == AA) // Anodized paintCol scratches through uncolored baseCol coat
+    float paintEdge;
+    if (uFinishStyle == AN || uFinishStyle == AM || uFinishStyle == AA)
         paintEdge = smoothstep(0.0, 0.01, paintBlend);
 
-    // Diffuse texture
-
-    vec3 paintCol = uCol0;
-
-    // apply grunge to paintCol only in creases
+    float grunge;
     if (uFinishStyle == AQ || uFinishStyle == GS)
         grunge = grungeCol.r * grungeCol.g * grungeCol.b;
 
-    grungeCol = mix(1.0, grungeCol, (pow((1.0 - curv), 4.0) * 0.25 + 0.75 * uWearAmt));
+    grungeCol = mix(vec4(1.0), grungeCol, (pow((1.0 - curv), 4.0) * 0.25 + 0.75 * uWearAmt));
 
-    // Solid style
+    // Paint Color
+
+    vec3 paintCol = uCol0;
+
+    // Solid Color
     if (uFinishStyle == SO) {
-        // apply color in solid blocks using masking from the part kit MasksSampler
         paintCol = mix(paintCol, uCol1, masks.r);
         paintCol = mix(paintCol, uCol2, masks.g);
         paintCol = mix(paintCol, uCol3, masks.b);
     }
 
-    // Hydrographic/anodized multicolored style
+    // Hydrographic / Anodized Multicolored
     if (uFinishStyle == HY || uFinishStyle == AM) {
-        // create camo using matCol
-        paintCol = mix(mix(mix(uCol0, uCol1, matCol.r), uCol2, matCol.g), uCol3, matCol.b);
-
-        // apply any masking from the last two masks from MasksSampler, allowing some areas to be solid color
+        paintCol = mix(mix(mix(uCol0, uCol1, matColor.r), uCol2, matColor.g), uCol3, matColor.b);
         paintCol = mix(paintCol, uCol2, masks.g);
         paintCol = mix(paintCol, uCol3, masks.b);
     }
 
-    // Spraypaint/anodized airbrushed style
-    if (uFinishStyle == SP || uFinishStyle == AA) {
-        // apply spraypaint via box map baseCold on mesh's object-space position as stored in the position pmap
-        vec2 posCoord = vec2(inputs.tex_coord.x, 1.0 - inputs.tex_coord.y);
-        vec4 pos = vec4(0.0, 0.0, 0.0, 0.0);
+    // TODO: pattern mapping
 
-        if (CHEAPMODE == 0) { // if supersampling is not disabled
-            //super sampling of position map
-            vec2 offsets[17] = {
-                    vec2(-0.00107234, -0.00400203),
-                    vec2(0.00195312, -0.00338291),
-                    vec2(0.00400203, -0.00107234),
-                    vec2(-0.000714896, -0.00266802),
-                    vec2(0.000976565, -0.00169146),
-                    vec2(0.00266802, -0.000714896),
-                    vec2(-0.00338291, -0.00195312),
-                    vec2(-0.00169146, -0.000976565),
-                    vec2(0.0, 0.0),
-                    vec2(0.00169146, 0.000976565),
-                    vec2(0.00338291, 0.00195312),
-                    vec2(-0.00266802, 0.000714896),
-                    vec2(-0.000976565, 0.00169146),
-                    vec2(0.000714896, 0.00266802),
-                    vec2(-0.00400203, 0.00107234),
-                    vec2(-0.00195312, 0.00338291),
-                    vec2(0.00107234, 0.00400203)
-                };
-            for (int k = 0; k < 17; k++)
-                pos += texture(OSPosSampler, posCoord + offsets[k]) * 0.05882353;
-        } else
-            pos = texture(OSPosSampler, posCoord);
-
-        // extract integer HDR values out from the RGBA vtf
-        // developer.valvesoftware.com/wiki/Valve_Texture_Format#HDR_compression
-        pos.rgb *= pos.a * 16.0;
-
-        // Project the mask in object-space
-        vec2 coord;
-        // apply the preview matCol scale to only the scale portion of the matCol transform.
-        mat2 t = mat2(
-                g_PreviewPatternScale, 0,
-                0, g_PreviewPatternScale
-            );
-        mat2 t2 = mat2(
-                g_matColTexCoordTransform[0].xy,
-                g_matColTexCoordTransform[1].xy
-            );
-        t *= 2;
-
-        coord.x = dot(pos.yz, t[0]) + g_matColTexCoordTransform[0].w;
-        coord.y = dot(pos.yz, t[1]) + g_matColTexCoordTransform[1].w;
-        vec3 fvTexX = texture(uMatColor, coord).rgb;
-
-        coord.x = dot(pos.xz, t[0]) + g_matColTexCoordTransform[0].w;
-        coord.y = dot(pos.xz, t[1]) + g_matColTexCoordTransform[1].w;
-        vec3 fvTexY = texture(uMatColor, coord).rgb;
-
-        coord.x = dot(pos.yx, t[0]) + g_matColTexCoordTransform[0].w;
-        coord.y = dot(pos.yx, t[1]) + g_matColTexCoordTransform[1].w;
-        vec3 fvTexZ = texture(uMatColor, coord).rgb;
-
-        // smooth blend the three projections across the object-space surface normals
-        float yBlend = abs(dot(normal.xyz, vec3(0.0, 1.0, 0.0)));
-        yBlend = pow(yBlend, g_flBlendYPow);
-
-        float zBlend = abs(dot(normal.xyz, vec3(0.0, 0.0, 1.0)));
-        zBlend = pow(zBlend, g_flBlendZPow);
-
-        vec3 patternMask = mix(mix(fvTexX, fvTexY, yBlend), fvTexZ, zBlend);
-
-        if (uFinishStyle == SP) // paintCol wears off in layers
-            patternMask.xyz *= paintEdges.xyz;
-
-        paintCol = mix(mix(mix(uCol0, uCol1, patternMask.r), uCol2, patternMask.g), uCol3, patternMask.b);
-        if (uFinishStyle == AA) {
-            paintCol = mix(paintCol, uCol2, masks.g);
-            paintCol = mix(paintCol, uCol3, masks.b);
-        }
-    }
-
-    // Anodized style
+    // Anodized
     if (uFinishStyle == AN || uFinishStyle == AM || uFinishStyle == AA) {
         if (uFinishStyle == AN)
             paintCol.rgb = uCol0.rgb;
-
-        // chipped edges of anodized dye
-        paintCol = mix(paintCol, g_cAnodizedBase, paintEdge);
-        grungeCol.rgb = mix(grungeCol.rgb, vec3(1.0, 1.0, 1.0), paintEdge);
-
-        // anodize only in areas specified by the masks texture
+        paintCol = mix(paintCol, vec3(0.05), paintEdge);
+        grungeCol.rgb = mix(grungeCol.rgb, vec3(1.0), paintEdge);
         paintBlend = clamp(1.0 + paintBlend - masks.r, 0.0, 1.0);
     }
 
-    // Custom painted style
+    // Custom painted
     if (uFinishStyle == CU)
-        paintCol = matCol.rgb;
+        paintCol = matColor.rgb;
 
-    // Antiqued or Gunsmith style
+    // Antiqued / Gunsmith
     if (uFinishStyle == AQ || uFinishStyle == GS) {
         float patinaBlend = paintWear * ao * curv * curv;
         patinaBlend = smoothstep(0.1, 0.2, patinaBlend * uWearAmt);
@@ -342,91 +252,56 @@ void applyFinish(V2F inputs) {
 
         vec3 patina = mix(uCol1, uCol2, uWearAmt);
         vec3 grimeCol = mix(uCol1, uCol3, pow(uWearAmt, 0.5));
-        patina = mix(grimeCol, patina, grimeBlend) * matCol.rgb;
-        float patternLum = dot(matCol.rgb, vec3(0.3, 0.59, 0.11));
-        vec3 scratches = uCol0 * patternLum;
-        patina = mix(patina, scratches, patinaBlend);
+        patina = mix(grimeCol, patina, grimeBlend) * matColor.rgb;
+        float paintLum = dot(matColor.rgb, vec3(0.3, 0.59, 0.11));
+        patina = mix(patina, uCol0 * paintLum, patinaBlend);
 
         if (uFinishStyle == AQ) {
             paintCol = patina;
             paintBlend = 1.0 - masks.r;
-        } else if (uFinishStyle == GS) {
-            paintCol = mix(matCol.rgb, patina, masks.r);
-            paintBlend = paintBlend * (1.0 - masks.r);
+        } else {
+            paintCol = mix(matColor.rgb, patina, masks.r);
+            paintBlend *= 1.0 - masks.r;
         }
     }
 
-    
-    // Specular Intensity Mask
-    
-    if (uFinishStyle == GS) {
-        if (PHONGALBEDOFACTORMODE == 1)
-            float flSpecMask = mix(g_flPaintPhongIntensity, 1.0, masks.r) * ao * grungeCol.a;
-        else
-            float flSpecMask = mix(g_flPaintPhongIntensity, g_flPhongAlbedoFactor, masks.r) * ao * grungeCol.a;
-    } else
-        float flSpecMask = g_flPaintPhongIntensity * ao * grungeCol.a;
+    vec3 outCol = mix(paintCol, baseColor, paintBlend);
+    float outRough = mix(matRough, baseRough, paintBlend);
+    float specLevel = tex2D(uMatSpecLevel, inputs).r;
 
-    if (uFinishStyle == AN || uFinishStyle == AM || uFinishStyle == AA || uFinishStyle == AQ || uFinishStyle == GS) { // anodized/metallic
-        // phongalbedoboost must be increased in the material for the anodized look, so in areas that are
-        // already using phongalbedo the specular intensity must be reduced in order to retain approximately
-        // the same intensity as the originally authored texture
-        float flInvPaintBlend = 1.0 - paintBlend;
+    vec3 diffColor = generateDiffuseColor(outCol, masks.r);
+    vec3 specColor = generateSpecularColor(specLevel, outCol, masks.r);
+    LocalVectors vectors = computeLocalFrame(inputs);
 
-        vec4 cOrigExp = texture(ExponentSampler, inputs.tex_coord);
-        if ((PREVIEW == 1) && (PREVIEWPHONGALBEDOTINT == 0))
-            cOrigExp.g = 0.0;
+    float shadow = getShadowFactor();
+    if (uUseCustomAOTex)
+        ao = getAO(inputs.sparse_coord, true);
+    float specOcclusion = specularOcclusionCorrection(ao * shadow, masks.r, outRough);
 
-        if (uFinishStyle == AQ)
-            flSpecMask *= mix(grimeBlend * (1.0 - patinaBlend * uWearAmt), 1.0, patinaBlend);
-        else if (uFinishStyle == GS) {
-            float flPaintSpecBlend = smoothstep(0.9, 1.0, paintBlend) * masks.r;
-            flSpecMask *= mix(smoothstep(0.01, 0.0, paintBlend), mix(grimeBlend * (1.0 - patinaBlend * uWearAmt), 1.0, patinaBlend), masks.r);
-            flSpecMask = mix(flSpecMask, baseCol.a, flPaintSpecBlend);
-            flPaintSpecBlend = smoothstep(0.9, 1.0, paintBlend) * (1.0 - masks.r);
-        } else
-            flSpecMask *= mix(g_flPaintPhongIntensity, g_flAnodizedBasePhongIntensity, paintEdge);
-
-        float flPhongAlbedoBlend = paintBlend;
-
-        float flAdjustedBase = 1.0;
-        if (PHONGALBEDOFACTORMODE == 1) {
-            flAdjustedBase = mix(1.0, g_flPhongAlbedoFactor, cOrigExp.g * flPhongAlbedoBlend);
-            color.a = mix(flSpecMask, baseCol.a * flAdjustedBase, paintBlend);
-        } else
-            color.a = mix(flSpecMask * g_flPhongAlbedoFactor, baseCol.a, flPhongAlbedoBlend);
-
-        if (uFinishStyle == GS)
-            color.a = mix(flSpecMask, baseCol.a * flAdjustedBase, flPaintSpecBlend);
-    }
-    // everything else
-    else {
-        float flPaintSpecBlend = smoothstep(0.9, 1.0, paintBlend);
-        flSpecMask *= smoothstep(0.01, 0.0, paintBlend);
-        color.a = mix(flSpecMask, baseCol.a, flPaintSpecBlend);
-    }
+    albedoOutput(diffColor);
+    diffuseShadingOutput(ao * shadow * envIrradiance(vectors.normal));
+    specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, outRough));
 }
 
 void shade(V2F inputs) {
     if (uLivePreview)
         applyFinish(inputs);
     else {
-        LocalVectors vectors = computeLocalFrame(inputs);
-
-        vec3 baseColor = getBaseColor(uMatColor, inputs.sparse_coord);
-        float roughness = getRoughness(uMatRough, inputs.sparse_coord);
-        float metallic = textureSparse(uMatMasks, inputs.sparse_coord).r;
-        float specLevel = getSpecularLevel(uMatSpecLevel, inputs.sparse_coord);
+        vec3 baseColor = tex2D(uMatColor, inputs).rgb;
+        float roughness = tex2D(uMatRough, inputs).r;
+        float metallic = tex2D(uMatMasks, inputs).r;
+        float specLevel = tex2D(uMatSpecLevel, inputs).r;
 
         vec3 diffColor = generateDiffuseColor(baseColor, metallic);
         vec3 specColor = generateSpecularColor(specLevel, baseColor, metallic);
+        LocalVectors vectors = computeLocalFrame(inputs);
 
-        float shadowFactor = getShadowFactor();
-        float occlusion = getAO(inputs.sparse_coord, true);
-        float specOcclusion = specularOcclusionCorrection(occlusion * shadowFactor, metallic, roughness);
+        float shadow = getShadowFactor();
+        float ao = getAO(inputs.sparse_coord, true);
+        float specOcclusion = specularOcclusionCorrection(ao * shadow, metallic, roughness);
 
         albedoOutput(diffColor);
-        diffuseShadingOutput(occlusion * shadowFactor * envIrradiance(vectors.normal));
+        diffuseShadingOutput(ao * shadow * envIrradiance(vectors.normal));
         specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness));
     }
 }

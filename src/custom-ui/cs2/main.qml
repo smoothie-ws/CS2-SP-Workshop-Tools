@@ -19,6 +19,7 @@ Rectangle {
 
     Component.onCompleted: {
         shader.connect();
+        // load defaults
         if (alg.project.settings.contains("CS2WT")) 
             shader.setValues(alg.project.settings.value("CS2WT"));
         else
@@ -31,7 +32,7 @@ Rectangle {
                 weaponBox.currentIndex = index;
         }
 
-        const matPath = `${alg.plugin_root_directory}assets/materials`;
+        const matPath = `${alg.plugin_root_directory}assets/textures`;
         shader.parameters["uGrungeTex"].item.url = importTexture(`${matPath}/grunge.png`);
         shader.parameters["uScratchesTex"].item.url = importTexture(`${matPath}/scratches.png`);
     }
@@ -62,7 +63,7 @@ Rectangle {
             "uScratchesTex":          { item: null,                   prop: "url"          },
             "uBaseColor":             { item: null,                   prop: "url"          },
             "uBaseRough":             { item: null,                   prop: "url"          },
-            "uBaseNormal":            { item: null,                   prop: "url"          },
+            "uBaseSurface":           { item: null,                   prop: "url"          },
             "uBaseMasks":             { item: null,                   prop: "url"          },
             "uBaseCavity":            { item: null,                   prop: "url"          },
             "uCol0":                  { item: null,                   prop: "arrayColor"   },
@@ -78,11 +79,6 @@ Rectangle {
             "texRotationRange":       { item: texRotation,            prop: "range"        },
             "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
             "texOffsetYRange":        { item: texOffsetY,             prop: "range"        }
-            "wearRange":              { item: wearRange,              prop: "range"        },
-            "texScale":               { item: texScale,               prop: "value"        },
-            "texRotationRange":       { item: texRotation,            prop: "range"        },
-            "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
-            "texOffsetYRange":        { item: texOffsetY,             prop: "range"        }
         }
 
         function connect() {
@@ -90,17 +86,17 @@ Rectangle {
                 if (param.startsWith("u")) {
                     const cl = alg.shaders.parameter(shaderId, param);
                     var updating = false;
-                    cl.valueChanged.connect(() => {
-                        if (!updating) {
-                            updating = true;
-                            component.item[component.prop] = cl.value;
-                            updating = false;
-                        }
-                    });
                     component.item[component.prop + "Changed"].connect(() => {
                         if (!updating) {
                             updating = true;
                             cl.value = component.item[component.prop];
+                            updating = false;
+                        }
+                    });
+                    cl.valueChanged.connect(() => {
+                        if (!updating) {
+                            updating = true;
+                            component.item[component.prop] = cl.value;
                             updating = false;
                         }
                     });
@@ -147,15 +143,16 @@ Rectangle {
         alg.project.settings.setValue("CS2WT", shader.getValues());
     }
 
-    function resetWeapon(weaponName) {
-        const path = `${alg.plugin_root_directory}assets/materials/${weaponName}`;
+    function resetWeapon(name) {
+        const path = `${alg.plugin_root_directory}assets/textures/models/${name}`;
         try {
-            shader.parameters["uBaseColor"].item.url = importTexture(`${path}/color.jpg`);
-            shader.parameters["uBaseRough"].item.url = importTexture(`${path}/rough.jpg`);
-            shader.parameters["uBaseNormal"].item.url = importTexture(`${path}/normal.jpg`);
-            shader.parameters["uBaseMasks"].item.url = importTexture(`${path}/masks.jpg`);
-            shader.parameters["uBaseCavity"].item.url = importTexture(`${path}/curvature.jpg`);
+            shader.parameters["uBaseColor"].item.url = importTexture(`${path}/${name}_color.png`);
+            shader.parameters["uBaseRough"].item.url = importTexture(`${path}/${name}_rough.png`);
+            shader.parameters["uBaseSurface"].item.url = importTexture(`${path}/${name}_surface.png`);
+            shader.parameters["uBaseMasks"].item.url = importTexture(`${path}/${name}_masks.png`);
+            shader.parameters["uBaseCavity"].item.url = importTexture(`${path}/${name}_cavity.png`);
         } catch(err) {
+
         }
     }
 
@@ -345,12 +342,12 @@ Rectangle {
             Repeater {
                 model: [
                     { param: "uGrungeTex",        text: "Grunge"            },
-                    { param: "uScratchesTex",     text: "Scratches"         },
+                    { param: "uScratchesTex",     text: "Wear"              },
                     { param: "uBaseColor",        text: "Base Color"        },
                     { param: "uBaseRough",        text: "Roughness"         },
                     { param: "uBaseMasks",        text: "Masks"             },
-                    { param: "uBaseNormal",       text: "Normal Map"        },
-                    { param: "uBaseCavity",       text: "Curvature Texture" }
+                    { param: "uBaseSurface",      text: "Surface"           },
+                    { param: "uBaseCavity",       text: "Cavity"            }
                 ]
                 delegate: SPParameter { 
                     Layout.fillWidth: true
@@ -469,7 +466,13 @@ Rectangle {
                 SPParameter {
                     SPSlider {
                         id: wearAmount
-                        text: "Wear Amount"
+                        text: `Wear Amount (${
+                            value < 0.07 ? "Factory New" : (
+                            value < 0.15 ? "Minimal Wear" : (
+                            value < 0.37 ? "Field Tested" : (
+                            value < 0.44 ? "Well Worn" : 
+                            "Battle Scarred")))
+                        })`
                         from: wearRange.minValue.toFixed(2)
                         to: wearRange.maxValue.toFixed(2)
                         onValueChanged: wearRange.value = value
@@ -665,8 +668,8 @@ Rectangle {
                 Repeater {
                     model: [
                         { param: "uUseCustomNormal",    text: "Custom Normal Map"        },
-                        { param: "uUseCustomMasks", text: "Custom Material Mask"     },
-                        { param: "uUseCustomAOTex",        text: "Custom Ambient Occlusion" }
+                        { param: "uUseCustomMasks",     text: "Custom Material Mask"     },
+                        { param: "uUseCustomAOTex",     text: "Custom Ambient Occlusion" }
                     ]
                     delegate: SPParameter {
                         property alias control: advancedControl
@@ -675,7 +678,7 @@ Rectangle {
                             id: advancedControl
                             checkable: true
                             text: modelData.text
-                            tooltipText: `Whether to use ${text.toLowerCase()}. Otherwise, the default weapon ${text.substring(7).toLowerCase()} is used`
+                            tooltipText: `Whether to use ${text.toLowerCase()} or the weapon default one`
                             Layout.fillWidth: true
                             contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                         }
