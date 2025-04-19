@@ -1,8 +1,8 @@
 import QtQuick 2.7
+import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.15
 import AlgWidgets 2.0
-import AlgWidgets.Style 2.0
 
 Item {
     id: root
@@ -12,28 +12,14 @@ Item {
     property alias url: internal.url
     property alias label: internal.label
     property alias filters: resourcePicker.filters
-    
+    property alias hovered: mouseArea.hovered
+
     QtObject {
         id: internal
 
         property string url: ""
         property string label: "Select texture"
         property string resourceName: "None"
-        property bool widgetHovered: false
-
-        onWidgetHoveredChanged: {
-            if (widgetHovered) {
-                background.border.color = "#378ef0";
-                widgetLabel.color = Qt.rgba(0.95, 0.95, 0.95, 1.0);
-                widgetLabel.scaleFactor = 1.1;
-                preview.shadeOffset = 0.25;
-            } else {
-                background.border.color = Qt.rgba(0.5, 0.5, 0.5, 0.5);
-                widgetLabel.color = Qt.rgba(0.75, 0.75, 0.75, 1.0);
-                widgetLabel.scaleFactor = 1.0;
-                preview.shadeOffset = 0.05;
-            }
-        }
 
         onUrlChanged: {
             var imgPath = alg.resources.getResourceInfo(url).filePath;
@@ -45,13 +31,12 @@ Item {
         }
     }
 
-
     Rectangle {
         id: background
         anchors.fill: parent
         color: "#2d2d2d"
         radius: 10
-        border.color: Qt.rgba(0.5, 0.5, 0.5, 0.5)
+        border.color: root.hovered ? "#378ef0" : Qt.rgba(0.5, 0.5, 0.5, 0.5)
         border.width: 1
 
         Behavior on border.color {
@@ -67,8 +52,8 @@ Item {
             anchors.margins: 3
             fillMode: Image.PreserveAspectCrop
 
-            property real shadeOffset: 0.1
-            property real scaleFactor: 1.0
+            property real shadeOffset: root.hovered ? 0.25 : 0.05
+            property real scaleFactor: root.hovered ? 1.1 : 1.0
 
             Behavior on shadeOffset {
                 NumberAnimation { 
@@ -99,13 +84,13 @@ Item {
             }
         }
 
-        Text {
-            id: widgetLabel
+        AlgLabel {
+            id: label
             antialiasing: true
             x: 16
             y: background.height * 0.5 - height * 0.5
             text: internal.label
-            color: Qt.rgba(0.75, 0.75, 0.75, 1.0)
+            color: root.hovered ? Qt.rgba(0.95, 0.95, 0.95, 1.0) : Qt.rgba(0.75, 0.75, 0.75, 1.0)
 
             Behavior on color {
                 ColorAnimation { 
@@ -120,8 +105,8 @@ Item {
                 id: textScale
                 xScale: factor
                 yScale: factor
-                origin.x: widgetLabel.x
-                origin.y: widgetLabel.height * 0.5
+                origin.x: label.x
+                origin.y: label.height * 0.5
 
                 property real factor: 1.0
 
@@ -140,21 +125,21 @@ Item {
         parent: background
         anchors.fill: parent
         hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
 
-        onEntered: internal.widgetHovered = true
-        onExited: internal.widgetHovered = false
+        property bool hovered: false
 
-        onClicked: {
-            var screenPosition = parent.mapToGlobal(mouse.x, mouse.y);
-            resourcePicker.show(screenPosition);
-        }
+        onEntered: hovered = true
+        onExited: hovered = false
+
+        onClicked: resourcePicker.show(parent.mapToGlobal(mouse.x, mouse.y))
 
         DropArea {
             id: dropArea
             anchors.fill: parent
 
-            onEntered: internal.widgetHovered = true
-            onExited: internal.widgetHovered = false
+            onEntered: mouseArea.hovered = true
+            onExited: mouseArea.hovered = false
             
             onDropped: {
                 var data = null;
@@ -175,16 +160,25 @@ Item {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        cursorShape: Qt.PointingHandCursor
+    ToolTip {
+        id: tooltip
+        visible: root.hovered
+        opacity: visible ? 1.0 : 0.0
+        text: root.url
+        delay: 500
 
-        onPressed: (e) => e.accepted = false
-        onReleased: (e) => e.accepted = false
-        onClicked: (e) => e.accepted = false
-        onDoubleClicked: (e) => e.accepted = false
-        onPressAndHold: (e) => e.accepted = false
-        onWheel: (e) => e.accepted = false
-        onPositionChanged: (e) => e.accepted = false
+        Behavior on opacity {
+            NumberAnimation { duration: 200 }
+        }
+
+        contentItem: Text {
+            text: tooltip.text
+            color: "#cfcfcf"
+        }
+
+        background: Rectangle {
+            color: Qt.rgba(0.12, 0.12, 0.12)
+            radius: 5
+        }
     }
 }

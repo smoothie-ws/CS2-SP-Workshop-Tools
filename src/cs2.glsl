@@ -4,6 +4,8 @@ import lib-utils.glsl
 import lib-sampler.glsl
 import lib-normal.glsl
 
+#define specLevel 0.5
+
 #define SO 0 // Solid Color
 #define HY 1 // Hydrographic
 #define SP 2 // Spray-Paint
@@ -18,14 +20,14 @@ import lib-normal.glsl
 //:  "custom-ui" : "cs2/main.qml"
 //: }
 
-// Grunge Textures
+// Grunge Textures ------------------------------------------------ //
 
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D uGrungeTex;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D uScratchesTex;
 
-// Weapon Base Textures
+// Weapon Base Textures ------------------------------------------- //
 
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D uBaseColor;
@@ -38,10 +40,8 @@ uniform sampler2D uBaseSurface;
 //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
 uniform sampler2D uBaseCavity;
 
-// Paint Textures
+// Paint Textures ------------------------------------------------- //
 
-//: param auto channel_specularlevel
-uniform SamplerSparse uMatSpecLevel;
 //: param auto channel_basecolor
 uniform SamplerSparse uMatColor;
 //: param auto channel_roughness
@@ -53,7 +53,7 @@ uniform SamplerSparse uMatAlpha;
 //: param auto channel_user2
 uniform SamplerSparse uMatPearl;
 
-// General
+// General Parameters --------------------------------------------- //
 
 //: param custom { "default": true }
 uniform_specialization bool uLivePreview;
@@ -62,7 +62,7 @@ uniform_specialization bool uPBRValidation;
 //: param custom { "default": 4 }
 uniform_specialization int uFinishStyle;
 
-// Common
+// Common Textures ------------------------------------------------ //
 
 //: param custom { "default": [90, 250] }
 uniform vec2 uPBRRange;
@@ -99,6 +99,11 @@ uniform bool uUseCustomAOTex;
 #define uTexScale uTexTransform.z
 #define uTexRotation uTexTransform.w
 
+struct ShaderOutputs {
+    LocalVectors vectors;
+    vec3 color, orm;
+};
+
 vec3 hueShift(vec3 col, float factor) {
     const vec3 w = vec3(0.5, 0.5, 0.5);
     float c = cos(factor);
@@ -110,13 +115,8 @@ vec3 hueShift(vec3 col, float factor) {
 }
 
 vec3 valPBR(vec3 col, float l_min, float l_max) {
-    float lum = dot(linear2sRGB(col), vec3(0.299, 0.587, 0.114)) * 255;
-    if (lum < l_min)
-        return vec3(0.0, 0.0, 1.0);
-    else if (lum > l_max)
-        return vec3(1.0, 0.0, 0.0);
-    else
-        return vec3(0.0);
+    float lum = dot(col, vec3(0.299, 0.587, 0.114)) * 255;
+    return vec3(step(l_max, lum), 0.0, step(lum, l_min));
 }
 
 vec4 tex2D(sampler2D tex_sampler, V2F inputs) {
@@ -127,11 +127,7 @@ vec4 tex2D(SamplerSparse tex_sampler, V2F inputs) {
     return textureSparse(tex_sampler, inputs.sparse_coord);
 }
 
-void applyFinish(V2F inputs) {
-    // replace normals if needed
-    if (!uUseCustomNormal) 
-        inputs.normal = normalize(tex2D(uBaseSurface, inputs).rgb * 2.0 - 1.0);
-
+void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // coord transformation
     float s = sin(uTexRotation);
     float c = cos(uTexRotation);
@@ -140,18 +136,22 @@ void applyFinish(V2F inputs) {
     inputs.sparse_coord.tex_coord += uTexOffset;
 
     // grunge textures
-    vec4 grungeCol = tex2D(uGrungeTex, inputs);
+    vec2 co = inputs.tex_coord;
+    inputs.tex_coord *= 2.0;
+    vec4 grungeCol = sRGB2linear(tex2D(uGrungeTex, inputs));
     float paintWear = tex2D(uScratchesTex, inputs).r;
+    inputs.tex_coord = co;
 
     // material textures
     vec4 matColor = tex2D(uMatColor, inputs);
+    matColor.rgb *= mix(vec3(1.0), grungeCol.rgb, uWearAmt * 2.0);
     matColor.a = tex2D(uMatAlpha, inputs).r;
     float matRough = uUseCustomRough ? tex2D(uMatRough, inputs).r : uPaintRoughness;
     float matPearl = uUsePearlMask ? tex2D(uMatPearl, inputs).r : 1.0;
 
     // base textures
     vec3 baseColor = sRGB2linear(tex2D(uBaseColor, inputs).rgb);
-    vec2 baseCavity = tex2D(uBaseCavity, inputs).rg;
+    vec3 baseCavity = sRGB2linear(tex2D(uBaseCavity, inputs).rgb);
     float baseRough = tex2D(uBaseRough, inputs).r;
 
     vec3 masks = (uUseCustomMasks ? tex2D(uMatMasks, inputs) : tex2D(uBaseMasks, inputs)).rgb;
@@ -159,11 +159,11 @@ void applyFinish(V2F inputs) {
     float curv = baseCavity.r;
     float ao = baseCavity.g;
 
-    // Wear
+    // Paint Wear ----------------------------------------------------- //
 
-    float paintBlend = 0.0;
+    float paintBlend = baseCavity.b;
     if (uFinishStyle != AQ) {
-        paintBlend = paintWear * curv;
+        paintBlend += paintWear * curv;
         paintBlend *= uWearAmt * 6.0 + 1.0;
 
         if (uFinishStyle == HY || uFinishStyle == AM || uFinishStyle == CU || uFinishStyle == GS) {
@@ -205,11 +205,11 @@ void applyFinish(V2F inputs) {
 
     float grunge;
     if (uFinishStyle == AQ || uFinishStyle == GS)
-        grunge = grungeCol.r * grungeCol.g * grungeCol.b;
+        grunge = grungeCol.r * grungeCol.g * grungeCol.b * 0.15;
 
     grungeCol = mix(vec4(1.0), grungeCol, (pow((1.0 - curv), 4.0) * 0.25 + 0.75 * uWearAmt));
 
-    // Paint Color
+    // Paint Color ---------------------------------------------------- //
 
     vec3 paintCol = uCol0;
 
@@ -227,8 +227,8 @@ void applyFinish(V2F inputs) {
         paintCol = mix(paintCol, uCol3, masks.b);
     }
 
-    // TODO: pattern mapping
-
+    // TODO: Spraypaint / Anodized Airbrushed
+    
     // Anodized
     if (uFinishStyle == AN || uFinishStyle == AM || uFinishStyle == AA) {
         if (uFinishStyle == AN)
@@ -248,10 +248,12 @@ void applyFinish(V2F inputs) {
         patinaBlend = smoothstep(0.1, 0.2, patinaBlend * uWearAmt);
 
         float grimeBlend = clamp(curv * ao - uWearAmt * 0.1, 0.0, 1.0) - grunge;
-        grimeBlend = smoothstep(0.0, 0.15, grimeBlend + 0.08);
+        grimeBlend = smoothstep(0.00, 0.15, grimeBlend + 0.08) + 0.08;
 
         vec3 patina = mix(uCol1, uCol2, uWearAmt);
         vec3 grimeCol = mix(uCol1, uCol3, pow(uWearAmt, 0.5));
+        // emissiveColorOutput(grimeCol);
+
         patina = mix(grimeCol, patina, grimeBlend) * matColor.rgb;
         float paintLum = dot(matColor.rgb, vec3(0.3, 0.59, 0.11));
         patina = mix(patina, uCol0 * paintLum, patinaBlend);
@@ -265,43 +267,60 @@ void applyFinish(V2F inputs) {
         }
     }
 
-    vec3 outCol = mix(paintCol, baseColor, paintBlend);
-    float outRough = mix(matRough, baseRough, paintBlend);
-    float specLevel = tex2D(uMatSpecLevel, inputs).r;
+    // Outputs -------------------------------------------------------- //
 
-    vec3 diffColor = generateDiffuseColor(outCol, masks.r);
-    vec3 specColor = generateSpecularColor(specLevel, outCol, masks.r);
-    LocalVectors vectors = computeLocalFrame(inputs);
+    // replace normal if needed
+    if (uUseCustomNormal)
+        outputs.vectors = computeLocalFrame(inputs);
+    else {
+        inputs.normal = normalize(tex2D(uBaseSurface, inputs).rgb * 2.0 - 1.0);
+        outputs.vectors = computeLocalFrame(inputs, inputs.normal, 0.0);
+    }
 
-    float shadow = getShadowFactor();
-    if (uUseCustomAOTex)
-        ao = getAO(inputs.sparse_coord, true);
-    float specOcclusion = specularOcclusionCorrection(ao * shadow, masks.r, outRough);
+    // pearlescence
+    float NdV = max(0.0, dot(outputs.vectors.normal, outputs.vectors.eye));
+    float pearlFactor = uPearlScale * (1.0 - NdV);
+    if (uUsePearlMask)
+        pearlFactor *= tex2D(uMatPearl, inputs).r;
+    paintCol = hueShift(paintCol, pearlFactor);
+    
+    // pbr validation
+    if (uPBRValidation) {
+        vec3 valCol = valPBR(paintCol, uPBRRange.x, uPBRRange.y);
+        paintCol = paintCol * (1.0 - length(valCol));
+        emissiveColorOutput(mix(valCol, vec3(0.0), paintBlend));
+    }
+
+    outputs.color = mix(paintCol, baseColor, paintBlend);
+    // replace occlusion if needed
+    outputs.orm.r = uUseCustomAOTex ? getAO(inputs.sparse_coord, true) : ao;
+    outputs.orm.g = mix(matRough, baseRough, paintBlend);
+    outputs.orm.b = masks.r;
+}
+
+void shadePBR(ShaderOutputs outputs) {
+    float shadow = outputs.orm.r * getShadowFactor();
+    vec3 diffColor = generateDiffuseColor(outputs.color, outputs.orm.b);
+    vec3 specColor = generateSpecularColor(specLevel, outputs.color, outputs.orm.b);
+    float specOcclusion = specularOcclusionCorrection(shadow, outputs.orm.b, outputs.orm.g);
 
     albedoOutput(diffColor);
-    diffuseShadingOutput(ao * shadow * envIrradiance(vectors.normal));
-    specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, outRough));
+    diffuseShadingOutput(shadow * envIrradiance(outputs.vectors.normal));
+    specularShadingOutput(specOcclusion * pbrComputeSpecular(outputs.vectors, specColor, outputs.orm.g));
 }
 
 void shade(V2F inputs) {
+    ShaderOutputs outputs;
+
     if (uLivePreview)
-        applyFinish(inputs);
+        applyFinish(inputs, outputs);
     else {
-        vec3 baseColor = tex2D(uMatColor, inputs).rgb;
-        float roughness = tex2D(uMatRough, inputs).r;
-        float metallic = tex2D(uMatMasks, inputs).r;
-        float specLevel = tex2D(uMatSpecLevel, inputs).r;
-
-        vec3 diffColor = generateDiffuseColor(baseColor, metallic);
-        vec3 specColor = generateSpecularColor(specLevel, baseColor, metallic);
-        LocalVectors vectors = computeLocalFrame(inputs);
-
-        float shadow = getShadowFactor();
-        float ao = getAO(inputs.sparse_coord, true);
-        float specOcclusion = specularOcclusionCorrection(ao * shadow, metallic, roughness);
-
-        albedoOutput(diffColor);
-        diffuseShadingOutput(ao * shadow * envIrradiance(vectors.normal));
-        specularShadingOutput(specOcclusion * pbrComputeSpecular(vectors, specColor, roughness));
+        outputs.vectors = computeLocalFrame(inputs);
+        outputs.color = tex2D(uMatColor, inputs).rgb;
+        outputs.orm.r = getAO(inputs.sparse_coord, true);
+        outputs.orm.g = tex2D(uMatRough, inputs).r;
+        outputs.orm.b = tex2D(uMatMasks, inputs).r;
     }
+
+    shadePBR(outputs);
 }

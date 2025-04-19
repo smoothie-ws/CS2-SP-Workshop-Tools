@@ -1,8 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.0
-import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
-
 
 ComboBox {
     id: root
@@ -38,7 +36,7 @@ ComboBox {
     popup: Popup {
         id: popupMenu
         width: root.width
-        height: 150
+        height: listContent.contentHeight
 
         background: Rectangle {
             color: "#333333"
@@ -51,11 +49,10 @@ ComboBox {
             id: listContent
             model: root.model
             anchors.fill: parent
-            spacing: 0
+            spacing: 5
             clip: true
 
             ScrollBar.vertical: SPScrollBar {
-                id: scrollBar
                 visible: parent.height < parent.contentHeight
             }
 
@@ -89,6 +86,7 @@ ComboBox {
                     id: mouseArea
                     anchors.fill: parent
                     hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
 
                     onEntered: {
                         listItem.color = Qt.rgba(1, 1, 1, 0.05)
@@ -108,5 +106,18 @@ ComboBox {
                 }
             }
         }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        cursorShape: Qt.PointingHandCursor
+
+        onPressed: (e) => e.accepted = false
+        onReleased: (e) => e.accepted = false
+        onClicked: (e) => e.accepted = false
+        onDoubleClicked: (e) => e.accepted = false
+        onPressAndHold: (e) => e.accepted = false
+        onWheel: (e) => e.accepted = false
+        onPositionChanged: (e) => e.accepted = false
     }
 }

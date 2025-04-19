@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.0
+import AlgWidgets 2.0
 import "math.js" as MathUtils
 
 ColumnLayout {
@@ -80,7 +81,7 @@ ColumnLayout {
         id: sliderParameters
         Layout.fillWidth: true
 
-        Label {
+        AlgLabel {
             id: label
             color: "#d0d0d0"
             Layout.fillWidth: true
@@ -135,7 +136,7 @@ ColumnLayout {
         height: 20.0
         spacing: 10.0
 
-        Label {
+        AlgLabel {
             color: "#d0d0d0"
             text: root.from
         }
@@ -256,7 +257,7 @@ ColumnLayout {
             }
         }
 
-        Label {
+        AlgLabel {
             color: "#d0d0d0"
             text: root.to
         }

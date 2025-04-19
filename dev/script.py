@@ -23,14 +23,22 @@ def decompile_vtex(folder: str, name: str, scale: float, tgt_name: str):
         try:
             if (scale != 1.0):
                 img = img.resize((int(img.size[0] * scale), int(img.size[1] * scale)))
-            img = img.convert("RGB")
-            # swap channels
-            if "surface" in name:
+            # swap channels for cavity texture
+            if "cavity" in name:
                 img = Image.merge("RGB", (
-                    img.getchannel(0), 
-                    img.getchannel(2), 
-                    ImageChops.invert(img.getchannel(1))
+                    img.getchannel("R"), 
+                    img.getchannel("G"), 
+                    img.getchannel("A")
                 ))
+            # swap channels for surface texture
+            elif "surface" in name:
+                img = Image.merge("RGB", (
+                    img.getchannel("R"), 
+                    img.getchannel("B"), 
+                    ImageChops.invert(img.getchannel("G"))
+                ))
+            else:
+                img = img.convert("RGB")
             img.save(os.path.join(folder, tgt_name))
         except:
             pass
@@ -58,7 +66,9 @@ def process(w, w_path, mat_path, img_scale, img_format):
             rmdir(wf_path)
         elif "vtex_c" in wf:
             flag = False
-            for tex in ["color", "masks", "cavity", "rough", "surface", "substrate_color"]:
+            for tex in [
+                    "default_color", f'{w}_color', "substrate_color", "masks", "cavity", "rough", "surface"
+                ]:
                 if tex in wf:
                     decompile_vtex(w_path, wf, img_scale, f'{w}_{tex.split("_")[-1]}.{img_format}')
                     flag = True

@@ -24,16 +24,9 @@ Rectangle {
             shader.setValues(alg.project.settings.value("CS2WT"));
         else
             writeDefaults();
-
-        const name = alg.project.lastImportedMeshUrl();
-        if (weaponBox.currentValue != name) {
-            const index = weaponBox.model.findIndex(w => w.value === name);
-            if (index != -1)
-                weaponBox.currentIndex = index;
-        }
-
+        // load textures
         const matPath = `${alg.plugin_root_directory}assets/textures`;
-        shader.parameters["uGrungeTex"].item.url = importTexture(`${matPath}/grunge.png`);
+        shader.parameters["uGrungeTex"].item.url = importTexture(`${matPath}/grunge.tga`);
         shader.parameters["uScratchesTex"].item.url = importTexture(`${matPath}/scratches.png`);
     }
 
@@ -320,10 +313,10 @@ Rectangle {
                     }
 
                     SPParameter {
+                        enabled: enablePBRValidation.checked
                         SPRangeSlider {
                             id: pbrRange
                             text: "PBR Range"
-                            enabled: enablePBRValidation.checked
                             from: 0
                             to: 255
                             pickValue: false
