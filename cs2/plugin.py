@@ -24,12 +24,26 @@ class Plugin:
         if sp.project.is_open():
             self.internal.init_project()
 
-        sp.event.DISPATCHER.connect(sp.event.ProjectOpened, self.on_project_opened)
-        sp.event.DISPATCHER.connect(sp.event.ProjectAboutToClose, self.on_project_about_to_close)
+        connections = {
+            sp.event.ProjectOpened: self.on_project_opened,
+            sp.event.ProjectCreated: self.on_project_created,
+            sp.event.ProjectAboutToSave: self.on_project_about_to_save,
+            sp.event.ProjectAboutToClose: self.on_project_about_to_close
+        }
+        for event, callback in connections.items():
+            sp.event.DISPATCHER.connect(event, callback)
 
     def on_project_opened(self, _):
         self.internal.init_project()
+
+    def on_project_created(self, _):
+        self.internal.init_project()
         
+    def on_project_about_to_save(self, _):
+        project = self.internal.project
+        if project.is_weapon_finish:
+            project.sync_econ()
+
     def on_project_about_to_close(self, _):
         self.internal.projectKindChanged.emit(0)
         

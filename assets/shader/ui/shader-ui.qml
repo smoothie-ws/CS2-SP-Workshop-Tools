@@ -20,8 +20,8 @@ Rectangle {
     Component.onCompleted: {
         shader.connect();
         // load defaults
-        if (alg.project.settings.contains("CS2WT")) 
-            shader.setValues(alg.project.settings.value("CS2WT"));
+        if (alg.project.settings.contains("weapon_finish")) 
+            shader.setValues(alg.project.settings.value("weapon_finish"));
         else
             writeDefaults();
         // load textures
@@ -77,6 +77,7 @@ Rectangle {
             for (const [param, component] of Object.entries(parameters)) 
                 if (param.startsWith("u")) {
                     const cl = alg.shaders.parameter(shaderId, param);
+                    component.item[component.prop] = cl.value;
                     var updating = false;
                     component.item[component.prop + "Changed"].connect(() => {
                         if (!updating) {
@@ -113,8 +114,8 @@ Rectangle {
         }
         
         function reset(param) {
-            if (alg.project.settings.contains("CS2WT"))
-                for (const d of alg.project.settings.value("CS2WT"))
+            if (alg.project.settings.contains("weapon_finish"))
+                for (const d of alg.project.settings.value("weapon_finish"))
                     if (param == d.param) {
                         const component = shader.parameters[d.param];
                         component.item[component.prop] = d.value;
@@ -132,7 +133,7 @@ Rectangle {
     }
 
     function writeDefaults() {
-        alg.project.settings.setValue("CS2WT", shader.getValues());
+        alg.project.settings.setValue("weapon_finish", shader.getValues());
     }
 
     function resetWeapon(name) {

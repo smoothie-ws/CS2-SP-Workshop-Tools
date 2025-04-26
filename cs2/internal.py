@@ -7,6 +7,7 @@ if sp.application.version_info() < (10, 1, 0):
 else:
     from PySide6 import QtCore, QtQml
 
+from .log import Log
 from .project import Project
 from .settings import Settings
 from .decompiler import Decompiler
@@ -14,8 +15,9 @@ from .decompiler import Decompiler
 
 class InternalState:
     Started = 0
-    Decompiling = 1
-    Closed = 2
+    Closed = 1
+    Decompiling = 2
+    CreatingWeaponFinish = 3
 
 
 class Internal(QtCore.QObject):
@@ -45,8 +47,18 @@ class Internal(QtCore.QObject):
             self.texturesAreMissing.emit()
     
     def init_project(self):
-        self.project = Project()
-        self.projectKindChanged.emit(2 if self.project.is_weapon_finish else 1)
+        if not self.state == InternalState.CreatingWeaponFinish:
+            self.project = Project()
+            self.projectKindChanged.emit(2 if self.project.is_weapon_finish else 1)
+
+    def set_up_as_weapon_finish(self, name:str, weapon:str, finish_style:int):
+        def callback(res, msg):
+            if res:
+                self.projectKindChanged.emit(2)
+                Log.warning(msg)
+            else:
+                Log.error(msg)
+        self.project.set_up_as_weapon_finish(name, weapon, finish_style, callback)
 
     def emit_cs2_path_is_missing(self):
         path = os.path.join("C:\\Program Files (x86)", "Steam", "steamapps", "common", "Counter-Strike Global Offensive")
@@ -60,6 +72,7 @@ class Internal(QtCore.QObject):
             if state != "Finished":
                 self.decompilationStateChanged.emit(state)
             else:
+                self.state = InternalState.Started
                 self.decompilationFinished.emit()
         
         self.decompilationStarted.emit()
@@ -104,16 +117,19 @@ class Internal(QtCore.QObject):
         weapon_list:dict = Settings.get("weapon_list")
         return "&".join([f'{key}:{weapon_list.get(key)}' for key in weapon_list.keys()])
     
-    @QtCore.Slot(str, str, int)
-    def createNewWeaponFinish(self, file_path, weapon, finish_style):
-        sp.project.create(
-            file_path,
-
-        )
-        self.init_project()
+    @QtCore.Slot(str, str, str, int)
+    def createWeaponFinish(self, file_path:str, name:str, weapon:str, finish_style:int):
+        def callback(res, msg):
+            self.state = InternalState.Started
+            if res:
+                self.projectKindChanged.emit(2)
+                Log.warning(msg)
+            else:
+                Log.error(msg)
+        self.state = InternalState.CreatingWeaponFinish
+        self.project = Project.create_weapon_finish(file_path, name, weapon, finish_style, callback)
     
-    @QtCore.Slot(str)
-    def openAsWeaponFinish(self, file_path):
-        sp.project.open(file_path)
-        self.init_project()
+    @QtCore.Slot(str, str, int)
+    def setupAsWeaponFinish(self, name:str, weapon:str, finish_style:int):
+        self.set_up_as_weapon_finish(name, weapon, finish_style)
     

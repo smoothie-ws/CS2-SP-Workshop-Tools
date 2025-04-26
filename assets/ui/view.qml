@@ -56,24 +56,9 @@ Rectangle {
                 icon.width: 18
                 icon.height: 18
                 Layout.alignment: Qt.AlignCenter
-                onClicked: newProjectWindow.show()
-            }
-
-            SPButton {
-                text: "Open as Weapon Finish"
-                tooltip.text: "Open an existing project as Weapon Finish"
-                icon.source: "./icons/open.png"
-                icon.width: 18
-                icon.height: 18
-                Layout.alignment: Qt.AlignCenter
-
-                onClicked: projectFileDialog.open()
-
-                SPFileDialog {
-                    id: projectFileDialog
-                    nameFilters: [ "(*.toc *.spp)" ]
-
-                    onAccepted: internal.openAsWeaponFinish(fileUrl.toString().substring(8))
+                onClicked: {
+                    weaponFinishInitWindow.isNew = true;
+                    weaponFinishInitWindow.show();
                 }
             }
         }
@@ -86,6 +71,7 @@ Rectangle {
             Layout.fillHeight: true
 
             Image {
+                id: placeholder
                 width: 512
                 height: width
                 anchors.centerIn: parent
@@ -94,7 +80,7 @@ Rectangle {
                 mipmap: true
 
                 Label {
-                    id: noProjectLabel
+                    id: placeholderLabel
                     text: root.projectKind == 0 ? "No project is opened" : "Opened project is not Weapon Finish"
                     color: "#eaeaea"
                     opacity: 0.5
@@ -113,10 +99,14 @@ Rectangle {
                     icon.source: "./icons/setup.png"
                     icon.width: 18
                     icon.height: 18
-                    anchors.top: noProjectLabel.bottom
+                    anchors.top: placeholderLabel.bottom
                     anchors.topMargin: 15
-                    anchors.horizontalCenter: noProjectLabel.horizontalCenter
-                    onClicked: projectFileDialog.open()
+                    anchors.horizontalCenter: placeholderLabel.horizontalCenter
+
+                    onClicked: {
+                        weaponFinishInitWindow.isNew = false;
+                        weaponFinishInitWindow.show();
+                    }
                 }
             }
         }
@@ -316,7 +306,7 @@ Rectangle {
         }
     }
 
-    NewProjectWindow {
-        id: newProjectWindow
+    WeaponFinishInitWindow {
+        id: weaponFinishInitWindow
     }
 }

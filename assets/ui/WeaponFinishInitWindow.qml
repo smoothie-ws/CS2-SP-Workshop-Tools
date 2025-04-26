@@ -11,13 +11,23 @@ Window {
     height: 300
     modality: Qt.ApplicationModal
     flags: Qt.Window | Qt.CustomizeWindowHint | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
-    title: "New Weapon Finish"
+    title: isNew ? "New Weapon Finish" : "Set up Weapon Finish"
     color: AlgStyle.background.color.mainWindow
 
+    property bool isNew: true
     property string fileUrl: ""
-    property alias finishName: nameInput.text
 
     property real scopeWidth: width * 0.5
+
+    signal proceed(string name, string weapon, int finishStyle, string fileUrl)
+
+    function submit() {
+        if (isNew)
+            internal.createWeaponFinish(fileUrl, nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue)
+        else
+            internal.setupAsWeaponFinish(nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue)
+        close();
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -48,6 +58,7 @@ Window {
 
         SPLabeled {
             text: "Mesh file"
+            visible: root.isNew
             Layout.fillWidth: true
 
             RowLayout {
@@ -137,12 +148,14 @@ Window {
             Item { Layout.fillWidth: true }
 
             SPButton {
-                id: createButton
-                text: "Create"
+                id: proceedButton
+                text: root.isNew ? "Create" : "Proceed"
                 backgroundRect.opacity: hovered ? 1.0 : 0.65
                 backgroundRect.color: "white"
                 label.color: "#262626"
                 Layout.alignment: Qt.AlignHCenter
+
+                onClicked: root.submit()
             }
 
             SPButton {

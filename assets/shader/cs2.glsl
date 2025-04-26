@@ -57,9 +57,9 @@ uniform SamplerSparse uMatPearl;
 
 //: param custom { "default": true }
 uniform_specialization bool uLivePreview;
-//: param custom { "default": true }
+//: param custom { "default": false }
 uniform_specialization bool uPBRValidation;
-//: param custom { "default": 4 }
+//: param custom { "default": 8 }
 uniform_specialization int uFinishStyle;
 
 // Common Textures ------------------------------------------------ //
