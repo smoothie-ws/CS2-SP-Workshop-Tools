@@ -1,4 +1,4 @@
-import QtQuick 2.7
+import QtQuick 2.15
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
 
@@ -16,7 +16,7 @@ RowLayout {
         icon.source: "./icons/cycle.png"
         icon.width: 15
         icon.height: 15
-        tooltipText: "Reset value"
+        tooltip.text: "Reset value"
 
         transform: Rotation { 
             origin.x: resetButton.width * 0.5

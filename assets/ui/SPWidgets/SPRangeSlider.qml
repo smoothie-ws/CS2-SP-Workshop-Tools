@@ -95,7 +95,7 @@ ColumnLayout {
             icon.source: "./icons/clamp.png"
             icon.width: 20
             icon.height: 20
-            tooltipText: "Shrink range to current value"
+            tooltip.text: "Shrink range to current value"
 
             onClicked: {
                 internal.sync(() => {

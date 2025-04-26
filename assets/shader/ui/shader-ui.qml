@@ -1,4 +1,4 @@
-import QtQuick 2.7
+import QtQuick 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.7
 import QtQuick.Window 2.15
@@ -42,7 +42,6 @@ Rectangle {
             "uFinishStyle":           { item: finishStyleBox,         prop: "currentIndex" },
             "uLivePreview":           { item: enableLivePreview,      prop: "checked"      },
             "uPBRValidation":         { item: enablePBRValidation,    prop: "checked"      },
-            "uPBRRange":              { item: pbrRange,               prop: "range"        },
             "uWearAmt":               { item: wearAmount,             prop: "value"        },
             "uTexTransform":          { item: texTransform,           prop: "transform"    },
             "uIgnoreWeaponSizeScale": { item: ignoreTextureSizeScale, prop: "checked"      },
@@ -296,33 +295,19 @@ Rectangle {
                         SPButton {
                             id: randomButton
                             text: "Random"
-                            tooltipText: "Generate random seed number"
+                            tooltip.text: "Generate random seed number"
 
                             onPressed: general.seed = Math.floor(Math.random() * 1000)
                         }
                     }
                 }
 
-                RowLayout {
-                    SPButton {
-                        id: enablePBRValidation
-                        text: "PBR Validation"
-                        checkable: true
-                        implicitWidth: 150
-                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
-                    }
-
-                    SPParameter {
-                        enabled: enablePBRValidation.checked
-                        SPRangeSlider {
-                            id: pbrRange
-                            text: "PBR Range"
-                            from: 0
-                            to: 255
-                            pickValue: false
-                        }
-                        onResetRequested: shader.reset("uPBRRange")
-                    }
+                SPButton {
+                    id: enablePBRValidation
+                    text: "PBR Validation"
+                    checkable: true
+                    implicitWidth: 150
+                    contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                 }
             }
         }
@@ -490,7 +475,7 @@ Rectangle {
                         text: "Ignore Weapon Size Scale"
                         Layout.fillWidth: true
                         checkable: true
-                        tooltipText: "For some finishes, the automatic scale adjustment per-weapon is not desired"
+                        tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
                     onResetRequested: shader.reset("uIgnoreWeaponSizeScale")
@@ -571,7 +556,7 @@ Rectangle {
                             text: finishStyleBox.currentIndex > 6 ? modelData[0].text : modelData[1].text
                             SPColorButton { 
                                 id: colorPicker
-                                tooltipText: finishStyleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
+                                tooltip.text: finishStyleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
                             }
                         }
                         onResetRequested: shader.reset(`uCol${index}`)
@@ -671,7 +656,7 @@ Rectangle {
                             id: advancedControl
                             checkable: true
                             text: modelData.text
-                            tooltipText: `Whether to use ${text.toLowerCase()} or the weapon default one`
+                            tooltip.text: `Whether to use ${text.toLowerCase()} or the weapon default one`
                             Layout.fillWidth: true
                             contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                         }

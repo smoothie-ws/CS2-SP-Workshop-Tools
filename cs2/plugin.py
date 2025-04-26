@@ -4,58 +4,89 @@ import shutil
 import substance_painter as sp
 import substance_painter_plugins as sp_plugins
 
-from .log import Log
 from .ui import UI
+from .log import Log
+from .settings import Settings
+from .internal import Internal, InternalState
+
 
 class Plugin:
-    cs2_path = None
-    plugin_path = None
-    documents_path = None
-
-    @staticmethod
-    def get_asset_path(*path:list) -> str:
-        return os.path.join(Plugin.plugin_path, "assets", *path)
-
     def __init__(self):
-        Plugin.documents_path = sp.js.evaluate("alg.documents_directory")
-        for path in sp_plugins.path:
-            for plugin in os.listdir(os.path.join(path, "plugins")):
-                if plugin == "CS2 Workshop Tools":
-                    Plugin.plugin_path = os.path.join(path, "plugins", plugin)
+        self.internal = None
+        self.ui = UI()
+        self.ui.load(Settings.get_asset_path("ui/view.qml"), self.start, self.fatal)
 
-        self.ui = UI(Plugin.cs2_path, Plugin.get_asset_path("ui/view.qml"), self.start, self.fatal)
-
-    def start(self):
+    def start(self, internal:Internal):
         Log.warning("Plugin started")
-        if not self.checkout():
-            self.ui.request_weapon_textures()
+        self.internal = internal
+        self.internal.state = InternalState.Started
+        self.internal.push_weapon_list(self.checkout())
+        if sp.project.is_open():
+            self.internal.init_project()
 
+        sp.event.DISPATCHER.connect(sp.event.ProjectOpened, self.on_project_opened)
+        sp.event.DISPATCHER.connect(sp.event.ProjectAboutToClose, self.on_project_about_to_close)
+
+    def on_project_opened(self, _):
+        self.internal.init_project()
+        
+    def on_project_about_to_close(self, _):
+        self.internal.projectKindChanged.emit(0)
+        
     def close(self):
+        self.ui.close()
+        if self.internal is not None:
+            self.internal.state = InternalState.Closed
         Log.warning("Plugin closed")
 
     def checkout(self):
-        sp_shaders_path = os.path.join(Plugin.documents_path, "assets", "shaders")
+        # weapon list
+        if not Settings.contains("weapon_list"):
+            Settings.set("weapon_list", Settings.default_weapon_list)
+
+        sp_shaders_path = os.path.join(Settings.documents_path, "assets", "shaders")
         sp_shaders_ui_path = os.path.join(sp_shaders_path, "custom-ui")
-        
-        # shader ui
-        shader_ui_path = Plugin.get_asset_path("shader", "ui")
-        if not os.path.exists(shader_ui_path):
-            shutil.copytree(shader_ui_path, sp_shaders_ui_path)
-            shutil.copytree(Plugin.get_asset_path("ui", "SPWidgets"), os.path.join(sp_shaders_ui_path, "cs2"))
-        
-        # weapon textures
-        if not os.path.exists(os.path.join(shader_ui_path, "assets", "textures", "models")):
-            return False
 
         # shader file
-        shader_path = os.path.join(sp_shaders_path, "cs2.glsl")
-        if not os.path.exists(shader_path):
-            shutil.copyfile(Plugin.get_asset_path("shader", "cs2.glsl"), shader_path)
+        if not os.path.exists(os.path.join(sp_shaders_path, "cs2.glsl")):
+            shelf = sp.resource.Shelf("your_assets")
+            shader_path = Settings.get_asset_path("shader", "cs2.glsl")
+            shader_resource = shelf.import_resource(shader_path, sp.resource.Usage.SHADER)
+            shader_resource.set_custom_preview(Settings.get_asset_path("ui", "icons", "logo_shader.png"))
 
-        return True
+        # shader ui
+        shader_ui_path = Settings.get_asset_path("shader", "ui")
+        sp_shader_ui_path = os.path.join(sp_shaders_ui_path, "cs2")
+        if not os.path.exists(sp_shader_ui_path):
+            shutil.copytree(shader_ui_path, sp_shader_ui_path)
+        # spwidgets
+        spwidgets_path = os.path.join(sp_shader_ui_path, "SPWidgets")
+        if not os.path.exists(spwidgets_path):
+            shutil.copytree(Settings.get_asset_path("ui", "SPWidgets"), spwidgets_path)
 
+        # textures
+        tex_path = os.path.join(sp_shader_ui_path, "assets", "textures")
+        if not os.path.exists(tex_path):
+            shutil.copytree(os.path.join(shader_ui_path, "assets", "textures"), tex_path)
+            
+        # weapon textures
+        weapon_list:dict = Settings.get("weapon_list")
+        models_path = os.path.join(sp_shader_ui_path, "assets", "textures", "models")
+        if os.path.exists(models_path):
+            weapons = os.listdir(models_path)
+            for weapon in weapons:
+                weapon_path = os.path.join(models_path, weapon)
+                if (os.path.exists(os.path.join(weapon_path, f'{weapon}_color.png')) and
+                    os.path.exists(os.path.join(weapon_path, f'{weapon}_cavity.png')) and
+                    os.path.exists(os.path.join(weapon_path, f'{weapon}_masks.png')) and
+                    os.path.exists(os.path.join(weapon_path, f'{weapon}_rough.png')) and
+                    os.path.exists(os.path.join(weapon_path, f'{weapon}_surface.png'))):
+                    if weapon_list.get(weapon) is not None:
+                        weapon_list.pop(weapon)
+
+        return weapon_list
 
     def fatal(self, msg:str):
         Log.error("An error occured: " + msg)
         sp_plugins.close_plugin(sys.modules.get(self.__class__.__module__))
-        self.ui.close()
+        self.close()

@@ -1,7 +1,6 @@
-import QtQuick 2.7
+import QtQuick 2.15
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
-import AlgWidgets 2.0
 
 Button {
     id: root
@@ -11,7 +10,9 @@ Button {
     implicitWidth: checker.width + icon.width + label.width + padding * 2.0
 
     property int contentAlignment: Qt.AlignCenter
-    property alias tooltipText: tooltip.text
+    property alias tooltip: tooltip
+    property alias label: label
+    property alias backgroundRect: backgroundRect
 
     onPressed: scale = 0.95
     onReleased: scale = 1.0
@@ -23,12 +24,14 @@ Button {
     }
 
     background: Rectangle {
+        id: backgroundRect
         anchors.fill: parent
-        color: root.hovered ? Qt.rgba(1.0, 1.0, 1.0, 0.1) : Qt.rgba(1.0, 1.0, 1.0, 0.0)
+        opacity: root.hovered ? 0.1 : 0.05
+        color: "white"
         radius: 15
 
-        Behavior on color {
-            ColorAnimation {
+        Behavior on opacity {
+            NumberAnimation {
                 duration: 250
             }
         }
@@ -67,7 +70,7 @@ Button {
                 opacity: root.hovered ? 1.0 : 0.5
             }
 
-            AlgLabel {
+            Label {
                 id: label
                 Layout.fillWidth: true
                 visible: root.text != ""

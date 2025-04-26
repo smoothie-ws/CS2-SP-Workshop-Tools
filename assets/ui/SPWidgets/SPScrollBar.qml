@@ -1,4 +1,4 @@
-import QtQuick 2.7
+import QtQuick 2.15
 import QtQuick.Controls 2.0
 import AlgWidgets.Style 2.0
 
