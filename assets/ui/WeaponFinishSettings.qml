@@ -119,7 +119,7 @@ Rectangle {
             weaponFinish.parameters["uBaseMasks"].item.url = importTexture(`${path}/${name}_masks.png`);
             weaponFinish.parameters["uBaseCavity"].item.url = importTexture(`${path}/${name}_cavity.png`);
         } catch(err) {
-
+            
         }
     }
 
@@ -270,39 +270,21 @@ Rectangle {
             }
         }
 
-        SPGroup {
-            Layout.fillWidth: true
-            toggled: false
-            text: "Default Textures"
-            
-            Repeater {
-                model: [
-                    { param: "uGrungeTex",        text: "Grunge"            },
-                    { param: "uScratchesTex",     text: "Wear"              },
-                    { param: "uBaseColor",        text: "Base Color"        },
-                    { param: "uBaseRough",        text: "Roughness"         },
-                    { param: "uBaseMasks",        text: "Masks"             },
-                    { param: "uBaseSurface",      text: "Surface"           },
-                    { param: "uBaseCavity",       text: "Cavity"            }
-                ]
-                delegate: SPParameter { 
-                    Layout.fillWidth: true
-
-                    property alias control: resourcePicker
-
-                    SPResourcePicker {
-                        id: resourcePicker
-                        label: modelData.text
-                        filters: AlgResourcePicker.TEXTURE
-                        Layout.fillWidth: true
-                    }
-                    
-                    onResetRequested: weaponFinish.reset(modelData.param)
-                }
-
-                onItemAdded: (i, item) => {
-                    weaponFinish.parameters[model[i].param].item = item.control;
-                }
+        Repeater {
+            model: [
+                { param: "uGrungeTex",        text: "Grunge"            },
+                { param: "uScratchesTex",     text: "Wear"              },
+                { param: "uBaseColor",        text: "Base Color"        },
+                { param: "uBaseRough",        text: "Roughness"         },
+                { param: "uBaseMasks",        text: "Masks"             },
+                { param: "uBaseSurface",      text: "Surface"           },
+                { param: "uBaseCavity",       text: "Cavity"            }
+            ]
+            delegate: Item {
+                property string url: ""
+            }
+            onItemAdded: (i, item) => {
+                weaponFinish.parameters[model[i].param].item = item;
             }
         }
 

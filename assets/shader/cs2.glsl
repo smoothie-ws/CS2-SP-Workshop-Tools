@@ -194,7 +194,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // base textures
     vec4 baseColor = sRGB2linear(tex2D(uBaseColor, inputs));
-    vec3 baseCavity = sRGB2linear(tex2D(uBaseCavity, inputs).rgb);
+    vec4 baseCavity = sRGB2linear(tex2D(uBaseCavity, inputs));
     float baseRough = tex2D(uBaseRough, inputs).r;
 
     float curv = baseCavity.r;
@@ -212,7 +212,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // Paint Wear ----------------------------------------------------- //
 
-    float paintBlend = baseCavity.b;
+    float paintBlend = baseCavity.a;
     if (uFinishStyle != AQ) {
         paintBlend += paintWear * curv;
         paintBlend *= uWearAmt * 6.0 + 1.0;
@@ -353,7 +353,13 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     if (uUseCustomNormal)
         outputs.vectors = computeLocalFrame(inputs);
     else {
-        inputs.normal = normalize(linear2sRGB(tex2D(uBaseSurface, inputs).rgb) * 2.0 - 1.0);
+        vec3 baseNormal = tex2D(uBaseSurface, inputs).rgb;
+        // swap channels
+        baseNormal.yz = vec2(
+            baseNormal.z,
+            1.0 - baseNormal.y
+        ); 
+        inputs.normal = normalize(baseNormal * 2.0 - 1.0);
         outputs.vectors = computeLocalFrame(inputs, inputs.normal, 0.0);
     }
 
