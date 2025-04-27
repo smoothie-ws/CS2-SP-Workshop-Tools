@@ -11,34 +11,41 @@ import "./SPWidgets/math.js" as MathUtils
 Rectangle {
     id: root
     color: AlgStyle.background.color.mainWindow
-    height: mainLayout.height
-    onHeightChanged: {
-        if (height != mainLayout.height)
-            height = Qt.binding(() => mainLayout.height);
-    }
+    implicitHeight: mainLayout.height
 
-    Component.onCompleted: {
-        shader.connect();
-        // load defaults
-        if (alg.project.settings.contains("weapon_finish")) 
-            shader.setValues(alg.project.settings.value("weapon_finish"));
-        else
-            writeDefaults();
+    function connectWeaponFinish() {
+        // connect shader
+        for (const [param, component] of Object.entries(weaponFinish.parameters)) 
+            if (param.startsWith("u")) {
+                component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${param}").value`));
+                if (["filePath", "url"].includes(component.prop))
+                    component.item[component.prop + "Changed"].connect(() => 
+                        internal.js(`alg.shaders.parameter(0, "${param}").value = "${component.item[component.prop]}"`)
+                    );
+                else
+                    component.item[component.prop + "Changed"].connect(() =>
+                        internal.js(`alg.shaders.parameter(0, "${param}").value = ${component.item[component.prop]}`)
+                    );
+            }
         // load textures
-        shader.parameters["uGrungeTex"].item.url = importTexture("./assets/textures/grunge.tga");
-        shader.parameters["uScratchesTex"].item.url = importTexture("./assets/textures/scratches.png");
-    }
-
-    PainterPlugin {
-        onProjectAboutToSave: writeDefaults()
+        weaponFinish.parameters["uGrungeTex"].item.url = importTexture(`${internal.pluginPath()}/assets/textures/grunge.tga`);
+        weaponFinish.parameters["uScratchesTex"].item.url = importTexture(`${internal.pluginPath()}/assets/textures/scratches.png`);
+        // load defaults
+        weaponFinish.setValues(alg.project.settings.value("weapon_finish"));
     }
 
     QtObject {
-        id: shader
-
-        property int shaderId: 0
+        id: weaponFinish
 
         property var parameters: {
+            "econfile":               { item: econFile,               prop: "filePath"     },
+            "weapon":                 { item: weaponBox,              prop: "currentIndex" },
+            "wearRange":              { item: wearRange,              prop: "range"        },
+            "texScale":               { item: texScale,               prop: "value"        },
+            "texRotationRange":       { item: texRotation,            prop: "range"        },
+            "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
+            "texOffsetYRange":        { item: texOffsetY,             prop: "range"        },
+            // shader parameters
             "uFinishStyle":           { item: finishStyleBox,         prop: "currentIndex" },
             "uLivePreview":           { item: enableLivePreview,      prop: "checked"      },
             "uPBRValidation":         { item: enablePBRValidation,    prop: "checked"      },
@@ -64,36 +71,6 @@ Rectangle {
             "uUseCustomNormal":       { item: null,                   prop: "checked"      },
             "uUseCustomMasks":        { item: null,                   prop: "checked"      },
             "uUseCustomAOTex":        { item: null,                   prop: "checked"      },
-            // not shader related
-            "weapon":                 { item: weaponBox,              prop: "currentIndex" },
-            "wearRange":              { item: wearRange,              prop: "range"        },
-            "texScale":               { item: texScale,               prop: "value"        },
-            "texRotationRange":       { item: texRotation,            prop: "range"        },
-            "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
-            "texOffsetYRange":        { item: texOffsetY,             prop: "range"        }
-        }
-
-        function connect() {
-            for (const [param, component] of Object.entries(parameters)) 
-                if (param.startsWith("u")) {
-                    const cl = alg.shaders.parameter(shaderId, param);
-                    component.item[component.prop] = cl.value;
-                    var updating = false;
-                    component.item[component.prop + "Changed"].connect(() => {
-                        if (!updating) {
-                            updating = true;
-                            cl.value = component.item[component.prop];
-                            updating = false;
-                        }
-                    });
-                    cl.valueChanged.connect(() => {
-                        if (!updating) {
-                            updating = true;
-                            component.item[component.prop] = cl.value;
-                            updating = false;
-                        }
-                    });
-                }
         }
 
         function getValues() {
@@ -114,36 +91,33 @@ Rectangle {
         }
         
         function reset(param) {
-            if (alg.project.settings.contains("weapon_finish"))
-                for (const d of alg.project.settings.value("weapon_finish"))
+            const settings = JSON.parse(internal.getProjectSettings("weapon_finish"));
+            if (settings !== null)
+                for (const d of settings)
                     if (param == d.param) {
-                        const component = shader.parameters[d.param];
+                        const component = weaponFinish.parameters[d.param];
                         component.item[component.prop] = d.value;
                         break;
                     }
         }
     }
 
-    function displayShaderParameters(shaderId) {
-        shader.shaderId = shaderId;
-    }
-
     function importTexture(url) {
-        return alg.resources.importSessionResource(url, "texture");
+        return JSON.parse(internal.js(`alg.resources.importSessionResource("${url}", "texture")`));
     }
 
     function writeDefaults() {
-        alg.project.settings.setValue("weapon_finish", shader.getValues());
+        internal.setProjectSettings("weapon_finish", JSON.stringify(weaponFinish.getValues()));
     }
 
     function resetWeapon(name) {
-        const path = `${alg.plugin_root_directory}assets/textures/models/${name}`;
+        const path = `${internal.pluginPath()}/assets/textures/models/${name}`;
         try {
-            shader.parameters["uBaseColor"].item.url = importTexture(`${path}/${name}_color.png`);
-            shader.parameters["uBaseRough"].item.url = importTexture(`${path}/${name}_rough.png`);
-            shader.parameters["uBaseSurface"].item.url = importTexture(`${path}/${name}_surface.png`);
-            shader.parameters["uBaseMasks"].item.url = importTexture(`${path}/${name}_masks.png`);
-            shader.parameters["uBaseCavity"].item.url = importTexture(`${path}/${name}_cavity.png`);
+            weaponFinish.parameters["uBaseColor"].item.url = importTexture(`${path}/${name}_color.png`);
+            weaponFinish.parameters["uBaseRough"].item.url = importTexture(`${path}/${name}_rough.png`);
+            weaponFinish.parameters["uBaseSurface"].item.url = importTexture(`${path}/${name}_surface.png`);
+            weaponFinish.parameters["uBaseMasks"].item.url = importTexture(`${path}/${name}_masks.png`);
+            weaponFinish.parameters["uBaseCavity"].item.url = importTexture(`${path}/${name}_cavity.png`);
         } catch(err) {
 
         }
@@ -186,62 +160,45 @@ Rectangle {
         id: mainLayout
         width: root.width
 
-        Item {
+        SPGroup {
+            id: settings
             Layout.fillWidth: true
-            height: layout.height
+            toggled: false
+            text: "Project Settings"
+            
+            SPLabeled {
+                id: econFile
+                text: "Econitem File"
+                visible: root.isNew
+                Layout.fillWidth: true
 
-            RowLayout {
-                id: layout
-                width: parent.width
-                anchors.margins: 10
-                spacing: 10
+                property string filePath: ""
 
-                SPButton {
-                    id: exportButton
+                RowLayout {
                     Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignHCenter
-                    text: "Export to .econitem"
-                    icon.source: "./assets/icons/export.png"
-                    icon.width: 18
-                    icon.height: 18
-
-                    onClicked: {
-                        window.show();
-                        fileDialog.mode = SPFileDialog.SaveFile
-                        fileDialog.title = "Export to .econitem"
-                        fileDialog.open()
+                    
+                    Label {
+                        clip: true
+                        opacity: 0.5
+                        elide: Text.ElideLeft
+                        horizontalAlignment: Text.AlignLeft
+                        text: econFileDialog.fileUrl
+                        color: AlgStyle.text.color.normal
+                        Layout.fillWidth: true
                     }
-                }
 
-                SPButton {
-                    id: importButton
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignHCenter
-                    text: "Import from .econitem"
-                    icon.source: "./assets/icons/import.png"
-                    icon.width: 18
-                    icon.height: 18
+                    SPButton {
+                        text: "Select"
+                        
+                        onClicked: econFileDialog.open()
 
-                    onClicked: {
-                        fileDialog.mode = SPFileDialog.OpenFile
-                        fileDialog.title = "Import from .econitem"
-                        fileDialog.open()
+                        SPFileDialog {
+                            id: econFileDialog
+                            title: "Select file"
+                            nameFilters: [ "CS2 Econ Item (*.econitem)" ]
+                            onAccepted: econFile.filePath = fileUrl.toString().substring(8);
+                        }
                     }
-                }
-            }
-
-            SPFileDialog {
-                id: fileDialog
-                folder: Qt.resolvedUrl("file:///C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive/content/csgo")
-                nameFilters: ["EconItem files (*.econitem)"]
-
-                onAccepted: {
-                    const file = alg.fileIO.open(fileUrl);
-                    // if (mode === SPFileDialog.SaveFile)
-                    //     econExport(file.readAll());
-                    // else
-                    //     econImport(file.readAll())
-                    file.close();
                 }
             }
         }
@@ -340,11 +297,11 @@ Rectangle {
                         Layout.fillWidth: true
                     }
                     
-                    onResetRequested: shader.reset(modelData.param)
+                    onResetRequested: weaponFinish.reset(modelData.param)
                 }
 
                 onItemAdded: (i, item) => {
-                    shader.parameters[model[i].param].item = item.control;
+                    weaponFinish.parameters[model[i].param].item = item.control;
                 }
             }
         }
@@ -456,7 +413,7 @@ Rectangle {
                         to: wearRange.maxValue.toFixed(2)
                         onValueChanged: wearRange.value = value
                     }
-                    onResetRequested: shader.reset("uWearAmt")
+                    onResetRequested: weaponFinish.reset("uWearAmt")
                 }
 
                 SPParameter {
@@ -467,7 +424,7 @@ Rectangle {
                         to: 10
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: shader.reset("texScale")
+                    onResetRequested: weaponFinish.reset("texScale")
                 }
 
                 SPParameter {
@@ -479,7 +436,7 @@ Rectangle {
                         tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: shader.reset("uIgnoreWeaponSizeScale")
+                    onResetRequested: weaponFinish.reset("uIgnoreWeaponSizeScale")
                 }
             }
 
@@ -495,7 +452,7 @@ Rectangle {
                         to: 360
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: shader.reset("texRotationRange")
+                    onResetRequested: weaponFinish.reset("texRotationRange")
                 }
 
                 SPParameter {
@@ -506,7 +463,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: shader.reset("texOffsetXRange")
+                    onResetRequested: weaponFinish.reset("texOffsetXRange")
                 }
 
                 SPParameter {
@@ -517,7 +474,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: shader.reset("texOffsetYRange")
+                    onResetRequested: weaponFinish.reset("texOffsetYRange")
                 }
             }
 
@@ -560,14 +517,14 @@ Rectangle {
                                 tooltip.text: finishStyleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
                             }
                         }
-                        onResetRequested: shader.reset(`uCol${index}`)
+                        onResetRequested: weaponFinish.reset(`uCol${index}`)
                     }
 
                     onItemAdded: (i, item) => {
                         colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, item.scopeWidth);
                         item.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
-                        shader.parameters[`uCol${i}`].item = item;
-                        shader.parameters[`uCol${i}`].item = item;
+                        weaponFinish.parameters[`uCol${i}`].item = item;
+                        weaponFinish.parameters[`uCol${i}`].item = item;
                     }
                 }
             }
@@ -585,8 +542,8 @@ Rectangle {
                         onValueChanged: wearAmount.value = value
                     }
                     onResetRequested: {
-                        shader.reset("wearRange"); 
-                        shader.reset("uWearAmt");
+                        weaponFinish.reset("wearRange"); 
+                        weaponFinish.reset("uWearAmt");
                     }
                 }
 
@@ -600,7 +557,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: shader.reset("uUsePearlMask")
+                    onResetRequested: weaponFinish.reset("uUsePearlMask")
                 }
 
                 SPParameter {
@@ -610,7 +567,7 @@ Rectangle {
                         from: -6
                         to: 6
                     }
-                    onResetRequested: shader.reset("uPearlScale")
+                    onResetRequested: weaponFinish.reset("uPearlScale")
                 }
 
                 SPSeparator { Layout.fillWidth: true }
@@ -623,7 +580,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: shader.reset("uUseCustomRough")
+                    onResetRequested: weaponFinish.reset("uUseCustomRough")
                 }
                     
                 SPParameter {
@@ -634,7 +591,7 @@ Rectangle {
                         from: 0
                         to: 1
                     }
-                    onResetRequested: shader.reset("uPaintRoughness")
+                    onResetRequested: weaponFinish.reset("uPaintRoughness")
                 }
             }
 
@@ -662,28 +619,14 @@ Rectangle {
                             contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                         }
 
-                        onResetRequested: shader.reset(modelData.param)
+                        onResetRequested: weaponFinish.reset(modelData.param)
                     }
 
                     onItemAdded: (i, item) => {
-                        shader.parameters[model[i].param].item = item.control;
+                        weaponFinish.parameters[model[i].param].item = item.control;
                     }
                 }
             }
-        }
-
-        SPSeparator { Layout.fillWidth: true }
-        
-        Text {
-            id: footer
-            Layout.fillWidth: true
-            horizontalAlignment: Text.AlignHCenter
-            textFormat: Text.RichText
-            font.pixelSize: 11
-            color: Qt.rgba(0.8, 0.8, 0.8, 1.0)
-            text: "Created by <a href=\"https://steamcommunity.com/id/smoothie-ws/\">smoothie</a>"
-
-            onLinkActivated: Qt.openUrlExternally(link)
         }
     }
 }

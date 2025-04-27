@@ -22,11 +22,11 @@ Window {
     signal proceed(string name, string weapon, int finishStyle, string fileUrl)
 
     function submit() {
+        close();
         if (isNew)
             internal.createWeaponFinish(fileUrl, nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue)
         else
             internal.setupAsWeaponFinish(nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue)
-        close();
     }
 
     ColumnLayout {
@@ -67,7 +67,7 @@ Window {
                 Label {
                     text: root.fileUrl
                     clip: true
-                    color: "#eaeaea"
+                    color: AlgStyle.text.color.normal
                     opacity: 0.5
                     elide: Text.ElideLeft
                     horizontalAlignment: Text.AlignLeft
@@ -163,7 +163,7 @@ Window {
                 text: "Cancel"
                 backgroundRect.opacity: hovered ? 0.75 : 0.25
                 backgroundRect.color: "black"
-                label.color: "#eaeaea"
+                label.color: AlgStyle.text.color.normal
                 Layout.alignment: Qt.AlignHCenter
 
                 onClicked: root.close()

@@ -3,6 +3,8 @@ import QtQuick.Window 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.15
 import QtGraphicalEffects 1.15
+import Painter 1.0
+import AlgWidgets.Style 2.0
 import "./SPWidgets"
 
 Rectangle {
@@ -21,7 +23,7 @@ Rectangle {
     // 2 - weapon finish project
     property int projectKind: 0
     readonly property bool busy: texturesAreMissingPopup.opened || cs2PathIsMissingPopup.opened || decompilingProgressPopup.opened
-
+    
     Connections {
         target: internal
         onTexturesAreMissing: texturesAreMissingPopup.open()
@@ -33,16 +35,20 @@ Rectangle {
         onDecompilationStateChanged: state => decompilingProgressPopup.decompilationState = state;
         onDecompilationUpdated: (progress, weapon) => decompilingProgressPopup.update(progress, weapon)
         onDecompilationFinished: decompilingProgressPopup.close()
-        onProjectKindChanged: projectKind => root.projectKind = projectKind
+        onProjectKindChanged: projectKind => {
+            root.projectKind = projectKind;
+            if (projectKind == 2)
+                weaponFinishSettings.connectWeaponFinish(0);
+        }
     }
 
-    // main layout
+    // main
     ColumnLayout {
         anchors.fill: root
         anchors.margins: 10
         spacing: 10
 
-        // header layout
+        // header
         RowLayout {
             id: header
             Layout.fillWidth: true
@@ -63,6 +69,7 @@ Rectangle {
             }
         }
 
+        // main
         Rectangle {
             color: "#333333"
             radius: 10
@@ -70,26 +77,31 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            Image {
+            ScrollView {
+                anchors.fill: parent
+                clip: true
+                
+                WeaponFinishSettings {
+                    id: weaponFinishSettings
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    anchors.rightMargin: 15
+                    enabled: root.projectKind == 2
+                }
+            }
+
+            ColumnLayout {
                 id: placeholder
-                width: 512
-                height: width
-                anchors.centerIn: parent
+                anchors.fill: parent
+                spacing: 20
                 visible: root.projectKind != 2
-                source: "./icons/logo_gs.png"
-                mipmap: true
 
                 Label {
-                    id: placeholderLabel
                     text: root.projectKind == 0 ? "No project is opened" : "Opened project is not Weapon Finish"
-                    color: "#eaeaea"
-                    opacity: 0.5
+                    color: AlgStyle.text.color.normal
                     font.pixelSize: 22
-                    anchors.top: parent.bottom
-                    anchors.topMargin: -parent.height * 0.1
-                    anchors.left: parent.left
-                    anchors.right: parent.right
                     horizontalAlignment: Text.AlignHCenter
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
                 }
                 
                 SPButton {
@@ -99,14 +111,39 @@ Rectangle {
                     icon.source: "./icons/setup.png"
                     icon.width: 18
                     icon.height: 18
-                    anchors.top: placeholderLabel.bottom
-                    anchors.topMargin: 15
-                    anchors.horizontalCenter: placeholderLabel.horizontalCenter
+                    Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
 
                     onClicked: {
+                        var screenPosition = parent.mapToGlobal(x, y);
                         weaponFinishInitWindow.isNew = false;
+                        weaponFinishInitWindow.x = screenPosition.x;
+                        weaponFinishInitWindow.y = screenPosition.y;
                         weaponFinishInitWindow.show();
                     }
+                }
+            }
+        }
+
+        // footer 
+        Item {
+            id: footer
+            Layout.fillWidth: true
+            Layout.preferredHeight: 45
+
+            ColumnLayout {
+                anchors.fill: parent
+
+                RowLayout {
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    id: versionLabel
+                    text: `v${internal.pluginVersion()}`
+                    color: AlgStyle.text.color.normal
+                    opacity: 0.5
+                    horizontalAlignment: Text.AlignHCenter
+                    Layout.fillWidth: true
                 }
             }
         }
@@ -129,15 +166,16 @@ Rectangle {
         content: Rectangle {
             radius: 10
             width: 400
-            height: 150
+            height: 155
             color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
             
             Text {
                 anchors.fill: parent
                 anchors.margins: 15
-                color: "#eaeaea"
+                color: AlgStyle.text.color.normal
                 wrapMode: Text.WordWrap
                 textFormat: Text.RichText
+                lineHeight: 1.4
                 text: "
                     <p>
                         Base weapon textures are required by the shader to calculate paint wear, dirt, and other effects.
@@ -173,19 +211,19 @@ Rectangle {
             width: 400
             
             Text {
-                color: "#eaeaea"
+                color: AlgStyle.text.color.normal
                 wrapMode: Text.WordWrap
                 textFormat: Text.RichText
                 Layout.fillWidth: true
                 text: "
                     <p>
-                        Base weapon textures are required by the shader to calculate paint wear, dirt, and other effects.
+                        Counter-Strike 2 path is used to automatically save .econitem files associated with weapon finishes and fast texture exporting.
                     </p>
                     <p>
-                        If you have Counter-Strike 2 installed on your computer, you can automatically decompile the textures by clicking <b>\"Decompile now\"</b>.
+                        If you have Counter-Strike 2 installed on your computer, you can provide path to its folder location.
                     </p>
                     <p>
-                        Otherwise, click <b>\"Dismiss\"</b>. In that case, you will need to provide the textures manually.
+                        You can change the path at any time in the plugin settings menu.
                     </p>
                 "
             }
@@ -261,12 +299,12 @@ Rectangle {
 
                 Label {
                     text: `${decompilingProgressPopup.decompilationState}...`
-                    color: "#eaeaea"
+                    color: AlgStyle.text.color.normal
                     Layout.fillWidth: true
                 }
 
                 Label {
-                    color: "#eaeaea"
+                    color: AlgStyle.text.color.normal
                     text: `${parseInt(decompilingProgressPopup.progress * 100)}%`
                 }
             }
@@ -281,7 +319,7 @@ Rectangle {
                     height: parent.height
                     radius: parent.radius
                     width: Math.max(height, decompilingProgressPopup.progress * parent.width)
-                    color: "#eaeaea"
+                    color: AlgStyle.text.color.normal
                 }
             }
             
@@ -297,7 +335,7 @@ Rectangle {
 
                     Text {
                         text: decompilingProgressPopup.log
-                        color: "#eaeaea"
+                        color: AlgStyle.text.color.normal
                         anchors.fill: parent
                         anchors.margins: 10
                     }

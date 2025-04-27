@@ -1,4 +1,5 @@
 import os
+import json
 import substance_painter as sp
 
 # Qt5 vs Qt6 check
@@ -8,7 +9,7 @@ else:
     from PySide6 import QtCore, QtQml
 
 from .log import Log
-from .project import Project
+from .project import Project, ProjectSettings
 from .settings import Settings
 from .decompiler import Decompiler
 
@@ -16,8 +17,9 @@ from .decompiler import Decompiler
 class InternalState:
     Started = 0
     Closed = 1
-    Decompiling = 2
-    CreatingWeaponFinish = 3
+    Preparing = 2
+    Decompiling = 3
+    CreatingWeaponFinish = 4
 
 
 class Internal(QtCore.QObject):
@@ -39,12 +41,7 @@ class Internal(QtCore.QObject):
         self.root.setContextProperty("internal", self)
 
         self.project = None
-        self.weapon_list = {}
-    
-    def push_weapon_list(self, weapon_list:dict):
-        if len(weapon_list) > 0 and Settings.get("ignore_textures_are_missing") is not True:
-            self.weapon_list = weapon_list
-            self.texturesAreMissing.emit()
+        self.missing_weapon_list = {}
     
     def init_project(self):
         if not self.state == InternalState.CreatingWeaponFinish:
@@ -60,6 +57,10 @@ class Internal(QtCore.QObject):
                 Log.error(msg)
         self.project.set_up_as_weapon_finish(name, weapon, finish_style, callback)
 
+    def emit_textures_are_missing(self):
+        if len(self.missing_weapon_list) > 0 and not Settings.get("ignore_textures_are_missing"):
+            self.texturesAreMissing.emit()
+    
     def emit_cs2_path_is_missing(self):
         path = os.path.join("C:\\Program Files (x86)", "Steam", "steamapps", "common", "Counter-Strike Global Offensive")
         if os.path.exists(path):
@@ -78,17 +79,33 @@ class Internal(QtCore.QObject):
         self.decompilationStarted.emit()
         Decompiler.decompile(
             os.path.join(cs2_path, "game", "csgo", "pak01_dir.vpk"), 
-            os.path.join(Settings.documents_path, "assets", "shaders", "custom-ui", "cs2", "assets", "textures"),
-            self.weapon_list,
+            Settings.get_asset_path("textures"),
+            self.missing_weapon_list,
             state_changed,
             self.decompilationUpdated.emit
         )
 
     # Slots
 
-    @QtCore.Slot()
-    def ignoreTexturesMissing(self):
-        Settings.set("ignore_textures_are_missing", True)
+    @QtCore.Slot(str)
+    def log(self, msg:str):
+        return Log.info(msg)
+
+    @QtCore.Slot(result=str)
+    def pluginVersion(self):
+        return Settings.plugin_version
+    
+    @QtCore.Slot(result=str)
+    def pluginPath(self):
+        return Settings.plugin_path
+
+    @QtCore.Slot(result=int)
+    def getState(self):
+        return self.state
+
+    @QtCore.Slot(bool)
+    def ignoreTexturesMissing(self, ignore:bool):
+        Settings.set("ignore_textures_are_missing", ignore)
 
     @QtCore.Slot()
     def startTexturesDecompilation(self):
@@ -129,7 +146,18 @@ class Internal(QtCore.QObject):
         self.state = InternalState.CreatingWeaponFinish
         self.project = Project.create_weapon_finish(file_path, name, weapon, finish_style, callback)
     
-    @QtCore.Slot(str, str, int)
-    def setupAsWeaponFinish(self, name:str, weapon:str, finish_style:int):
-        self.set_up_as_weapon_finish(name, weapon, finish_style)
+    @QtCore.Slot(str, result=str)
+    def js(self, code:str):
+        try:
+            return json.dumps(sp.js.evaluate(code))
+        except Exception as e:
+            print(e, code)
+
+    @QtCore.Slot(str, result=str)
+    def getProjectSettings(self, key:str):
+        return json.dumps(ProjectSettings.get(key))
+    
+    @QtCore.Slot(str)
+    def setProjectSettings(self, key:str, value:str):
+        return ProjectSettings.set(key, json.loads(value))
     

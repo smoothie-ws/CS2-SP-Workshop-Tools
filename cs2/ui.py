@@ -14,27 +14,29 @@ from .settings import Settings
 class UI:
     def __init__(self):
         self.widgets = []
+        self.view = QtQuick.QQuickView()
+        self.view.setResizeMode(QtQuick.QQuickView.SizeRootObjectToView)
+        # connect
+        self.internal = Internal(self.view.engine().rootContext())
     
     def load(self, qml_path:str, callback, error_callback):
-        view = QtQuick.QQuickView()
-        view.statusChanged.connect(lambda status: self.start(status, view, callback, error_callback))
-        view.setResizeMode(QtQuick.QQuickView.SizeRootObjectToView)
         if QtCore.QFile.exists(qml_path):
-            view.setSource(QtCore.QUrl.fromLocalFile(qml_path))
+            self.view.statusChanged.connect(
+                lambda status: self.start(status, callback, error_callback)
+            )
+            self.view.setSource(QtCore.QUrl.fromLocalFile(qml_path))
 
-    def start(self, status:int, view:QtQuick.QQuickView, callback, error_callback):
+    def start(self, status:int, callback, error_callback):
         if status  == QtQuick.QQuickView.Ready:
-            # connect
-            internal = Internal(view.engine().rootContext())
             # add dock widget
-            container = QtWidgets.QWidget.createWindowContainer(view)
+            container = QtWidgets.QWidget.createWindowContainer(self.view)
             container.setWindowTitle("CS2 Workshop Tools")
             container.setObjectName("CS2WT")
             container.setWindowIcon(QtGui.QIcon(Settings.get_asset_path(os.path.join("ui", "icons", "logo.png"))))
             self.widgets.append(sp.ui.add_dock_widget(container))
-            callback(internal)
+            callback()
         else:
-            error_callback(str([e.toString() for e in view.errors()]))
+            error_callback(str([e.toString() for e in self.view.errors()]))
 
     def close(self):
         for widget in self.widgets:

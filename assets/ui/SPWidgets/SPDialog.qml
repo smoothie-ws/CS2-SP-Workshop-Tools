@@ -73,7 +73,7 @@ Item {
 
                 Label {
                     id: popupTitle
-                    color: "#eaeaea"
+                    color: AlgStyle.text.color.normal
                     font.pixelSize: 13
                     font.bold: true
                     verticalAlignment: Text.AlignVCenter
@@ -135,7 +135,7 @@ Item {
                     text: "Cancel"
                     backgroundRect.opacity: hovered ? 0.75 : 0.25
                     backgroundRect.color: "black"
-                    label.color: "#eaeaea"
+                    label.color: AlgStyle.text.color.normal
                     Layout.alignment: Qt.AlignHCenter
 
                     onClicked: root.submit(false)

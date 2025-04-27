@@ -8,90 +8,76 @@ class Settings:
     path = None
     plugin_path = None
     documents_path = None
-    default_weapon_list = {
-        "ak47": "AK-47", 
-        "aug": "AUG", 
-        "awp": "AWP", 
-        "bizon": "PP-Bizon", 
-        "cz75a": "CZ75-Auto", 
-        "deagle": "Desert Eagle", 
-        "elite": "Dual Berettas", 
-        "famas": "FAMAS", 
-        "fiveseven": "Five-SeveN", 
-        "glock18": "Glock-18", 
-        "g3sg1": "G3SG1", 
-        "galilar": "Galil AR", 
-        "mac10": "MAC-10", 
-        "m249": "M249", 
-        "m4a1_silencer": "M4A1-S", 
-        "m4a4": "M4A4", 
-        "mag7": "MAG-7", 
-        "mp5sd": "MP5-SD", 
-        "mp7": "MP7", 
-        "mp9": "MP9", 
-        "negev": "Negev", 
-        "nova": "Nova", 
-        "hkp2000": "P2000", 
-        "p250": "P250", 
-        "p90": "P90", 
-        "revolver": "R8 Revolver", 
-        "sawedoff": "Sawed-Off", 
-        "scar20": "SCAR-20", 
-        "sg556": "SG 553", 
-        "ssg08": "SSG 08", 
-        "tec9": "Tec-9", 
-        "ump45": "UMP-45", 
-        "usp_silencer": "USP-S", 
-        "xm1014": "XM1014", 
-        "taser": "Zeus x27"
-    }
+
+    plugin_version: str = None
+    plugin_settings: dict = None
+
+    @staticmethod
+    def _init():
+        # init paths
+        for path in sp_plugins.path:
+            for plugin in os.listdir(os.path.join(path, "plugins")):
+                if plugin == "CS2 Workshop Tools":
+                    Settings.plugin_path = os.path.join(path, "plugins", plugin).replace("\\", "/")
+        Settings.documents_path = sp.js.evaluate("alg.documents_directory")
+        Settings.path = os.path.join(Settings.plugin_path, "plugin.json")
+
+        # load data
+        data = {}
+        if os.path.exists(Settings.path):
+            try:
+                with open(Settings.path, "r", encoding="utf-8") as f:
+                    data = json.loads(f.read())
+            except:
+                pass
+        Settings.plugin_version = data.get("version", "0.0.1a")
+        Settings.plugin_settings = data.get("settings")
+        if Settings.plugin_settings is None:
+            Settings.reset()
+
+    @staticmethod
+    def dump():
+        with open(Settings.path, "w", encoding="utf-8") as f:
+            json.dump({
+                "version": Settings.plugin_version,
+                "settings": Settings.plugin_settings
+            }, f, indent=4, ensure_ascii=False)
+
+    @staticmethod
+    def reset():
+        defaults_path = os.path.join(Settings.plugin_path, "default_settings.json")
+        if os.path.exists(defaults_path):
+            try:
+                with open(defaults_path, "r", encoding="utf-8") as f:
+                    Settings.plugin_settings = json.loads(f.read())
+            except:
+                pass
 
     @staticmethod
     def get_asset_path(*path:list) -> str:
         return os.path.join(Settings.plugin_path, "assets", *path)
 
     @staticmethod
-    def write(settings:dict):
-        with open(Settings.path, "w") as f:
-            f.write(json.dumps(settings))
-    
-    @staticmethod
     def keys() -> dict:
-        if os.path.exists(Settings.path):
-            with open(Settings.path, "r") as f:
-                content = f.read()
-        else:
-            content = "{}"
-        return json.loads(content)
+        return Settings.plugin_settings
     
     @staticmethod
     def clear():
-        Settings.write("{}")
+        Settings.plugin_settings = {}
     
     @staticmethod
     def contains(key:str):
-        return Settings.get(key) is not None
+        return Settings.plugin_settings.get(key) is not None
     
     @staticmethod
     def remove(key:str):
-        settings = Settings.keys()
-        settings.pop(key)
-        Settings.write(settings)
+        Settings.plugin_settings.pop(key)
     
     @staticmethod
-    def get(key:str):
-        return Settings.keys().get(key)
+    def get(key:str, default=None):
+        return Settings.plugin_settings.get(key, default)
     
     @staticmethod
     def set(key:str, value):
-        settings = Settings.keys()
-        settings[key] = value
-        Settings.write(settings)
-
-
-for path in sp_plugins.path:
-    for plugin in os.listdir(os.path.join(path, "plugins")):
-        if plugin == "CS2 Workshop Tools":
-            Settings.plugin_path = os.path.join(path, "plugins", plugin)
-Settings.documents_path = sp.js.evaluate("alg.documents_directory")
-Settings.path = os.path.join(Settings.plugin_path, "settings.json")
+        Settings.plugin_settings[key] = value
+    

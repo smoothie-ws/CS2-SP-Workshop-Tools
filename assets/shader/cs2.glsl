@@ -17,7 +17,7 @@ import lib-normal.glsl
 #define GS 8 // Gunsmith
 
 //: metadata {
-//:  "custom-ui" : "cs2/shader-ui.qml"
+//:  "custom-ui" : "cs2-ui.qml"
 //: }
 
 // Grunge Textures ------------------------------------------------ //
@@ -62,7 +62,7 @@ uniform_specialization bool uPBRValidation;
 //: param custom { "default": 8 }
 uniform_specialization int uFinishStyle;
 
-// Common Textures ------------------------------------------------ //
+// Common Parameters ---------------------------------------------- //
 
 //: param custom { "default": 0.00 }
 uniform float uWearAmt;

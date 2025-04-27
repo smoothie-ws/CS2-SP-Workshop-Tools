@@ -1,69 +1,48 @@
 class WeaponFinish:
-    def __init__(self,
-                 name:str,
-                 weapon:str,
-                 finish_style:str,
-                 tex_scale:float,
-                 ignore_weapon_size_scale:bool,
-                 tex_rotation:list,
-                 tex_offsetx:list,
-                 tex_offsety:list,
-                 color0:list,
-                 color1:list,
-                 color2:list,
-                 color3:list,
-                 wear:list,
-                 custom_pearl_mask:bool,
-                 pearl_scale:float,
-                 custom_rough_tex:bool,
-                 rough:float,
-                 custom_normal_map:bool,
-                 custom_mat_mask:bool,
-                 custom_ao_tex:bool,
-                 ):
-        self.name = name
-        self.weapon = weapon
-        self.finish_style = finish_style
-        self.tex_scale = tex_scale
-        self.ignore_weapon_size_scale = ignore_weapon_size_scale
-        self.tex_rotation = tex_rotation
-        self.tex_offsetx = tex_offsetx
-        self.tex_offsety = tex_offsety
-        self.color0 = color0
-        self.color1 = color1
-        self.color2 = color2
-        self.color3 = color3
-        self.wear = wear
-        self.custom_pearl_mask = custom_pearl_mask
-        self.pearl_scale = pearl_scale
-        self.custom_rough_tex = custom_rough_tex
-        self.rough = rough
-        self.custom_normal_map = custom_normal_map
-        self.custom_mat_mask = custom_mat_mask
-        self.custom_ao_tex = custom_ao_tex
-
-    def __str__(self):
+    @staticmethod
+    def format(
+		name:str,
+		weapon:str,
+		finish_style:str,
+		tex_scale:float,
+		ignore_weapon_size_scale:bool,
+		tex_rotation:list,
+		tex_offsetx:list,
+		tex_offsety:list,
+		color0:list,
+		color1:list,
+		color2:list,
+		color3:list,
+		wear:list,
+		custom_pearl_mask:bool,
+		pearl_scale:float,
+		custom_rough_tex:bool,
+		rough:float,
+		custom_normal_map:bool,
+		custom_mat_mask:bool,
+		custom_ao_tex:bool
+        ):
         return ECON_TEMPLATE.format(
-            name=self.name,
-            weapon=self.weapon,
-            finish_style=self.finish_style,
-            tex_scale=self.tex_scale,
-            ignore_weapon_size_scale=self.ignore_weapon_size_scale,
-            tex_rotation=self.tex_rotation,
-            tex_offsetx=self.tex_offsetx,
-            tex_offsety=self.tex_offsety,
-            color0=self.color0,
-            color1=self.color1,
-            color2=self.color2,
-            color3=self.color3,
-            wear=self.wear,
-            custom_pearl_mask=self.custom_pearl_mask,
-            pearl_scale=self.pearl_scale,
-            custom_rough_tex=self.custom_rough_tex,
-            rough=self.rough,
-            custom_normal_map=self.custom_normal_map,
-            custom_mat_mask=self.custom_mat_mask,
-            custom_ao_tex=self.custom_ao_tex
+            name=name,
+            weapon=weapon,
+            finish_style=finish_style,
+            tex_scale=tex_scale,
+            ignore_weapon_size_scale=ignore_weapon_size_scale,
+            tex_rotation=tex_rotation,
+            tex_offsetx=tex_offsetx,
+            tex_offsety=tex_offsety,
+            color0=color0,
+            color1=color1,
+            color2=color2,
+            color3=color3,
+            wear=wear,
+            custom_pearl_mask=custom_pearl_mask,
+            pearl_scale=pearl_scale,
+            custom_rough_tex=custom_rough_tex,
+            rough=rough,
+            custom_normal_map=custom_normal_map,
+            custom_mat_mask=custom_mat_mask,
+            custom_ao_tex=custom_ao_tex
         )
 
 
