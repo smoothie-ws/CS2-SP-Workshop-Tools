@@ -34,6 +34,13 @@ Rectangle {
         weaponFinish.setValues(alg.project.settings.value("weapon_finish"));
     }
 
+    PainterPlugin {
+        onProjectAboutToSave: {
+            internal.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(weaponFinish.getValues())})`)
+            internal.info(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+        }
+    }
+
     QtObject {
         id: weaponFinish
 
@@ -74,12 +81,9 @@ Rectangle {
         }
 
         function getValues() {
-            var values = []
+            var values = {}
             for (const [param, component] of Object.entries(parameters))
-                values.push({
-                    param: param, 
-                    value: component.item[component.prop]
-                });
+                values[param] = component.item[component.prop];
             return values;
         }
 
@@ -91,7 +95,7 @@ Rectangle {
         }
         
         function reset(param) {
-            const settings = JSON.parse(internal.getProjectSettings("weapon_finish"));
+            const settings = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
             if (settings !== null)
                 for (const d of settings)
                     if (param == d.param) {
@@ -104,10 +108,6 @@ Rectangle {
 
     function importTexture(url) {
         return JSON.parse(internal.js(`alg.resources.importSessionResource("${url}", "texture")`));
-    }
-
-    function writeDefaults() {
-        internal.setProjectSettings("weapon_finish", JSON.stringify(weaponFinish.getValues()));
     }
 
     function resetWeapon(name) {
@@ -163,9 +163,9 @@ Rectangle {
         SPGroup {
             id: settings
             Layout.fillWidth: true
-            toggled: false
+            expandable: false
             text: "Project Settings"
-            
+
             SPLabeled {
                 id: econFile
                 text: "Econitem File"
@@ -195,6 +195,7 @@ Rectangle {
                         SPFileDialog {
                             id: econFileDialog
                             title: "Select file"
+                            folder: Qt.resolvedUrl(internal.getCs2Path())
                             nameFilters: [ "CS2 Econ Item (*.econitem)" ]
                             onAccepted: econFile.filePath = fileUrl.toString().substring(8);
                         }
@@ -270,21 +271,43 @@ Rectangle {
             }
         }
 
-        Repeater {
-            model: [
-                { param: "uGrungeTex",        text: "Grunge"            },
-                { param: "uScratchesTex",     text: "Wear"              },
-                { param: "uBaseColor",        text: "Base Color"        },
-                { param: "uBaseRough",        text: "Roughness"         },
-                { param: "uBaseMasks",        text: "Masks"             },
-                { param: "uBaseSurface",      text: "Surface"           },
-                { param: "uBaseCavity",       text: "Cavity"            }
-            ]
-            delegate: Item {
-                property string url: ""
-            }
-            onItemAdded: (i, item) => {
-                weaponFinish.parameters[model[i].param].item = item;
+        SPGroup {
+            id: baseTextures
+            Layout.fillWidth: true
+            toggled: false
+            text: "Base Textures"
+
+            Repeater {
+                model: [
+                    { param: "uGrungeTex",        text: "Grunge"            },
+                    { param: "uScratchesTex",     text: "Wear"              },
+                    { param: "uBaseColor",        text: "Base Color"        },
+                    { param: "uBaseRough",        text: "Roughness"         },
+                    { param: "uBaseMasks",        text: "Masks"             },
+                    { param: "uBaseSurface",      text: "Surface"           },
+                    { param: "uBaseCavity",       text: "Cavity"            }
+                ]
+                delegate: SPParameter {
+                    property alias url: resourcePicker.url
+                    property alias scopeWidth: resourceLabel.scopeWidth
+
+                    SPLabeled {
+                        id: resourceLabel
+                        text: modelData.text
+
+                        SPResourcePicker {
+                            id: resourcePicker
+                            Layout.fillWidth: true
+                            filters: AlgResourcePicker.TEXTURE
+                        }
+                    }
+                }
+
+                onItemAdded: (i, item) => {
+                    weaponFinish.parameters[model[i].param].item = item;
+                    settings.scopeWidth = Math.max(settings.scopeWidth, item.scopeWidth);
+                    item.scopeWidth = Qt.binding(() => settings.scopeWidth);
+                }
             }
         }
 
@@ -465,8 +488,6 @@ Rectangle {
                 Layout.fillWidth: true
                 text: "Color"
                 visible: finishStyleBox.currentIndex != 6
-
-                property real scopeWidth: 0.0
 
                 Repeater {
                     model: [

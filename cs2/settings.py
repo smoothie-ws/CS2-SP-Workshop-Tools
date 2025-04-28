@@ -1,7 +1,8 @@
-import os
 import json
 import substance_painter as sp
 import substance_painter_plugins as sp_plugins
+
+from .path import Path
 
 
 class Settings:
@@ -16,15 +17,15 @@ class Settings:
     def _init():
         # init paths
         for path in sp_plugins.path:
-            for plugin in os.listdir(os.path.join(path, "plugins")):
+            for plugin in Path.listdir(Path.join(path, "plugins")):
                 if plugin == "CS2 Workshop Tools":
-                    Settings.plugin_path = os.path.join(path, "plugins", plugin).replace("\\", "/")
+                    Settings.plugin_path = Path.join(path, "plugins", plugin).replace("\\", "/")
         Settings.documents_path = sp.js.evaluate("alg.documents_directory")
-        Settings.path = os.path.join(Settings.plugin_path, "plugin.json")
+        Settings.path = Path.join(Settings.plugin_path, "plugin.json")
 
         # load data
         data = {}
-        if os.path.exists(Settings.path):
+        if Path.exists(Settings.path):
             try:
                 with open(Settings.path, "r", encoding="utf-8") as f:
                     data = json.loads(f.read())
@@ -45,8 +46,8 @@ class Settings:
 
     @staticmethod
     def reset():
-        defaults_path = os.path.join(Settings.plugin_path, "default_settings.json")
-        if os.path.exists(defaults_path):
+        defaults_path = Path.join(Settings.plugin_path, "default_settings.json")
+        if Path.exists(defaults_path):
             try:
                 with open(defaults_path, "r", encoding="utf-8") as f:
                     Settings.plugin_settings = json.loads(f.read())
@@ -55,7 +56,7 @@ class Settings:
 
     @staticmethod
     def get_asset_path(*path:list) -> str:
-        return os.path.join(Settings.plugin_path, "assets", *path)
+        return Path.join(Settings.plugin_path, "assets", *path)
 
     @staticmethod
     def keys() -> dict:

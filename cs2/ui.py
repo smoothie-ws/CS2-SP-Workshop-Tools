@@ -1,4 +1,3 @@
-import os
 import substance_painter as sp
 
 # Qt5 vs Qt6 check
@@ -7,6 +6,7 @@ if sp.application.version_info() < (10, 1, 0):
 else:
     from PySide6 import QtWidgets, QtQuick, QtCore, QtGui
 
+from .path import Path
 from .internal import Internal
 from .settings import Settings
 
@@ -32,7 +32,7 @@ class UI:
             container = QtWidgets.QWidget.createWindowContainer(self.view)
             container.setWindowTitle("CS2 Workshop Tools")
             container.setObjectName("CS2WT")
-            container.setWindowIcon(QtGui.QIcon(Settings.get_asset_path(os.path.join("ui", "icons", "logo.png"))))
+            container.setWindowIcon(QtGui.QIcon(Settings.get_asset_path(Path.join("ui", "icons", "logo.png"))))
             self.widgets.append(sp.ui.add_dock_widget(container))
             callback()
         else:

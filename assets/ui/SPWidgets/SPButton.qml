@@ -12,6 +12,7 @@ Button {
     property int contentAlignment: Qt.AlignCenter
     property alias tooltip: tooltip
     property alias label: label
+    property alias checker: checker
     property alias backgroundRect: backgroundRect
 
     onPressed: scale = 0.95

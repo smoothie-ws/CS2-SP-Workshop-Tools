@@ -7,7 +7,6 @@ import AlgWidgets 2.0
 Item {
     id: root
     height: 32
-    width: 32
 
     property alias url: internal.url
     property alias label: internal.label
@@ -19,10 +18,10 @@ Item {
 
         property string url: ""
         property string label: "Select texture"
-        property string resourceName: "None"
+        property string resourceName: ""
 
         onUrlChanged: {
-            var imgPath = alg.resources.getResourceInfo(url).filePath;
+            var imgPath = JSON.parse(internal.js(`alg.resources.getResourceInfo("${url}")`)).filePath;
             if (alg.fileIO.exists(imgPath)) {
                 if (imgPath.endsWith('.jpg') | imgPath.endsWith('.jpeg') | imgPath.endsWith('.png'))
                     preview.source = 'file:///' + imgPath;
@@ -89,7 +88,7 @@ Item {
             antialiasing: true
             x: 16
             y: background.height * 0.5 - height * 0.5
-            text: internal.label
+            text: rointernalot.resourceName == "" ? internal.label : internal.resourceName
             color: root.hovered ? Qt.rgba(0.95, 0.95, 0.95, 1.0) : Qt.rgba(0.75, 0.75, 0.75, 1.0)
 
             Behavior on color {
@@ -157,28 +156,6 @@ Item {
         onResourceSelected: {
             internal.url = previewID;
             internal.resourceName = name;
-        }
-    }
-
-    ToolTip {
-        id: tooltip
-        visible: root.hovered
-        opacity: visible ? 1.0 : 0.0
-        text: root.url
-        delay: 500
-
-        Behavior on opacity {
-            NumberAnimation { duration: 200 }
-        }
-
-        contentItem: Text {
-            text: tooltip.text
-            color: "#cfcfcf"
-        }
-
-        background: Rectangle {
-            color: Qt.rgba(0.12, 0.12, 0.12)
-            radius: 5
         }
     }
 }
