@@ -84,15 +84,15 @@ class Internal(QtCore.QObject):
 
     @QtCore.Slot(str)
     def info(self, msg:str):
-        return Log.info(msg)
+        Log.info(msg)
     
     @QtCore.Slot(str)
     def warning(self, msg:str):
-        return Log.warning(msg)
+        Log.warning(msg)
 
     @QtCore.Slot(str)
     def error(self, msg:str):
-        return Log.error(msg)
+        Log.error(msg)
 
     @QtCore.Slot(result=str)
     def pluginVersion(self):
@@ -149,18 +149,18 @@ class Internal(QtCore.QObject):
                 self.projectKindChanged.emit(2)
                 Log.warning(msg)
             else:
-                Log.error(msg)
+                Log.error(f'Failed to create weapon finish: {msg}')
         self.state = InternalState.CreatingWeaponFinish
         WeaponFinish.create(file_path, name, weapon, finish_style, callback)
 
-    @QtCore.Slot(str, str, str, int)
+    @QtCore.Slot(str, str, int)
     def setupAsWeaponFinish(self, name:str, weapon:str, finish_style:int):
         def callback(res, msg):
             if res:
                 self.projectKindChanged.emit(2)
                 Log.warning(msg)
             else:
-                Log.error(msg)
+                Log.error(f'Failed to set up weapon finish: {msg}')
         WeaponFinish.set_up(name, weapon, finish_style, callback)
 
     @QtCore.Slot(str, result=str)

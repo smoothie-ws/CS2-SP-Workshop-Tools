@@ -4,8 +4,6 @@ import lib-utils.glsl
 import lib-sampler.glsl
 import lib-normal.glsl
 
-#define specLevel 0.5
-
 #define SO 0 // Solid Color
 #define HY 1 // Hydrographic
 #define SP 2 // Spray-Paint
@@ -59,8 +57,6 @@ uniform SamplerSparse uMatPearl;
 uniform_specialization bool uLivePreview;
 //: param custom { "default": false }
 uniform_specialization bool uPBRValidation;
-//: param custom { "default": 8 }
-uniform_specialization int uFinishStyle;
 
 // Common Parameters ---------------------------------------------- //
 
@@ -152,7 +148,7 @@ vec3 hsl2rgb(vec3 hsl) {
 
 vec3 hueShift(vec3 col, float factor) {
     vec3 hsl = rgb2hsl(col);
-    hsl.x = mod(hsl.x + factor / (2.0 * 3.14159265359), 1.0); // переводим радианы в [0,1] hue
+    hsl.x = mod(hsl.x + factor / (2.0 * 3.14159265359), 1.0);
     return hsl2rgb(hsl);
 }
 
@@ -184,13 +180,16 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     vec4 matColor = tex2D(uMatColor, inputs);
     matColor.a = tex2D(uMatAlpha, inputs).r;
     float matRough = uUseCustomRough ? (tex2D(uMatRough, inputs).r) : uPaintRoughness;
-    float matMetal;
 
-    vec3 matMasks;
-    if (uUseCustomMasks && uFinishStyle != CU)
-        matMasks = tex2D(uMatMasks, inputs).rgb;
-    else
-        matMasks = tex2D(uBaseMasks, inputs).rgb;
+    #if FINISH_STYLE != CU
+        vec3 matMasks;
+        if (uUseCustomMasks)
+            matMasks = tex2D(uMatMasks, inputs).rgb;
+        else
+            matMasks = tex2D(uBaseMasks, inputs).rgb;
+    #else
+        vec3 matMasks = tex2D(uBaseMasks, inputs).rgb;
+    #endif
 
     // base textures
     vec4 baseColor = sRGB2linear(tex2D(uBaseColor, inputs));
@@ -213,55 +212,61 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // Paint Wear ----------------------------------------------------- //
 
     float paintBlend = baseCavity.a;
-    if (uFinishStyle != AQ) {
+    #if FINISH_STYLE != AQ 
         paintBlend += paintWear * curv;
         paintBlend *= uWearAmt * 6.0 + 1.0;
 
-        if (uFinishStyle == HY || uFinishStyle == AM || uFinishStyle == CU || uFinishStyle == GS) {
+        #if FINISH_STYLE == HY || FINISH_STYLE == AM || FINISH_STYLE == CU || FINISH_STYLE == GS
             paintBlend += smoothstep(0.5, 0.6, matColor.a) * smoothstep(1.0, 0.9, matColor.a);
 
             float cuttable = 1.0;
-            if (uFinishStyle == HY || uFinishStyle == AM)
+            #if FINISH_STYLE == HY || FINISH_STYLE == AM
                 cuttable = 1.0 - clamp(matMasks.g + matMasks.b, 0.0, 1.0);
+            #endif
 
-            if (uFinishStyle == AM) {
+            #if FINISH_STYLE == AM
                 matColor.a = clamp(matColor.a * 2.0, 0.0, 1.0);
-                matMetal = 1.0;
-            } else if (uFinishStyle == GS) {
+                float matMetal = 1.0;
+            #elif FINISH_STYLE == GS
                 paintBlend *= max(1.0 - cuttable, smoothstep(0.0, 0.5, matColor.a));
                 matColor.a = mix(matColor.a, clamp(matColor.a * 2.0, 0.0, 1.0), matMasks.r);
-                matMetal = matMasks.r;
-            } else {
+                float matMetal = matMasks.r;
+            #else
                 paintBlend *= max(1.0 - cuttable, smoothstep(0.0, 0.5, matColor.a));
-                matMetal = 0.0;
-            }
-        }
-    } else
-        matMetal = 1.0;
+                float matMetal = 0.0;
+            #endif
+        #else
+            float matMetal = 0.0;
+        #endif
+    #else
+        float matMetal = 1.0;
+    #endif
 
-    vec3 paintEdges = vec3(1.0);
-    if (uFinishStyle == HY || uFinishStyle == SP) {
+    #if FINISH_STYLE == HY || FINISH_STYLE == SP
         vec3 spread = vec3(0.06 * uWearAmt);
         spread.y *= 2.0;
         spread.z *= 3.0;
 
+        vec3 paintEdges = vec3(1.0);
         paintEdges.x = smoothstep(0.58, 0.56 - spread.x, paintBlend);
         paintEdges.y = smoothstep(0.56 - spread.x, 0.54 - spread.y, paintBlend);
         paintEdges.z = smoothstep(0.54 - spread.y, 0.52 - spread.z, paintBlend);
-    }
+    #endif
 
-    if (uFinishStyle == GS)
+    #if FINISH_STYLE == GS
         paintBlend = mix(smoothstep(0.58, 0.68, paintBlend), paintBlend, matMasks.r);
-    else if (uFinishStyle != AQ)
+    #elif FINISH_STYLE != AQ
         paintBlend = smoothstep(0.58, 0.68, paintBlend);
+    #endif
 
-    float paintEdge;
-    if (uFinishStyle == AN || uFinishStyle == AM || uFinishStyle == AA)
-        paintEdge = smoothstep(0.0, 0.01, paintBlend);
+    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
+        float paintEdge = smoothstep(0.0, 0.01, paintBlend);
+    #endif
 
-    float grunge;
-    if (uFinishStyle == AQ || uFinishStyle == GS)
-        grunge = grungeCol.r * grungeCol.g * grungeCol.b;
+    #if FINISH_STYLE == AQ || FINISH_STYLE == GS
+        float grunge = grungeCol.r * grungeCol.g * grungeCol.b;
+    #endif
+
     grungeCol = mix(vec4(1.0), grungeCol, (pow((1.0 - curv), 4.0) * 0.25 + 0.75 * uWearAmt));
 
     // Paint Color ---------------------------------------------------- //
@@ -269,41 +274,42 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     vec3 paintCol = uCol0;
 
     // Solid Color
-    if (uFinishStyle == SO) {
+    #if FINISH_STYLE == SO
         paintCol = mix(paintCol, col1, matMasks.r);
         paintCol = mix(paintCol, col2, matMasks.g);
         paintCol = mix(paintCol, col3, matMasks.b);
-    }
+    #endif
 
     // Hydrographic / Anodized Multicolored
-    if (uFinishStyle == HY || uFinishStyle == AM) {
+    #if FINISH_STYLE == HY || FINISH_STYLE == AM
         paintCol = mix(mix(mix(col0, col1, matColor.r), col2, matColor.g), col3, matColor.b);
         paintCol = mix(paintCol, col2, matMasks.g);
         paintCol = mix(paintCol, col3, matMasks.b);
-    }
+    #endif
 
     // TODO: Spraypaint / Anodized Airbrushed
 
     // Anodized
-    if (uFinishStyle == AN || uFinishStyle == AM || uFinishStyle == AA) {
-        if (uFinishStyle == AN)
+    #if FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA
+        #if (FINISH_STYLE == AN)
             paintCol.rgb = col0.rgb;
+        #endif
         paintCol = mix(paintCol, vec3(0.05), paintEdge);
         grungeCol.rgb = mix(grungeCol.rgb, vec3(1.0), paintEdge);
         paintBlend = clamp(1.0 + paintBlend - matMasks.r, 0.0, 1.0);
         // dirtMask *= mix(0.48, 1.0, paintEdge);
-    }
+    #endif
 
     // Custom painted
-    if (uFinishStyle == CU) {
+    #if FINISH_STYLE == CU
         paintCol = matColor.rgb;
         matMasks.r = 0.0;
-    }
+    #endif
 
     float dirtMask = 0.0;
 
     // Antiqued / Gunsmith
-    if (uFinishStyle == AQ || uFinishStyle == GS) {
+    #if FINISH_STYLE == AQ || FINISH_STYLE == GS
         float patinaBlend = paintWear * ao * curv * curv;
         patinaBlend = smoothstep(0.2, 0.05, patinaBlend * uWearAmt);
 
@@ -318,24 +324,25 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         float patternLum = dot(matColor.rgb, vec3(0.3, 0.59, 0.11));
         patinaCol = mix(col0, patinaCol, patinaBlend) * smoothstep(0.0, 0.1, patternLum);
 
-        if (uFinishStyle == AQ) {
+        #if FINISH_STYLE == AQ
             paintCol = patinaCol;
             paintBlend = 1.0 - matMasks.r;
             pearlFactor *= step(0.0, patinaBlend);
-        } else {
+        #else
             paintCol = mix(matColor.rgb, patinaCol, matMasks.r);
             paintBlend *= 1.0 - matMasks.r;
             pearlFactor *= step(0.0, patinaBlend) * matMasks.r + 1.0 - matMasks.r;
-        }
+        #endif
 
         dirtMask += mix(0.0, mix(0.0, grimeBlend * patinaBlend * uWearAmt, patinaBlend), matMasks.r);
-    }
+    #endif
 
     dirtMask += ao * (0.5 - grungeCol.a * 0.5);
-    if (uFinishStyle == SO || uFinishStyle == HY || uFinishStyle == SP || uFinishStyle == CU)
+    #if FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP || FINISH_STYLE == CU
         dirtMask *= smoothstep(0.01, 0.0, paintBlend);
-    else if (uFinishStyle == GS)
+    #elif (FINISH_STYLE == GS)
         dirtMask *= mix(smoothstep(0.01, 0.0, paintBlend), 1.0, matMasks.r);
+    #endif
 
     matRough += dirtMask * mix(0.48, 0.16, matMasks.r) * uWearAmt;
     matMetal -= dirtMask * uWearAmt;
@@ -389,7 +396,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 void shadePBR(ShaderOutputs outputs) {
     float shadow = outputs.orm.r * getShadowFactor();
     vec3 diffColor = generateDiffuseColor(outputs.color, outputs.orm.b);
-    vec3 specColor = generateSpecularColor(specLevel, outputs.color, outputs.orm.b);
+    vec3 specColor = generateSpecularColor(0.5, outputs.color, outputs.orm.b);
     float specOcclusion = specularOcclusionCorrection(shadow, outputs.orm.b, outputs.orm.g);
 
     albedoOutput(diffColor);

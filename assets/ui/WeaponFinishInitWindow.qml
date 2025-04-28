@@ -22,11 +22,11 @@ Window {
     signal proceed(string name, string weapon, int finishStyle, string fileUrl)
 
     function submit() {
-        close();
         if (isNew)
-            internal.createWeaponFinish(fileUrl, nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue)
+            internal.createWeaponFinish(fileUrl, nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue);
         else
-            internal.setupAsWeaponFinish(nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue)
+            internal.setupAsWeaponFinish(nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue);
+        close();
     }
 
     ColumnLayout {

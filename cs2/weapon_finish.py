@@ -6,6 +6,93 @@ from .project_settings import ProjectSettings
 
 
 class WeaponFinish:
+	FINISH_STYLES = [
+		"so", # Solid Color
+		"hy", # Hydrographic
+		"sp", # Spray-Paint
+		"an", # Anodized
+		"am", # Anodized Multicolored
+		"aa", # Anodized Airbrushed
+		"cu", # Custom Paint Job
+		"aq", # Patina
+		"gs"  # Gunsmith
+	]
+
+	ECON_TEMPLATE = """
+	<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
+	{
+		cs2_item_type = "CCS2EconNode_PaintKit"
+		CCS2EconNode_PaintKit = 
+		{
+			description_string = "#CSGO_Workshop_EmptyString"
+			description_tag = "#CSGO_Workshop"
+			rarity = "common"
+			composite_material_class = "PaintKit_{finish_style}"
+			composite_material_keys = 
+			{
+				econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
+				econ_instance.g_flWearAmount = {wear}
+				econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
+				econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
+				exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
+				exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
+				exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
+				exposed_params.g_bUseNormalMap = {custom_normal_map}
+				exposed_params.g_bUsePearlescenceMask = {custom_normal_map}
+				exposed_params.g_bUseRoughness = {custom_normal_map}
+				exposed_params.g_flPatternTexCoordScale = {tex_scale}
+				exposed_params.g_flPearlescentScale = {pearl_scale}
+				exposed_params.g_tPaintRoughness = "{rough_tex_path}"
+				exposed_params.g_tPattern = "{albedo_tex_path}"
+				exposed_params.g_vColor0 = {color0}
+				exposed_params.g_vColor1 = {color1}
+				exposed_params.g_vColor2 = {color2}
+				exposed_params.g_vColor3 = {color3}
+			}
+			all_composite_material_keys = 
+			{
+				econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
+				econ_instance.g_flWearAmount = {wear}
+				econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
+				econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
+				exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
+				exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
+				exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
+				exposed_params.g_bUseNormalMap = {custom_normal_map}
+				exposed_params.g_bUsePearlescenceMask = {custom_normal_map}
+				exposed_params.g_bUseRoughness = {custom_normal_map}
+				exposed_params.g_bUseRoughnessByColor = false
+				exposed_params.g_flPaintRoughness = {rough}
+				exposed_params.g_flPatternTexCoordScale = 1.0
+				exposed_params.g_flPearlescentScale = {pearl_scale}
+				exposed_params.g_tFinalAmbientOcclusion = "{ao_tex_path}"
+				exposed_params.g_tNormal = "{normal_tex_path}"
+				exposed_params.g_tPaintByNumberMasks = "{masks_tex_path}"
+				exposed_params.g_tPaintRoughness = "{rough_tex_path}"
+				exposed_params.g_tPattern = "{albedo_tex_path}"
+				exposed_params.g_tPearlescenceMask = "{pearl_tex_path}"
+				exposed_params.g_vColor0 = {color0}
+				exposed_params.g_vColor1 = {color1}
+				exposed_params.g_vColor2 = {color2}
+				exposed_params.g_vColor3 = {color3}
+				exposed_params.g_vPaintMetalness.0 = 0.0
+				exposed_params.g_vPaintMetalness.1 = 0.0
+				exposed_params.g_vPaintMetalness.2 = 0.0
+				exposed_params.g_vPaintMetalness.3 = 0.0
+				exposed_params.g_vPaintRoughness.0 = 0.6
+				exposed_params.g_vPaintRoughness.1 = 0.6
+				exposed_params.g_vPaintRoughness.2 = 0.6
+				exposed_params.g_vPaintRoughness.3 = 0.6
+			}
+			preview_weapon = "weapon_{weapon}"
+			associate_assets = 
+			[
+				resource_name:"weapons/paints/workshop/{name}.vcompmat",
+			]
+		}
+	}
+	"""
+
 	@staticmethod
 	def create(file_path:str, name:str, weapon:str, finish_style:int, callback):
 		# create project
@@ -57,7 +144,7 @@ class WeaponFinish:
 		custom_mat_mask:bool,
 		custom_ao_tex:bool
 		):
-		return ECON_TEMPLATE.format(
+		return WeaponFinish.ECON_TEMPLATE.format(
 			name=name,
 			weapon=weapon,
 			finish_style=finish_style,
@@ -82,140 +169,66 @@ class WeaponFinish:
 
 	@staticmethod
 	def set_up(name:str, weapon:str, finish_style:int, callback):
-		def set_up(callback):
+		def _set_up(callback):
 			try:
-				shaders = sp.resource.search("s: your_assets u: shader n: cs2")
-				if len(shaders) > 0:
-					# update shader
-					sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{shaders[0].identifier().url()}")')
-					
-					# update channel stacks
-					new_stack = {
-						sp.textureset.ChannelType.BaseColor: (sp.textureset.ChannelFormat.sRGB8, None),
-						sp.textureset.ChannelType.Roughness: (sp.textureset.ChannelFormat.L8, None),
-						sp.textureset.ChannelType.User0: (sp.textureset.ChannelFormat.RGB8, "Masks"),
-						sp.textureset.ChannelType.User1: (sp.textureset.ChannelFormat.L8, "Alpha"),
-						sp.textureset.ChannelType.User2: (sp.textureset.ChannelFormat.L8, "Pearlescence")
-					}
+				# update shader instances
+				for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
+					shaders = sp.resource.search(f's: your_assets u: shader n: cs2_{fs}')
+					if len(shaders) > 0:
+						sp.js.evaluate(f'alg.shaders.updateShaderInstance({i}, "{shaders[0].identifier().url()}")')
+					else:
+						callback(False, f'Failed to find shader for `{fs.upper()}` finish style')
+						return
 
-					allowed_channels = [
-						sp.textureset.ChannelType.BaseColor,
-						sp.textureset.ChannelType.Roughness,
-						sp.textureset.ChannelType.User0,
-						sp.textureset.ChannelType.User1,
-						sp.textureset.ChannelType.User2,
-						sp.textureset.ChannelType.Height,
-						sp.textureset.ChannelType.Normal
-					]
-					for texture_set in sp.textureset.all_texture_sets():
-						for stack in texture_set.all_stacks():
-							for channel_type, channel in new_stack.items():
-								channel_format, channel_label = channel
-								if stack.has_channel(channel_type):
-									stack_channel = stack.get_channel(channel_type)
-									if stack_channel.format() != channel_format or stack_channel.label() != channel_label:
-										stack.edit_channel(channel_type, channel_format, channel_label)
-								else:
-									stack.add_channel(channel_type, channel_format, channel_label)
-							# remove unnecessary channels 
-							for channel_type, channel in stack.all_channels().items():
-								if channel_type not in allowed_channels:
-									stack.remove_channel(channel_type)
+				# update channel stacks
+				new_stack = {
+					sp.textureset.ChannelType.BaseColor: (sp.textureset.ChannelFormat.sRGB8, None),
+					sp.textureset.ChannelType.Roughness: (sp.textureset.ChannelFormat.L8, None),
+					sp.textureset.ChannelType.User0: (sp.textureset.ChannelFormat.RGB8, "Masks"),
+					sp.textureset.ChannelType.User1: (sp.textureset.ChannelFormat.L8, "Alpha"),
+					sp.textureset.ChannelType.User2: (sp.textureset.ChannelFormat.L8, "Pearlescence")
+				}
 
-					# update project settings
-					ProjectSettings.set("weapon_finish", {
-						"name": name,
-						"weapon": weapon,
-						"uFinishStyle": finish_style
-					})
+				allowed_channels = [
+					sp.textureset.ChannelType.BaseColor,
+					sp.textureset.ChannelType.Roughness,
+					sp.textureset.ChannelType.User0,
+					sp.textureset.ChannelType.User1,
+					sp.textureset.ChannelType.User2,
+					sp.textureset.ChannelType.Height,
+					sp.textureset.ChannelType.Normal
+				]
+				for texture_set in sp.textureset.all_texture_sets():
+					for stack in texture_set.all_stacks():
+						for channel_type, channel in new_stack.items():
+							channel_format, channel_label = channel
+							if stack.has_channel(channel_type):
+								stack_channel = stack.get_channel(channel_type)
+								if stack_channel.format() != channel_format or stack_channel.label() != channel_label:
+									stack.edit_channel(channel_type, channel_format, channel_label)
+							else:
+								stack.add_channel(channel_type, channel_format, channel_label)
+						# remove unnecessary channels 
+						for channel_type, channel in stack.all_channels().items():
+							if channel_type not in allowed_channels:
+								stack.remove_channel(channel_type)
 
-					callback(True, "The project was set up as Weapon Finish")
-				else:
-					callback(False, "Failed to find shader")
+				# update project settings
+				ProjectSettings.set("weapon_finish", {
+					"name": name,
+					"weapon": weapon,
+					"finishStyle": finish_style
+				})
+
+				callback(True, "The project was set up as Weapon Finish")
 			except Exception as e:
 				callback(False, str(e))
 
 		if sp.resource.Shelf("your_assets").is_crawling():
-			sp.event.DISPATCHER.connect(sp.event.ShelfCrawlingEnded, lambda _: set_up(callback))
+			sp.event.DISPATCHER.strong_connect(sp.event.ShelfCrawlingEnded, lambda _: _set_up(callback))
 		else:
-			set_up(callback)
+			_set_up(callback)
 
 	@staticmethod
 	def save(parameters):
 		ProjectSettings.set("weapon_finish", parameters)
-        
-
-ECON_TEMPLATE = """
-<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->
-{
-	cs2_item_type = "CCS2EconNode_PaintKit"
-	CCS2EconNode_PaintKit = 
-	{
-		description_string = "#CSGO_Workshop_EmptyString"
-		description_tag = "#CSGO_Workshop"
-		rarity = "common"
-		composite_material_class = "PaintKit_{finish_style}"
-		composite_material_keys = 
-		{
-			econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
-			econ_instance.g_flWearAmount = {wear}
-			econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
-			econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
-			exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
-			exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
-			exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
-			exposed_params.g_bUseNormalMap = {custom_normal_map}
-			exposed_params.g_bUsePearlescenceMask = {custom_normal_map}
-			exposed_params.g_bUseRoughness = {custom_normal_map}
-			exposed_params.g_flPatternTexCoordScale = {tex_scale}
-			exposed_params.g_flPearlescentScale = {pearl_scale}
-			exposed_params.g_tPaintRoughness = "{rough_tex_path}"
-			exposed_params.g_tPattern = "{albedo_tex_path}"
-			exposed_params.g_vColor0 = {color0}
-			exposed_params.g_vColor1 = {color1}
-			exposed_params.g_vColor2 = {color2}
-			exposed_params.g_vColor3 = {color3}
-		}
-		all_composite_material_keys = 
-		{
-			econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
-			econ_instance.g_flWearAmount = {wear}
-			econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
-			econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
-			exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
-			exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
-			exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
-			exposed_params.g_bUseNormalMap = {custom_normal_map}
-			exposed_params.g_bUsePearlescenceMask = {custom_normal_map}
-			exposed_params.g_bUseRoughness = {custom_normal_map}
-			exposed_params.g_bUseRoughnessByColor = false
-			exposed_params.g_flPaintRoughness = {rough}
-			exposed_params.g_flPatternTexCoordScale = 1.0
-			exposed_params.g_flPearlescentScale = {pearl_scale}
-			exposed_params.g_tFinalAmbientOcclusion = "{ao_tex_path}"
-			exposed_params.g_tNormal = "{normal_tex_path}"
-			exposed_params.g_tPaintByNumberMasks = "{masks_tex_path}"
-			exposed_params.g_tPaintRoughness = "{rough_tex_path}"
-			exposed_params.g_tPattern = "{albedo_tex_path}"
-			exposed_params.g_tPearlescenceMask = "{pearl_tex_path}"
-			exposed_params.g_vColor0 = {color0}
-			exposed_params.g_vColor1 = {color1}
-			exposed_params.g_vColor2 = {color2}
-			exposed_params.g_vColor3 = {color3}
-			exposed_params.g_vPaintMetalness.0 = 0.0
-			exposed_params.g_vPaintMetalness.1 = 0.0
-			exposed_params.g_vPaintMetalness.2 = 0.0
-			exposed_params.g_vPaintMetalness.3 = 0.0
-			exposed_params.g_vPaintRoughness.0 = 0.6
-			exposed_params.g_vPaintRoughness.1 = 0.6
-			exposed_params.g_vPaintRoughness.2 = 0.6
-			exposed_params.g_vPaintRoughness.3 = 0.6
-		}
-		preview_weapon = "weapon_{weapon}"
-		associate_assets = 
-		[
-			resource_name:"weapons/paints/workshop/{name}.vcompmat",
-		]
-	}
-}
-"""

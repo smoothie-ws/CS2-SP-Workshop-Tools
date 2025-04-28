@@ -14,18 +14,20 @@ Rectangle {
     implicitHeight: mainLayout.height
 
     function connectWeaponFinish() {
-        // connect shader
+        // connect shaders
         for (const [param, component] of Object.entries(weaponFinish.parameters)) 
             if (param.startsWith("u")) {
                 component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${param}").value`));
                 if (["filePath", "url"].includes(component.prop))
-                    component.item[component.prop + "Changed"].connect(() => 
-                        internal.js(`alg.shaders.parameter(0, "${param}").value = "${component.item[component.prop]}"`)
-                    );
+                    for (var i = 0; i < 9; i++) 
+                        component.item[component.prop + "Changed"].connect(() => 
+                            internal.js(`alg.shaders.parameter(${i}, "${param}").value = "${component.item[component.prop]}"`)
+                        );
                 else
-                    component.item[component.prop + "Changed"].connect(() =>
-                        internal.js(`alg.shaders.parameter(0, "${param}").value = ${component.item[component.prop]}`)
-                    );
+                    for (var i = 0; i < 9; i++) 
+                        component.item[component.prop + "Changed"].connect(() =>
+                            internal.js(`alg.shaders.parameter(${i}, "${param}").value = ${component.item[component.prop]}`)
+                        );
             }
         // load textures
         weaponFinish.parameters["uGrungeTex"].item.url = importTexture(`${internal.pluginPath()}/assets/textures/grunge.tga`);
@@ -36,8 +38,7 @@ Rectangle {
 
     PainterPlugin {
         onProjectAboutToSave: {
-            internal.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(weaponFinish.getValues())})`)
-            internal.info(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+            internal.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(weaponFinish.getValues())})`);
         }
     }
 
@@ -46,14 +47,14 @@ Rectangle {
 
         property var parameters: {
             "econfile":               { item: econFile,               prop: "filePath"     },
+            "finishStyle":            { item: finishStyleBox,         prop: "currentIndex" },
             "weapon":                 { item: weaponBox,              prop: "currentIndex" },
             "wearRange":              { item: wearRange,              prop: "range"        },
             "texScale":               { item: texScale,               prop: "value"        },
             "texRotationRange":       { item: texRotation,            prop: "range"        },
             "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
             "texOffsetYRange":        { item: texOffsetY,             prop: "range"        },
-            // shader parameters
-            "uFinishStyle":           { item: finishStyleBox,         prop: "currentIndex" },
+            // Shader parameters
             "uLivePreview":           { item: enableLivePreview,      prop: "checked"      },
             "uPBRValidation":         { item: enablePBRValidation,    prop: "checked"      },
             "uWearAmt":               { item: wearAmount,             prop: "value"        },
