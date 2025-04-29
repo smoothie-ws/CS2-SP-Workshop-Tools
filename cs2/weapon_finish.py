@@ -1,8 +1,10 @@
 import substance_painter as sp
 
+from .log import Log
 from .path import Path
 from .settings import Settings
 from .project_settings import ProjectSettings
+from .resource import search as resource_search
 
 
 class WeaponFinish:
@@ -171,15 +173,6 @@ class WeaponFinish:
 	def set_up(name:str, weapon:str, finish_style:int, callback):
 		def _set_up(callback):
 			try:
-				# update shader instances
-				for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
-					shaders = sp.resource.search(f's: your_assets u: shader n: cs2_{fs}')
-					if len(shaders) > 0:
-						sp.js.evaluate(f'alg.shaders.updateShaderInstance({i}, "{shaders[0].identifier().url()}")')
-					else:
-						callback(False, f'Failed to find shader for `{fs.upper()}` finish style')
-						return
-
 				# update channel stacks
 				new_stack = {
 					sp.textureset.ChannelType.BaseColor: (sp.textureset.ChannelFormat.sRGB8, None),
@@ -220,9 +213,13 @@ class WeaponFinish:
 					"finishStyle": finish_style
 				})
 
-				callback(True, "The project was set up as Weapon Finish")
+				WeaponFinish.change_finish_style(finish_style, 
+					lambda res, msg: callback(res, 
+						f'The project was set up as Weapon Finish' if res else f'Failed to set up Weapon Finish: {msg}'
+					)
+				)
 			except Exception as e:
-				callback(False, str(e))
+				callback(False, f'Failed to set up weapon finish: {str(e)}')
 
 		if sp.resource.Shelf("your_assets").is_crawling():
 			sp.event.DISPATCHER.strong_connect(sp.event.ShelfCrawlingEnded, lambda _: _set_up(callback))
@@ -232,3 +229,17 @@ class WeaponFinish:
 	@staticmethod
 	def save(parameters):
 		ProjectSettings.set("weapon_finish", parameters)
+
+	@staticmethod
+	def change_finish_style(finish_style: int, callback):
+		fs = WeaponFinish.FINISH_STYLES[finish_style]
+		# update shader instance
+		def update_shader(resources):
+			if len(resources) > 0:
+				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{resources[0].identifier().url()}")')
+				callback(True, f'Finish Style was changed to `{fs.upper()}`')
+			else:
+				callback(False, f'Failed to find shader for `{fs.upper()}` finish style')
+			
+		resource_search(update_shader, "your_assets", "shader", f'cs2_{fs}')
+		

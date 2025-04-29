@@ -163,6 +163,16 @@ class Internal(QtCore.QObject):
                 Log.error(f'Failed to set up weapon finish: {msg}')
         WeaponFinish.set_up(name, weapon, finish_style, callback)
 
+    @QtCore.Slot(int)
+    def changeFinishStyle(self, finish_style:int):
+        WeaponFinish.change_finish_style(finish_style, 
+            lambda res, msg: Log.warning(msg) if res else Log.error(msg)
+        )
+
+    @QtCore.Slot(str)
+    def saveWeaponFinish(self, values:str):
+        WeaponFinish.save(json.loads(values))
+
     @QtCore.Slot(str, result=str)
     def js(self, code:str):
         try:
@@ -171,6 +181,3 @@ class Internal(QtCore.QObject):
             Log.error(f'Failed to evaluate js code: {str(e)}')
             Log.info(code)
     
-    @QtCore.Slot(str)
-    def saveWeaponFinish(self, values:str):
-        WeaponFinish.save(json.loads(values))

@@ -6,10 +6,11 @@ import substance_painter_plugins as sp_plugins
 from .ui import UI
 from .log import Log
 from .path import Path
-from .shader import preprocess
 from .settings import Settings
 from .internal import InternalState
 from .weapon_finish import WeaponFinish
+from .shader import preprocess as shader_preprocess
+from .resource import search as resource_search
 
 
 Settings.plugin_version = "0.0.1a"
@@ -28,7 +29,7 @@ class Plugin:
         Log.warning(f'Plugin started (version {Settings.plugin_version})')
         self.internal.emit_textures_are_missing()
         if sp.project.is_open():
-            self.internal.init_project()
+            self.internal.on_project_opened()
         connections = {
             sp.event.ProjectOpened: lambda _: self.internal.on_project_opened(),
             sp.event.ProjectAboutToClose: lambda _: self.internal.on_project_about_to_close()
@@ -57,17 +58,14 @@ class Plugin:
             shader_file_path = Path.join(sp_shaders_path, shader_file)
             if not Path.exists(shader_file_path):
                 with open(shader_file_path, "w", encoding="utf-8") as f:
-                    f.write(preprocess(shader_source, {"FINISH_STYLE": i}))
+                    f.write(shader_preprocess(shader_source, {"FINISH_STYLE": i}))
 
-        def set_previews(e):
-            if e.shelf_name == "your_assets":
-                for fs in WeaponFinish.FINISH_STYLES:
-                    shader_resource = sp.resource.search(f's: your_assets u: shader n: cs2_{fs}')
-                    if len(shader_resource) > 0:
-                        shader_resource[0].set_custom_preview(Settings.get_asset_path("ui", "icons", f'cs2_{fs}.png'))
-                sp.event.DISPATCHER.disconnect(sp.event.ShelfCrawlingEnded, set_previews)
+        def set_previews(shader_resources):
+            for shader_resource in shader_resources:
+                name = shader_resource.identifier().name
+                shader_resource.set_custom_preview(Settings.get_asset_path("ui", "icons", f'{name}.png'))
 
-        sp.event.DISPATCHER.connect_strong(sp.event.ShelfCrawlingEnded, set_previews)
+        resource_search(set_previews, "your_assets", "shader", "cs2")
 
         # shader ui
         if not Path.exists(Path.join(sp_shaders_ui_path, "cs2-ui.qml")):

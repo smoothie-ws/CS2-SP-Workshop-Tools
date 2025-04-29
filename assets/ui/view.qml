@@ -38,7 +38,7 @@ Rectangle {
         onProjectKindChanged: projectKind => {
             root.projectKind = projectKind;
             if (projectKind == 2)
-                weaponFinishSettings.connectWeaponFinish(0);
+                weaponFinishSettings.connectWeaponFinish();
         }
     }
 

@@ -14,31 +14,31 @@ Rectangle {
     implicitHeight: mainLayout.height
 
     function connectWeaponFinish() {
-        // connect shaders
+        // connect shader
         for (const [param, component] of Object.entries(weaponFinish.parameters)) 
             if (param.startsWith("u")) {
                 component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${param}").value`));
                 if (["filePath", "url"].includes(component.prop))
-                    for (var i = 0; i < 9; i++) 
-                        component.item[component.prop + "Changed"].connect(() => 
-                            internal.js(`alg.shaders.parameter(${i}, "${param}").value = "${component.item[component.prop]}"`)
-                        );
+                    component.item[component.prop + "Changed"].connect(() => 
+                        internal.js(`alg.shaders.parameter(0, "${param}").value = "${component.item[component.prop]}"`)
+                    );
                 else
-                    for (var i = 0; i < 9; i++) 
-                        component.item[component.prop + "Changed"].connect(() =>
-                            internal.js(`alg.shaders.parameter(${i}, "${param}").value = ${component.item[component.prop]}`)
-                        );
+                    component.item[component.prop + "Changed"].connect(() => 
+                        internal.js(`alg.shaders.parameter(0, "${param}").value = ${component.item[component.prop]}`)
+                    );
             }
         // load textures
         weaponFinish.parameters["uGrungeTex"].item.url = importTexture(`${internal.pluginPath()}/assets/textures/grunge.tga`);
         weaponFinish.parameters["uScratchesTex"].item.url = importTexture(`${internal.pluginPath()}/assets/textures/scratches.png`);
+
+        finishStyleBox.currentIndexChanged.connect(() => internal.changeFinishStyle(finishStyleBox.currentIndex));
         // load defaults
         weaponFinish.setValues(alg.project.settings.value("weapon_finish"));
     }
 
     PainterPlugin {
         onProjectAboutToSave: {
-            internal.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(weaponFinish.getValues())})`);
+            internal.saveWeaponFinish(JSON.stringify(weaponFinish.getValues()));
         }
     }
 
@@ -46,8 +46,10 @@ Rectangle {
         id: weaponFinish
 
         property var parameters: {
-            "econfile":               { item: econFile,               prop: "filePath"     },
+            "econFile":               { item: econFile,               prop: "filePath"     },
+            "texturesFolder":         { item: texturesFolder,         prop: "filePath"     },
             "finishStyle":            { item: finishStyleBox,         prop: "currentIndex" },
+            "name":                   { item: weaponFinishName,       prop: "text"         },
             "weapon":                 { item: weaponBox,              prop: "currentIndex" },
             "wearRange":              { item: wearRange,              prop: "range"        },
             "texScale":               { item: texScale,               prop: "value"        },
@@ -161,6 +163,14 @@ Rectangle {
         id: mainLayout
         width: root.width
 
+        Label {
+            id: weaponFinishName
+            text: "NONE"
+            color: AlgStyle.text.color.normal
+            font.pixelSize: 14
+            font.bold: true
+        }
+
         SPGroup {
             id: settings
             Layout.fillWidth: true
@@ -170,7 +180,6 @@ Rectangle {
             SPLabeled {
                 id: econFile
                 text: "Econitem File"
-                visible: root.isNew
                 Layout.fillWidth: true
 
                 property string filePath: ""
@@ -199,6 +208,42 @@ Rectangle {
                             folder: Qt.resolvedUrl(internal.getCs2Path())
                             nameFilters: [ "CS2 Econ Item (*.econitem)" ]
                             onAccepted: econFile.filePath = fileUrl.toString().substring(8);
+                        }
+                    }
+                }
+            }
+
+            SPLabeled {
+                id: texturesFolder
+                text: "Textures Folder"
+                Layout.fillWidth: true
+
+                property string filePath: ""
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    
+                    Label {
+                        clip: true
+                        opacity: 0.5
+                        elide: Text.ElideLeft
+                        horizontalAlignment: Text.AlignLeft
+                        text: texturesFolderDialog.fileUrl
+                        color: AlgStyle.text.color.normal
+                        Layout.fillWidth: true
+                    }
+
+                    SPButton {
+                        text: "Select"
+                        
+                        onClicked: texturesFolderDialog.open()
+
+                        SPFileDialog {
+                            id: texturesFolderDialog
+                            title: "Select folder"
+                            selectFolder: true
+                            folder: Qt.resolvedUrl(internal.getCs2Path())
+                            onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
                         }
                     }
                 }

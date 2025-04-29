@@ -51,6 +51,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.margins: root.padding
         backgroundRect.opacity: 0.0
+        label.font.bold: true
         icon.source: enabled ? (checked ? AlgStyle.icons.groupwidget.expanded : AlgStyle.icons.groupwidget.collapsed) : ""
         icon.width: 16
         icon.height: 16
