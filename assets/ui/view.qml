@@ -38,7 +38,7 @@ Rectangle {
         onProjectKindChanged: projectKind => {
             root.projectKind = projectKind;
             if (projectKind == 2)
-                weaponFinishSettings.connectWeaponFinish();
+                weaponFinishSettings.loadWeaponFinish();
         }
     }
 
@@ -52,6 +52,14 @@ Rectangle {
         RowLayout {
             id: header
             Layout.fillWidth: true
+
+            Label {
+                id: weaponFinishName
+                text: root.projectKind == 2 ? JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"))["name"].upper() : ""
+                color: AlgStyle.text.color.normal
+                font.pixelSize: 14
+                font.bold: true
+            }
 
             SPSeparator { Layout.fillWidth: true }
 
@@ -101,7 +109,7 @@ Rectangle {
                     color: AlgStyle.text.color.normal
                     font.pixelSize: 22
                     horizontalAlignment: Text.AlignHCenter
-                    Layout.alignment: Qt.AlignHCenter | Qt.AlignBottom
+                    Layout.alignment: Qt.AlignHCenter | (root.projectKind == 0 ? Qt.AlignVCenter : Qt.AlignBottom)
                 }
                 
                 SPButton {

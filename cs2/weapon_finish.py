@@ -96,7 +96,7 @@ class WeaponFinish:
 	"""
 
 	@staticmethod
-	def create(file_path:str, name:str, weapon:str, finish_style:int, callback):
+	def create(file_path:str, name:str, weapon:str, finish_style:str, callback):
 		# create project
 		export_path = None
 		cs2_path = Settings.get("cs2_path")
@@ -170,8 +170,8 @@ class WeaponFinish:
 		)
 
 	@staticmethod
-	def set_up(name:str, weapon:str, finish_style:int, callback):
-		def _set_up(callback):
+	def set_up(name:str, weapon:str, finish_style:str, callback):
+		def _set_up():
 			try:
 				# update channel stacks
 				new_stack = {
@@ -222,24 +222,23 @@ class WeaponFinish:
 				callback(False, f'Failed to set up weapon finish: {str(e)}')
 
 		if sp.resource.Shelf("your_assets").is_crawling():
-			sp.event.DISPATCHER.strong_connect(sp.event.ShelfCrawlingEnded, lambda _: _set_up(callback))
+			sp.event.DISPATCHER.strong_connect(sp.event.ShelfCrawlingEnded, lambda _: _set_up())
 		else:
-			_set_up(callback)
+			_set_up()
 
 	@staticmethod
 	def save(parameters):
 		ProjectSettings.set("weapon_finish", parameters)
 
 	@staticmethod
-	def change_finish_style(finish_style: int, callback):
-		fs = WeaponFinish.FINISH_STYLES[finish_style]
+	def change_finish_style(finish_style: str, callback):
 		# update shader instance
 		def update_shader(resources):
 			if len(resources) > 0:
 				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{resources[0].identifier().url()}")')
-				callback(True, f'Finish Style was changed to `{fs.upper()}`')
+				callback(True, f'Finish Style was changed to `{finish_style.upper()}`')
 			else:
-				callback(False, f'Failed to find shader for `{fs.upper()}` finish style')
+				callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
 			
-		resource_search(update_shader, "your_assets", "shader", f'cs2_{fs}')
+		resource_search(update_shader, "your_assets", "shader", f'cs2_{finish_style}')
 		

@@ -18,26 +18,6 @@ import lib-normal.glsl
 //:  "custom-ui" : "cs2-ui.qml"
 //: }
 
-// Grunge Textures ------------------------------------------------ //
-
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D uGrungeTex;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D uScratchesTex;
-
-// Weapon Base Textures ------------------------------------------- //
-
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-uniform sampler2D uBaseColor;
-//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
-uniform sampler2D uBaseRough;
-//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
-uniform sampler2D uBaseMasks;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
-uniform sampler2D uBaseSurface;
-//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
-uniform sampler2D uBaseCavity;
-
 // Paint Textures ------------------------------------------------- //
 
 //: param auto channel_basecolor
@@ -51,42 +31,66 @@ uniform SamplerSparse uMatAlpha;
 //: param auto channel_user2
 uniform SamplerSparse uMatPearl;
 
+// Grunge Textures ------------------------------------------------ //
+
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5], "group" : "Base Textures" }
+uniform sampler2D uGrungeTex;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5], "group" : "Base Textures" }
+uniform sampler2D uScratchesTex;
+
+// Weapon Base Textures ------------------------------------------- //
+
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5], "group" : "Base Textures" }
+uniform sampler2D uBaseColor;
+//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5], "group" : "Base Textures" }
+uniform sampler2D uBaseRough;
+//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0], "group" : "Base Textures" }
+uniform sampler2D uBaseMasks;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0], "group" : "Base Textures" }
+uniform sampler2D uBaseSurface;
+//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5], "group" : "Base Textures" }
+uniform sampler2D uBaseCavity;
+
 // General Parameters --------------------------------------------- //
 
-//: param custom { "default": true }
+//: param custom { "default": true, "group" : "General" }
 uniform_specialization bool uLivePreview;
-//: param custom { "default": false }
+//: param custom { "default": false, "group" : "General" }
 uniform_specialization bool uPBRValidation;
 
 // Common Parameters ---------------------------------------------- //
 
-//: param custom { "default": 0.00 }
+//: param custom { "default": 0.00, "group" : "Common" }
 uniform float uWearAmt;
-//: param custom { "default": true }
+//: param custom { "default": true, "group" : "Common" }
 uniform bool uIgnoreWeaponSizeScale;
-//: param custom { "default": 1.00 }
-uniform vec3 uCol0;
-//: param custom { "default": 1.00 }
-uniform vec3 uCol1;
-//: param custom { "default": 1.00 }
-uniform vec3 uCol2;
-//: param custom { "default": 1.00 }
-uniform vec3 uCol3;
-//: param custom { "default": [0.0, 0.0, 1.0, 0.0] }
+//: param custom { "default": [0.0, 0.0, 1.0, 0.0], "group" : "Common" }
 uniform vec4 uTexTransform; // packed values: [offsetX, offsetY, scale, rotation]
-//: param custom { "default": 0.00 }
-uniform float uPearlScale;
-//: param custom { "default": true }
+#if FINISH_STYLE != CU
+//: param custom { "default": 1.00, "group" : "Color" }
+uniform vec3 uCol0;
+//: param custom { "default": 1.00, "group" : "Color" }
+uniform vec3 uCol1;
+//: param custom { "default": 1.00, "group" : "Color" }
+uniform vec3 uCol2;
+//: param custom { "default": 1.00, "group" : "Color" }
+uniform vec3 uCol3;
+#endif
+//: param custom { "default": true, "group" : "Effects" }
 uniform bool uUsePearlMask;
-//: param custom { "default": 0.60 }
-uniform float uPaintRoughness;
-//: param custom { "default": true }
+//: param custom { "default": 0.00, "group" : "Effects" }
+uniform float uPearlScale;
+//: param custom { "default": true, "group" : "Effects" }
 uniform bool uUseCustomRough;
-//: param custom { "default": true }
+//: param custom { "default": 0.60, "group" : "Effects" }
+uniform float uPaintRoughness;
+//: param custom { "default": true, "group" : "Advanced" }
 uniform bool uUseCustomNormal;
-//: param custom { "default": true }
+#if FINISH_STYLE != CU
+//: param custom { "default": true, "group" : "Advanced" }
 uniform bool uUseCustomMasks;
-//: param custom { "default": true }
+#endif
+//: param custom { "default": true, "group" : "Advanced" }
 uniform bool uUseCustomAOTex;
 
 #define uTexOffset uTexTransform.xy
@@ -204,10 +208,12 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         pearlFactor *= tex2D(uMatPearl, inputs).r;
 
     // colors
-    vec3 col0 = sRGB2linear(uCol0);
-    vec3 col1 = sRGB2linear(uCol1);
-    vec3 col2 = sRGB2linear(uCol2);
-    vec3 col3 = sRGB2linear(uCol3);
+    #if FINISH_STYLE != CU
+        vec3 col0 = sRGB2linear(uCol0);
+        vec3 col1 = sRGB2linear(uCol1);
+        vec3 col2 = sRGB2linear(uCol2);
+        vec3 col3 = sRGB2linear(uCol3);
+    #endif
 
     // Paint Wear ----------------------------------------------------- //
 
@@ -216,11 +222,11 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         paintBlend += paintWear * curv;
         paintBlend *= uWearAmt * 6.0 + 1.0;
 
-        #if FINISH_STYLE == HY || FINISH_STYLE == AM || FINISH_STYLE == CU || FINISH_STYLE == GS
+        #if (FINISH_STYLE == HY || FINISH_STYLE == AM || FINISH_STYLE == CU || FINISH_STYLE == GS)
             paintBlend += smoothstep(0.5, 0.6, matColor.a) * smoothstep(1.0, 0.9, matColor.a);
 
             float cuttable = 1.0;
-            #if FINISH_STYLE == HY || FINISH_STYLE == AM
+            #if (FINISH_STYLE == HY || FINISH_STYLE == AM)
                 cuttable = 1.0 - clamp(matMasks.g + matMasks.b, 0.0, 1.0);
             #endif
 
@@ -271,7 +277,9 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // Paint Color ---------------------------------------------------- //
 
-    vec3 paintCol = uCol0;
+    #if FINISH_STYLE != CU
+        vec3 paintCol = uCol0;
+    #endif
 
     // Solid Color
     #if FINISH_STYLE == SO
@@ -302,7 +310,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // Custom painted
     #if FINISH_STYLE == CU
-        paintCol = matColor.rgb;
+        vec3 paintCol = matColor.rgb;
         matMasks.r = 0.0;
     #endif
 

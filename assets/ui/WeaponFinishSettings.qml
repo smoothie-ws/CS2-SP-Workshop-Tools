@@ -13,44 +13,47 @@ Rectangle {
     color: AlgStyle.background.color.mainWindow
     implicitHeight: mainLayout.height
 
-    function connectWeaponFinish() {
-        // connect shader
+    function loadWeaponFinish() {
+        weaponFinish.load();
+    }
+
+    function importTexture(url) {
+        return JSON.parse(internal.js(`alg.resources.importSessionResource("${url}", "texture")`));
+    }
+
+    PainterPlugin {
+        onProjectAboutToSave: weaponFinish.save()
+    }
+
+    Component.onCompleted: {
+        // connect widgets to shader
         for (const [param, component] of Object.entries(weaponFinish.parameters)) 
             if (param.startsWith("u")) {
-                component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${param}").value`));
                 if (["filePath", "url"].includes(component.prop))
                     component.item[component.prop + "Changed"].connect(() => 
                         internal.js(`alg.shaders.parameter(0, "${param}").value = "${component.item[component.prop]}"`)
+                    );
+                else if (["range", "arrayColor", "transform"].includes(component.prop))
+                    component.item[component.prop + "Changed"].connect(() => 
+                        internal.js(`alg.shaders.parameter(0, "${param}").value = [${component.item[component.prop]}]`)
                     );
                 else
                     component.item[component.prop + "Changed"].connect(() => 
                         internal.js(`alg.shaders.parameter(0, "${param}").value = ${component.item[component.prop]}`)
                     );
             }
-        // load textures
-        weaponFinish.parameters["uGrungeTex"].item.url = importTexture(`${internal.pluginPath()}/assets/textures/grunge.tga`);
-        weaponFinish.parameters["uScratchesTex"].item.url = importTexture(`${internal.pluginPath()}/assets/textures/scratches.png`);
-
-        finishStyleBox.currentIndexChanged.connect(() => internal.changeFinishStyle(finishStyleBox.currentIndex));
-        // load defaults
-        weaponFinish.setValues(alg.project.settings.value("weapon_finish"));
-    }
-
-    PainterPlugin {
-        onProjectAboutToSave: {
-            internal.saveWeaponFinish(JSON.stringify(weaponFinish.getValues()));
-        }
+        finishStyleBox.currentKeyChanged.connect(() => internal.changeFinishStyle(finishStyleBox.currentKey));
     }
 
     QtObject {
         id: weaponFinish
+        objectName: weaponFinish
 
         property var parameters: {
             "econFile":               { item: econFile,               prop: "filePath"     },
             "texturesFolder":         { item: texturesFolder,         prop: "filePath"     },
-            "finishStyle":            { item: finishStyleBox,         prop: "currentIndex" },
-            "name":                   { item: weaponFinishName,       prop: "text"         },
-            "weapon":                 { item: weaponBox,              prop: "currentIndex" },
+            "finishStyle":            { item: finishStyleBox,         prop: "currentKey" },
+            "weapon":                 { item: weaponBox,              prop: "currentKey" },
             "wearRange":              { item: wearRange,              prop: "range"        },
             "texScale":               { item: texScale,               prop: "value"        },
             "texRotationRange":       { item: texRotation,            prop: "range"        },
@@ -83,46 +86,72 @@ Rectangle {
             "uUseCustomAOTex":        { item: null,                   prop: "checked"      },
         }
 
-        function getValues() {
+        // save weapon finish parameters
+        function save() {
             var values = {}
             for (const [param, component] of Object.entries(parameters))
                 values[param] = component.item[component.prop];
-            return values;
+            internal.saveWeaponFinish(JSON.stringify(values));
         }
 
-        function setValues(values) {
-            for (const v of values) {
-                const component = parameters[v.param];
-                component.item[component.prop] = v.value;
+        // load weapon finish parameters
+        function load() {
+            const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+
+            for (const [param, component] of Object.entries(parameters)) {
+                // set shader's value
+                if (param.startsWith("u"))
+                    component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${param}").value`));
+                // else set saved value
+                else {
+                    const value = values[param];
+                    if (value !== undefined)
+                        component.item[component.prop] = value;
+                }
             }
+
+            // load textures
+            const w = weaponBox.currentKey;
+            const texPath = `${internal.pluginPath()}/assets/textures`;
+
+            for (const [param, file] of Object.entries({
+                    "uGrungeTex": "grunge.tga", 
+                    "uScratchesTex": "scratches.png",
+                    "uBaseColor": `models/${w}/${w}_color.png`, 
+                    "uBaseRough": `models/${w}/${w}_rough.png`, 
+                    "uBaseSurface": `models/${w}/${w}_surface.png`, 
+                    "uBaseMasks": `models/${w}/${w}_masks.png`, 
+                    "uBaseCavity": `models/${w}/${w}_cavity.png`, 
+                }))
+                if (values[param] === undefined || values[param] === "")
+                    parameters[param].item.url = importTexture(`${texPath}/${file}`);
         }
         
-        function reset(param) {
-            const settings = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
-            if (settings !== null)
-                for (const d of settings)
-                    if (param == d.param) {
-                        const component = weaponFinish.parameters[d.param];
-                        component.item[component.prop] = d.value;
-                        break;
-                    }
+        function resetParameter(parameter) {
+            const component = parameters[parameter];
+            const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+            // first try to find saved value
+            for (const [param, value] of Object.entries(values))
+                if (parameter == param) {
+                    component.item[component.prop] = value;
+                    return;
+                }
+            // else set shader's default
+            if (parameter.startsWith("u"))
+                component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${parameter}").value`));
         }
-    }
 
-    function importTexture(url) {
-        return JSON.parse(internal.js(`alg.resources.importSessionResource("${url}", "texture")`));
-    }
-
-    function resetWeapon(name) {
-        const path = `${internal.pluginPath()}/assets/textures/models/${name}`;
-        try {
-            weaponFinish.parameters["uBaseColor"].item.url = importTexture(`${path}/${name}_color.png`);
-            weaponFinish.parameters["uBaseRough"].item.url = importTexture(`${path}/${name}_rough.png`);
-            weaponFinish.parameters["uBaseSurface"].item.url = importTexture(`${path}/${name}_surface.png`);
-            weaponFinish.parameters["uBaseMasks"].item.url = importTexture(`${path}/${name}_masks.png`);
-            weaponFinish.parameters["uBaseCavity"].item.url = importTexture(`${path}/${name}_cavity.png`);
-        } catch(err) {
-            
+        function setWeapon(weapon) {
+            const path = `${internal.pluginPath()}/assets/textures/models/${weapon}`;
+            try {
+                parameters["uBaseColor"].item.url = importTexture(`${path}/${weapon}_color.png`);
+                parameters["uBaseRough"].item.url = importTexture(`${path}/${weapon}_rough.png`);
+                parameters["uBaseSurface"].item.url = importTexture(`${path}/${weapon}_surface.png`);
+                parameters["uBaseMasks"].item.url = importTexture(`${path}/${weapon}_masks.png`);
+                parameters["uBaseCavity"].item.url = importTexture(`${path}/${weapon}_cavity.png`);
+            } catch(err) {
+                
+            }
         }
     }
 
@@ -162,14 +191,6 @@ Rectangle {
     ColumnLayout {
         id: mainLayout
         width: root.width
-
-        Label {
-            id: weaponFinishName
-            text: "NONE"
-            color: AlgStyle.text.color.normal
-            font.pixelSize: 14
-            font.bold: true
-        }
 
         SPGroup {
             id: settings
@@ -376,48 +397,9 @@ Rectangle {
 
                     SPComboBox {
                         id: weaponBox
-                        textRole: "text"
-                        valueRole: "value"
                         Layout.fillWidth: true
-                        model: [
-                            { text: "AK-47", value: "ak47" },
-                            { text: "AUG", value: "aug" },
-                            { text: "AWP", value: "awp" },
-                            { text: "PP-Bizon", value: "bizon" },
-                            { text: "CZ75-Auto", value: "cz75a" },
-                            { text: "Desert Eagle", value: "deagle" },
-                            { text: "Dual Berettas", value: "elite" },
-                            { text: "FAMAS", value: "famas" },
-                            { text: "Five-SeveN", value: "fiveseven" },
-                            { text: "Glock-18", value: "glock18" },
-                            { text: "G3SG1", value: "g3sg1" },
-                            { text: "Galil AR", value: "galilar" },
-                            { text: "MAC-10", value: "mac10" },
-                            { text: "M249", value: "m249" },
-                            { text: "M4A1-S", value: "m4a1_silencer" },
-                            { text: "M4A4", value: "m4a4" },
-                            { text: "MAG-7", value: "mag7" },
-                            { text: "MP5-SD", value: "mp5sd" },
-                            { text: "MP7", value: "mp7" },
-                            { text: "MP9", value: "mp9" },
-                            { text: "Negev", value: "negev" },
-                            { text: "Nova", value: "nova" },
-                            { text: "P2000", value: "hkp2000" },
-                            { text: "P250", value: "p250" },
-                            { text: "P90", value: "p90" },
-                            { text: "R8 Revolver", value: "revolver" },
-                            { text: "Sawed-Off", value: "sawedoff" },
-                            { text: "SCAR-20", value: "scar20" },
-                            { text: "SG 553", value: "sg553" },
-                            { text: "SSG 08", value: "ssg08" },
-                            { text: "Tec-9", value: "tec9" },
-                            { text: "UMP-45", value: "ump45" },
-                            { text: "USP-S", value: "usp_silencer" },
-                            { text: "XM1014", value: "xm1014" },
-                            { text: "Zeus x27", value: "taser" }
-                        ]
-
-                        onCurrentValueChanged: resetWeapon(currentValue)
+                        map: JSON.parse(internal.getWeaponList())
+                        onCurrentKeyChanged: weaponFinish.setWeapon(currentKey)
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, finishStyle.scopeWidth)
@@ -432,19 +414,17 @@ Rectangle {
                         id: finishStyleBox
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        model: [
-                            { text: "Solid Color", value: 0 },
-                            { text: "Hydrographic", value: 1 },
-                            { text: "Spray Paint", value: 2 },
-                            { text: "Anodized", value: 3 },
-                            { text: "Anodized Multicolored", value: 4 },
-                            { text: "Anodized Airbrushed", value: 5 },
-                            { text: "Custom Paint Job", value: 6 },
-                            { text: "Patina", value: 7 },
-                            { text: "Gunsmith", value: 8 }
-                        ]
-                        textRole: "text"
-                        valueRole: "value"
+                        map: {
+                            "so": "Solid Color",
+                            "hy": "Hydrographic",
+                            "sp": "Spray Paint",
+                            "an": "Anodized",
+                            "am": "Anodized Multicolored",
+                            "aa": "Anodized Airbrushed",
+                            "cu": "Custom Paint Job",
+                            "aq": "Patina",
+                            "gs": "Gunsmith"
+                        }
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
@@ -464,7 +444,7 @@ Rectangle {
                         to: wearRange.maxValue.toFixed(2)
                         onValueChanged: wearRange.value = value
                     }
-                    onResetRequested: weaponFinish.reset("uWearAmt")
+                    onResetRequested: weaponFinish.resetParameter("uWearAmt")
                 }
 
                 SPParameter {
@@ -475,7 +455,7 @@ Rectangle {
                         to: 10
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: weaponFinish.reset("texScale")
+                    onResetRequested: weaponFinish.resetParameter("texScale")
                 }
 
                 SPParameter {
@@ -487,7 +467,7 @@ Rectangle {
                         tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: weaponFinish.reset("uIgnoreWeaponSizeScale")
+                    onResetRequested: weaponFinish.resetParameter("uIgnoreWeaponSizeScale")
                 }
             }
 
@@ -503,7 +483,7 @@ Rectangle {
                         to: 360
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: weaponFinish.reset("texRotationRange")
+                    onResetRequested: weaponFinish.resetParameter("texRotationRange")
                 }
 
                 SPParameter {
@@ -514,7 +494,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: weaponFinish.reset("texOffsetXRange")
+                    onResetRequested: weaponFinish.resetParameter("texOffsetXRange")
                 }
 
                 SPParameter {
@@ -525,7 +505,7 @@ Rectangle {
                         to: 1
                         onValueChanged: texTransform.sync()
                     }
-                    onResetRequested: weaponFinish.reset("texOffsetYRange")
+                    onResetRequested: weaponFinish.resetParameter("texOffsetYRange")
                 }
             }
 
@@ -566,7 +546,7 @@ Rectangle {
                                 tooltip.text: finishStyleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
                             }
                         }
-                        onResetRequested: weaponFinish.reset(`uCol${index}`)
+                        onResetRequested: weaponFinish.resetParameter(`uCol${index}`)
                     }
 
                     onItemAdded: (i, item) => {
@@ -591,8 +571,8 @@ Rectangle {
                         onValueChanged: wearAmount.value = value
                     }
                     onResetRequested: {
-                        weaponFinish.reset("wearRange"); 
-                        weaponFinish.reset("uWearAmt");
+                        weaponFinish.resetParameter("wearRange"); 
+                        weaponFinish.resetParameter("uWearAmt");
                     }
                 }
 
@@ -606,7 +586,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: weaponFinish.reset("uUsePearlMask")
+                    onResetRequested: weaponFinish.resetParameter("uUsePearlMask")
                 }
 
                 SPParameter {
@@ -616,7 +596,7 @@ Rectangle {
                         from: -6
                         to: 6
                     }
-                    onResetRequested: weaponFinish.reset("uPearlScale")
+                    onResetRequested: weaponFinish.resetParameter("uPearlScale")
                 }
 
                 SPSeparator { Layout.fillWidth: true }
@@ -629,7 +609,7 @@ Rectangle {
                         checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-                    onResetRequested: weaponFinish.reset("uUseCustomRough")
+                    onResetRequested: weaponFinish.resetParameter("uUseCustomRough")
                 }
                     
                 SPParameter {
@@ -640,7 +620,7 @@ Rectangle {
                         from: 0
                         to: 1
                     }
-                    onResetRequested: weaponFinish.reset("uPaintRoughness")
+                    onResetRequested: weaponFinish.resetParameter("uPaintRoughness")
                 }
             }
 
@@ -668,7 +648,7 @@ Rectangle {
                             contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                         }
 
-                        onResetRequested: weaponFinish.reset(modelData.param)
+                        onResetRequested: weaponFinish.resetParameter(modelData.param)
                     }
 
                     onItemAdded: (i, item) => {

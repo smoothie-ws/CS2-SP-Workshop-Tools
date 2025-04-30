@@ -34,8 +34,11 @@ class Internal(QtCore.QObject):
 
         self.missing_weapon_list = {}
     
+    def weapon_finish_opened(self):
+        return ProjectSettings.get("weapon_finish") is not None
+    
     def on_project_opened(self):
-        if ProjectSettings.get("weapon_finish") is not None:
+        if self.weapon_finish_opened():
             self.projectKindChanged.emit(2)
         else:
             self.projectKindChanged.emit(1)
@@ -138,11 +141,10 @@ class Internal(QtCore.QObject):
 
     @QtCore.Slot(result=str)
     def getWeaponList(self):
-        weapon_list:dict = Settings.get("weapon_list")
-        return "&".join([f'{key}:{weapon_list.get(key)}' for key in weapon_list.keys()])
+        return json.dumps(Settings.get("weapon_list"))
     
-    @QtCore.Slot(str, str, str, int)
-    def createWeaponFinish(self, file_path:str, name:str, weapon:str, finish_style:int):
+    @QtCore.Slot(str, str, str, str)
+    def createWeaponFinish(self, file_path:str, name:str, weapon:str, finish_style:str):
         def callback(res, msg):
             self.state = InternalState.Started
             if res:
@@ -153,8 +155,8 @@ class Internal(QtCore.QObject):
         self.state = InternalState.CreatingWeaponFinish
         WeaponFinish.create(file_path, name, weapon, finish_style, callback)
 
-    @QtCore.Slot(str, str, int)
-    def setupAsWeaponFinish(self, name:str, weapon:str, finish_style:int):
+    @QtCore.Slot(str, str, str)
+    def setupAsWeaponFinish(self, name:str, weapon:str, finish_style:str):
         def callback(res, msg):
             if res:
                 self.projectKindChanged.emit(2)
@@ -163,8 +165,8 @@ class Internal(QtCore.QObject):
                 Log.error(f'Failed to set up weapon finish: {msg}')
         WeaponFinish.set_up(name, weapon, finish_style, callback)
 
-    @QtCore.Slot(int)
-    def changeFinishStyle(self, finish_style:int):
+    @QtCore.Slot(str)
+    def changeFinishStyle(self, finish_style:str):
         WeaponFinish.change_finish_style(finish_style, 
             lambda res, msg: Log.warning(msg) if res else Log.error(msg)
         )

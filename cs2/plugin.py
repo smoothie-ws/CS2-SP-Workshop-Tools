@@ -38,9 +38,9 @@ class Plugin:
             sp.event.DISPATCHER.connect_strong(event, callback)
 
     def close(self):
-        self.ui.close()
         if self.internal is not None:
             self.internal.state = InternalState.Closed
+        self.ui.close()
         Log.warning("Plugin closed")
 
     def checkout_weapon_textures(self):

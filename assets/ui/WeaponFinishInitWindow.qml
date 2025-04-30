@@ -23,9 +23,9 @@ Window {
 
     function submit() {
         if (isNew)
-            internal.createWeaponFinish(fileUrl, nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue);
+            internal.createWeaponFinish(fileUrl, nameInput.text, weaponBox.currentKey, finishStyleBox.currentKey);
         else
-            internal.setupAsWeaponFinish(nameInput.text, weaponBox.currentValue, finishStyleBox.currentValue);
+            internal.setupAsWeaponFinish(nameInput.text, weaponBox.currentKey, finishStyleBox.currentKey);
         close();
     }
 
@@ -99,19 +99,17 @@ Window {
             SPComboBox {
                 id: finishStyleBox
                 Layout.fillWidth: true
-                model: [
-                    { text: "Solid Color", value: 0 },
-                    { text: "Hydrographic", value: 1 },
-                    { text: "Spray Paint", value: 2 },
-                    { text: "Anodized", value: 3 },
-                    { text: "Anodized Multicolored", value: 4 },
-                    { text: "Anodized Airbrushed", value: 5 },
-                    { text: "Custom Paint Job", value: 6 },
-                    { text: "Patina", value: 7 },
-                    { text: "Gunsmith", value: 8 }
-                ]
-                textRole: "text"
-                valueRole: "value"
+                map: {
+                    "so": "Solid Color",
+                    "hy": "Hydrographic",
+                    "sp": "Spray Paint",
+                    "an": "Anodized",
+                    "am": "Anodized Multicolored",
+                    "aa": "Anodized Airbrushed",
+                    "cu": "Custom Paint Job",
+                    "aq": "Patina",
+                    "gs": "Gunsmith"
+                }
             }
         }
 
@@ -122,21 +120,8 @@ Window {
 
             SPComboBox {
                 id: weaponBox
-                textRole: "text"
-                valueRole: "value"
                 Layout.fillWidth: true
-                model: {
-                    const weaponList = internal.getWeaponList();
-                    let weaponListModel = [];
-                    for (const keyValue of weaponList.split("&")) {
-                        const weapon = keyValue.split(":")
-                        weaponListModel.push({
-                            value: weapon[0],
-                            text: weapon[1]
-                        }); 
-                    }
-                    weaponListModel;
-                }
+                map: JSON.parse(internal.getWeaponList())
             }
         }
         

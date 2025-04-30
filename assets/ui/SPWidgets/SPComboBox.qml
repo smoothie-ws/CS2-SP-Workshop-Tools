@@ -5,6 +5,36 @@ import AlgWidgets.Style 2.0
 ComboBox {
     id: root
     implicitHeight: 25
+    textRole: "text"
+    valueRole: "value"
+    model: {
+        const m = [];
+        for (const [value, text] of Object.entries(map))
+            m.push({value: value, text: text});
+        return m;
+    }
+
+    property var map: {}
+    property var currentKey: null
+
+    Component.onCompleted: {
+        var updating = false;
+        function update(f) {
+            if (!updating) {
+                updating = true;
+                f();
+                updating = false;
+            }
+        }
+        currentIndexChanged.connect(() =>
+            update(() => currentKey = Object.keys(map)[currentIndex])
+        );
+        currentKeyChanged.connect(() =>
+            update(() => currentIndex = Object.keys(map).indexOf(currentKey))
+        );
+    }
+
+    
 
     background: Rectangle {
         anchors.fill: parent
