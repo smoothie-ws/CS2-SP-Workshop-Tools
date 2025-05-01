@@ -2,6 +2,7 @@ import json
 import substance_painter as sp
 import substance_painter_plugins as sp_plugins
 
+from .log import Log
 from .path import Path
 
 
@@ -14,7 +15,7 @@ class Settings:
     plugin_settings: dict = None
 
     @staticmethod
-    def _init():
+    def load():
         # init paths
         for path in sp_plugins.path:
             for plugin in Path.listdir(Path.join(path, "plugins")):
@@ -37,7 +38,7 @@ class Settings:
             Settings.reset()
 
     @staticmethod
-    def dump():
+    def save():
         with open(Settings.path, "w", encoding="utf-8") as f:
             json.dump({
                 "version": Settings.plugin_version,
@@ -46,17 +47,29 @@ class Settings:
 
     @staticmethod
     def reset():
-        defaults_path = Path.join(Settings.plugin_path, "default_settings.json")
-        if Path.exists(defaults_path):
-            try:
-                with open(defaults_path, "r", encoding="utf-8") as f:
-                    Settings.plugin_settings = json.loads(f.read())
-            except:
-                pass
+        try:
+            for key, value in Settings.get_defaults():
+                Settings.set(key, value)
+        except SettingsError as e:
+            Log.error(f'Failed to reset plugin settings: {str(e)}')
 
     @staticmethod
     def get_asset_path(*path:list) -> str:
         return Path.join(Settings.plugin_path, "assets", *path)
+
+    @staticmethod
+    def get_defaults():
+        defaults_path = Settings.get_asset_path("default_plugin_settings.json")
+        error_message = f'Path `{defaults_path}` does not exist'
+
+        if Path.exists(defaults_path):
+            try:
+                with open(defaults_path, "r", encoding="utf-8") as f:
+                    return json.loads(f.read())
+            except Exception as e:
+                error_message = str(e)
+        
+        raise SettingsError(f'Failed to get default plugin settings: {error_message}')
 
     @staticmethod
     def keys() -> dict:
@@ -82,3 +95,6 @@ class Settings:
     def set(key:str, value):
         Settings.plugin_settings[key] = value
     
+
+class SettingsError(Exception):
+    pass

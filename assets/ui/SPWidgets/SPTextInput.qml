@@ -14,7 +14,7 @@ TextInput {
     property Component background: Rectangle {
         color: "black"
         radius: 10
-        opacity: root.focus ? 0.5 : (mouseArea.hovered ? 0.3 : 0.15)
+        opacity: root.focus ? 0.5 : (mouseArea.containsMouse ? 0.3 : 0.15)
 
         Behavior on opacity {
             NumberAnimation { duration: 150 }
@@ -35,10 +35,6 @@ TextInput {
         cursorShape: Qt.IBeamCursor
         hoverEnabled: true
 
-        property bool hovered: false
-
-        onEntered: hovered = true
-        onExited: hovered = false
         onPressed: (e) => e.accepted = false
         onReleased: (e) => e.accepted = false
         onClicked: (e) => e.accepted = false

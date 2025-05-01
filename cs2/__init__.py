@@ -5,10 +5,10 @@ plugin = None
 
 def start_plugin():
     global plugin
-    Settings._init()
+    Settings.load()
     plugin = Plugin()
 
 def close_plugin():
     global plugin
-    Settings.dump()
+    Settings.save()
     plugin.close()

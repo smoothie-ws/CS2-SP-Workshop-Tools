@@ -40,6 +40,7 @@ Rectangle {
             if (projectKind == 2)
                 weaponFinishSettings.loadWeaponFinish();
         }
+        onFinishStyleReady: weaponFinishSettings.syncWeaponFinish()
     }
 
     // main
@@ -65,7 +66,7 @@ Rectangle {
 
             SPButton {
                 text: "New Weapon Finish"
-                tooltip.text: "Create a new project and set it up as Weapon Finish"
+                tooltip.text: "Create new project and set it up as a Weapon Finish"
                 icon.source: "./icons/add.png"
                 icon.width: 18
                 icon.height: 18
@@ -132,30 +133,41 @@ Rectangle {
             }
         }
 
-        // footer 
-        Item {
-            id: footer
+        // footer
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 45
 
-            ColumnLayout {
-                anchors.fill: parent
+            SPSeparator { Layout.fillWidth: true }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    id: versionLabel
-                    text: `v${internal.pluginVersion()}`
+            Repeater {
+                model: [
+                    `<b><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a> v${internal.pluginVersion()}</b>`,
+                    "| Created by <a href=\"https://steamcommunity.com/id/smoothie-ws/\"><b>smoothie</b></a>"
+                ]
+                delegate: Text {
                     color: AlgStyle.text.color.normal
-                    opacity: 0.5
-                    horizontalAlignment: Text.AlignHCenter
-                    Layout.fillWidth: true
+                    opacity: 0.75
+                    textFormat: Text.RichText
+
+                    text: qsTr(`<style>a:link{color:%1;text-decoration:none;}</style>${modelData}`).arg(hoveredLink ? "#e08ee0" : "#6dabf0")
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: {
+                            if (parent.hoveredLink)
+                                Qt.openUrlExternally(parent.linkAt(mouseX, mouseY));
+                        }
+                    }
                 }
             }
+            
+            SPSeparator { Layout.fillWidth: true }
         }
+        
     }
+
+    // Dialogues
 
     SPDialog {
         id: texturesAreMissingPopup

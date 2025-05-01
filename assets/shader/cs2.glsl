@@ -185,35 +185,37 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     matColor.a = tex2D(uMatAlpha, inputs).r;
     float matRough = uUseCustomRough ? (tex2D(uMatRough, inputs).r) : uPaintRoughness;
 
+    // base textures
+    vec4 baseColor = sRGB2linear(tex2D(uBaseColor, inputs));
+    vec4 baseCavity = sRGB2linear(tex2D(uBaseCavity, inputs));
+    vec3 baseMasks = tex2D(uBaseMasks, inputs).rgb;
+    float baseRough = tex2D(uBaseRough, inputs).r;
+    float baseMetal = baseMasks.r;
+
+    float curv = baseCavity.r;
+    float ao = baseCavity.g;
+
+    // masks & colors
     #if FINISH_STYLE != CU
         vec3 matMasks;
         if (uUseCustomMasks)
             matMasks = tex2D(uMatMasks, inputs).rgb;
         else
-            matMasks = tex2D(uBaseMasks, inputs).rgb;
-    #else
-        vec3 matMasks = tex2D(uBaseMasks, inputs).rgb;
-    #endif
-
-    // base textures
-    vec4 baseColor = sRGB2linear(tex2D(uBaseColor, inputs));
-    vec4 baseCavity = sRGB2linear(tex2D(uBaseCavity, inputs));
-    float baseRough = tex2D(uBaseRough, inputs).r;
-
-    float curv = baseCavity.r;
-    float ao = baseCavity.g;
-
-    float pearlFactor = uPearlScale;
-    if (uUsePearlMask)
-        pearlFactor *= tex2D(uMatPearl, inputs).r;
-
-    // colors
-    #if FINISH_STYLE != CU
+            matMasks = baseMasks;
         vec3 col0 = sRGB2linear(uCol0);
         vec3 col1 = sRGB2linear(uCol1);
         vec3 col2 = sRGB2linear(uCol2);
         vec3 col3 = sRGB2linear(uCol3);
+        vec3 paintCol = col0;
+    #else
+        vec3 matMasks = baseMasks;
+        vec3 paintCol = matColor.rgb;
+        matMasks.r = 0.0;
     #endif
+
+    float pearlFactor = uPearlScale;
+    if (uUsePearlMask)
+        pearlFactor *= tex2D(uMatPearl, inputs).r;
 
     // Paint Wear ----------------------------------------------------- //
 
@@ -248,7 +250,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         float matMetal = 1.0;
     #endif
 
-    #if FINISH_STYLE == HY || FINISH_STYLE == SP
+    #if (FINISH_STYLE == HY || FINISH_STYLE == SP)
         vec3 spread = vec3(0.06 * uWearAmt);
         spread.y *= 2.0;
         spread.z *= 3.0;
@@ -269,17 +271,13 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         float paintEdge = smoothstep(0.0, 0.01, paintBlend);
     #endif
 
-    #if FINISH_STYLE == AQ || FINISH_STYLE == GS
+    #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
         float grunge = grungeCol.r * grungeCol.g * grungeCol.b;
     #endif
 
     grungeCol = mix(vec4(1.0), grungeCol, (pow((1.0 - curv), 4.0) * 0.25 + 0.75 * uWearAmt));
 
-    // Paint Color ---------------------------------------------------- //
-
-    #if FINISH_STYLE != CU
-        vec3 paintCol = uCol0;
-    #endif
+    // Paint Color  --------------------------------------------------- //
 
     // Solid Color
     #if FINISH_STYLE == SO
@@ -298,8 +296,8 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // TODO: Spraypaint / Anodized Airbrushed
 
     // Anodized
-    #if FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA
-        #if (FINISH_STYLE == AN)
+    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
+        #if FINISH_STYLE == AN
             paintCol.rgb = col0.rgb;
         #endif
         paintCol = mix(paintCol, vec3(0.05), paintEdge);
@@ -308,21 +306,15 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         // dirtMask *= mix(0.48, 1.0, paintEdge);
     #endif
 
-    // Custom painted
-    #if FINISH_STYLE == CU
-        vec3 paintCol = matColor.rgb;
-        matMasks.r = 0.0;
-    #endif
-
     float dirtMask = 0.0;
 
     // Antiqued / Gunsmith
-    #if FINISH_STYLE == AQ || FINISH_STYLE == GS
+    #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
         float patinaBlend = paintWear * ao * curv * curv;
         patinaBlend = smoothstep(0.2, 0.05, patinaBlend * uWearAmt);
 
-        float grimeBlend = clamp(curv * ao * 4.0 - uWearAmt * 0.1, 0.0, 1.0) - grunge;
-        grimeBlend = smoothstep(0.35, 0.0, grimeBlend);
+        float grimeBlend = clamp(curv * ao - uWearAmt * 0.1, 0.0, 1.0) - grunge * 0.15;
+        grimeBlend = smoothstep(0.15, 0.0, grimeBlend + 0.08);
 
         vec3 patinaCol = mix(col1, col2, uWearAmt);
         vec3 grimeCol = mix(col1, col3, pow(uWearAmt, 0.5));
@@ -346,14 +338,15 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     #endif
 
     dirtMask += ao * (0.5 - grungeCol.a * 0.5);
-    #if FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP || FINISH_STYLE == CU
+    #if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP || FINISH_STYLE == CU)
         dirtMask *= smoothstep(0.01, 0.0, paintBlend);
     #elif (FINISH_STYLE == GS)
         dirtMask *= mix(smoothstep(0.01, 0.0, paintBlend), 1.0, matMasks.r);
     #endif
 
-    matRough += dirtMask * mix(0.48, 0.16, matMasks.r) * uWearAmt;
-    matMetal -= dirtMask * uWearAmt;
+    float dirtAmt = dirtMask * uWearAmt;
+    matRough += dirtAmt * mix(0.48, 0.16, matMasks.r);
+    matMetal -= dirtAmt;
 
     // Outputs -------------------------------------------------------- //
 
@@ -362,7 +355,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // Roughness
     outputs.orm.g = mix(matRough, baseRough, paintBlend);
     // Metallic
-    outputs.orm.b = mix(matMetal, matMasks.r, paintBlend);
+    outputs.orm.b = mix(matMetal, baseMetal, paintBlend);
 
     // Normal
     if (uUseCustomNormal)
@@ -377,7 +370,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         inputs.normal = normalize(baseNormal * 2.0 - 1.0);
         outputs.vectors = computeLocalFrame(inputs, inputs.normal, 0.0);
     }
-
+    
     // Color
     paintCol *= grungeCol.rgb;
 
@@ -393,7 +386,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         vec3 valCol = mix(
                 vec3(step(0.91, g), 0.0, step(g, 0.02)), // non-metallic
                 vec3(step(0.97, g), 0.0, step(g, 0.12)), // metalic
-                step(0.75, outputs.orm.b)
+                step(0.75, matMetal)
             );
         valCol = mix(valCol, vec3(0.0), paintBlend);
         outputs.color = outputs.color * (1.0 - length(valCol));

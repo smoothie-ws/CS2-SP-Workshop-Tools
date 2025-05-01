@@ -34,11 +34,8 @@ class Internal(QtCore.QObject):
 
         self.missing_weapon_list = {}
     
-    def weapon_finish_opened(self):
-        return ProjectSettings.get("weapon_finish") is not None
-    
     def on_project_opened(self):
-        if self.weapon_finish_opened():
+        if self.is_weapon_finish_opened():
             self.projectKindChanged.emit(2)
         else:
             self.projectKindChanged.emit(1)
@@ -46,6 +43,15 @@ class Internal(QtCore.QObject):
     def on_project_about_to_close(self):
         self.projectKindChanged.emit(0)
 
+    def on_about(self):
+        Log.info("About")
+        
+    def on_settings(self):
+        Log.info("Settings")
+        
+    def is_weapon_finish_opened(self):
+        return ProjectSettings.get("weapon_finish") is not None
+    
     def emit_textures_are_missing(self):
         if len(self.missing_weapon_list) > 0 and not Settings.get("ignore_textures_are_missing"):
             self.texturesAreMissing.emit()
@@ -82,6 +88,7 @@ class Internal(QtCore.QObject):
     decompilationStateChanged = QtCore.Signal(str)
     decompilationFinished = QtCore.Signal()
     projectKindChanged = QtCore.Signal(int)
+    finishStyleReady = QtCore.Signal()
 
     # Slots
 
@@ -166,10 +173,15 @@ class Internal(QtCore.QObject):
         WeaponFinish.set_up(name, weapon, finish_style, callback)
 
     @QtCore.Slot(str)
-    def changeFinishStyle(self, finish_style:str):
-        WeaponFinish.change_finish_style(finish_style, 
-            lambda res, msg: Log.warning(msg) if res else Log.error(msg)
-        )
+    def changeFinishStyle(self, finish_style: str):
+        def _change(res: bool, msg: str):
+            if res:
+                Log.warning(msg) 
+                self.finishStyleReady.emit()
+            else:
+                Log.error(msg)
+
+        WeaponFinish.change_finish_style(finish_style, _change)
 
     @QtCore.Slot(str)
     def saveWeaponFinish(self, values:str):

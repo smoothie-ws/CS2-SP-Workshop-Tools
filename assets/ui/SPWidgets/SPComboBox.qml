@@ -34,8 +34,6 @@ ComboBox {
         );
     }
 
-    
-
     background: Rectangle {
         anchors.fill: parent
         color: root.hovered ? "#333333" : "#2d2d2d"
@@ -90,7 +88,7 @@ ComboBox {
                 id: listItem
                 width: listContent.width
                 height: 20
-                color: Qt.rgba(0, 0, 0, 0)
+                color: listItemMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
                 radius: 15
 
                 Rectangle {
@@ -99,7 +97,6 @@ ComboBox {
                     radius: width
                     x: 5
                     y: parent.height / 2 - height / 2
-                    scale: root.currentIndex == index ? 1.2 : 1
                     color: root.currentIndex == index ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(1, 1, 1, 0.5)
                 }
 
@@ -113,20 +110,10 @@ ComboBox {
                 }
 
                 MouseArea {
-                    id: mouseArea
+                    id: listItemMouseArea
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-
-                    onEntered: {
-                        listItem.color = Qt.rgba(1, 1, 1, 0.05)
-                        itemLabel.font.pixelSize = 13
-                    }
-
-                    onExited: {
-                        listItem.color = Qt.rgba(0, 0, 0, 0)
-                        itemLabel.font.pixelSize = 11
-                    }
 
                     onClicked: {
                         root.activated(index)

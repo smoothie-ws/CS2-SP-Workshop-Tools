@@ -12,7 +12,7 @@ ColumnLayout {
     property alias mouseArea: mouseArea
     property alias text: label.text
     property alias pressed: mouseArea.pressed
-    property alias hovered: mouseArea.hovered
+    property alias hovered: mouseArea.containsMouse
 
     property real from: 0.0
     property real to: 1.0
@@ -56,10 +56,6 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            property bool hovered: false
-
-            onEntered: hovered = true
-            onExited: hovered = false
             onPressed: sync()
             onPositionChanged: if (pressed) sync()
 

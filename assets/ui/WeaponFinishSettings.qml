@@ -15,6 +15,30 @@ Rectangle {
 
     function loadWeaponFinish() {
         weaponFinish.load();
+
+        // load base textures
+        const w = weaponBox.currentKey;
+        const texPath = `${internal.pluginPath()}/assets/textures`;
+
+        const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+        for (const [param, file] of Object.entries({
+                "uGrungeTex": "grunge.tga", 
+                "uScratchesTex": "scratches.png", 
+                "uBaseColor": `models/${w}/${w}_color.png`, 
+                "uBaseRough": `models/${w}/${w}_rough.png`, 
+                "uBaseSurface": `models/${w}/${w}_surface.png`, 
+                "uBaseMasks": `models/${w}/${w}_masks.png`, 
+                "uBaseCavity": `models/${w}/${w}_cavity.png`
+            }))
+            if (values[param] === undefined || values[param] === "")
+                weaponFinish.parameters[param].control.url = importTexture(`${texPath}/${file}`);
+
+        weaponFinish.save();
+    }
+
+    // when user changes finish style, the corresponding shader instance has outdated parameter values
+    function syncWeaponFinish() {
+        weaponFinish.syncShader();
     }
 
     function importTexture(url) {
@@ -26,132 +50,62 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        // connect widgets to shader
-        for (const [param, component] of Object.entries(weaponFinish.parameters)) 
-            if (param.startsWith("u")) {
-                if (["filePath", "url"].includes(component.prop))
-                    component.item[component.prop + "Changed"].connect(() => 
-                        internal.js(`alg.shaders.parameter(0, "${param}").value = "${component.item[component.prop]}"`)
-                    );
-                else if (["range", "arrayColor", "transform"].includes(component.prop))
-                    component.item[component.prop + "Changed"].connect(() => 
-                        internal.js(`alg.shaders.parameter(0, "${param}").value = [${component.item[component.prop]}]`)
-                    );
-                else
-                    component.item[component.prop + "Changed"].connect(() => 
-                        internal.js(`alg.shaders.parameter(0, "${param}").value = ${component.item[component.prop]}`)
-                    );
-            }
-        finishStyleBox.currentKeyChanged.connect(() => internal.changeFinishStyle(finishStyleBox.currentKey));
+        weaponFinish.connect();
+
+        finishStyleBox.currentKeyChanged.connect(() => 
+            internal.changeFinishStyle(finishStyleBox.currentKey)
+        );
+        weaponBox.currentKeyChanged.connect(() => {
+            const w = weaponBox.currentKey;
+            const path = `${internal.pluginPath()}/assets/textures/models/${w}`;
+            try {
+                weaponFinish.parameters["uBaseColor"].control.url = importTexture(`${path}/${w}_color.png`);
+                weaponFinish.parameters["uBaseRough"].control.url = importTexture(`${path}/${w}_rough.png`);
+                weaponFinish.parameters["uBaseSurface"].control.url = importTexture(`${path}/${w}_surface.png`);
+                weaponFinish.parameters["uBaseMasks"].control.url = importTexture(`${path}/${w}_masks.png`);
+                weaponFinish.parameters["uBaseCavity"].control.url = importTexture(`${path}/${w}_cavity.png`);
+            } catch(err) { }
+        });
     }
 
-    QtObject {
+    WeaponFinish {
         id: weaponFinish
-        objectName: weaponFinish
 
-        property var parameters: {
-            "econFile":               { item: econFile,               prop: "filePath"     },
-            "texturesFolder":         { item: texturesFolder,         prop: "filePath"     },
-            "finishStyle":            { item: finishStyleBox,         prop: "currentKey" },
-            "weapon":                 { item: weaponBox,              prop: "currentKey" },
-            "wearRange":              { item: wearRange,              prop: "range"        },
-            "texScale":               { item: texScale,               prop: "value"        },
-            "texRotationRange":       { item: texRotation,            prop: "range"        },
-            "texOffsetXRange":        { item: texOffsetX,             prop: "range"        },
-            "texOffsetYRange":        { item: texOffsetY,             prop: "range"        },
+        parameters: {
+            "econFile":               { control: econFile,               prop: "filePath"     },
+            "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
+            "finishStyle":            { control: finishStyleBox,         prop: "currentKey"   },
+            "weapon":                 { control: weaponBox,              prop: "currentKey"   },
+            "wearRange":              { control: wearRange,              prop: "range"        },
+            "texScale":               { control: texScale,               prop: "value"        },
+            "texRotationRange":       { control: texRotation,            prop: "range"        },
+            "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
+            "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
             // Shader parameters
-            "uLivePreview":           { item: enableLivePreview,      prop: "checked"      },
-            "uPBRValidation":         { item: enablePBRValidation,    prop: "checked"      },
-            "uWearAmt":               { item: wearAmount,             prop: "value"        },
-            "uTexTransform":          { item: texTransform,           prop: "transform"    },
-            "uIgnoreWeaponSizeScale": { item: ignoreTextureSizeScale, prop: "checked"      },
-            "uUsePearlMask":          { item: usePearlescentMask,     prop: "checked"      },
-            "uPearlScale":            { item: pearlescentScale,       prop: "value"        },
-            "uUseCustomRough":        { item: useRoughnessTexture,    prop: "checked"      },
-            "uPaintRoughness":        { item: paintRoughness,         prop: "value"        },
+            "uLivePreview":           { control: enableLivePreview,      prop: "checked"      },
+            "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
+            "uWearAmt":               { control: wearAmount,             prop: "value"        },
+            "uTexTransform":          { control: texTransform,           prop: "transform"    },
+            "uIgnoreWeaponSizeScale": { control: ignoreTextureSizeScale, prop: "checked"      },
+            "uUsePearlMask":          { control: usePearlescentMask,     prop: "checked"      },
+            "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
+            "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
+            "uPaintRoughness":        { control: paintRoughness,         prop: "value"        },
             // dynamically generated components
-            "uGrungeTex":             { item: null,                   prop: "url"          },
-            "uScratchesTex":          { item: null,                   prop: "url"          },
-            "uBaseColor":             { item: null,                   prop: "url"          },
-            "uBaseRough":             { item: null,                   prop: "url"          },
-            "uBaseSurface":           { item: null,                   prop: "url"          },
-            "uBaseMasks":             { item: null,                   prop: "url"          },
-            "uBaseCavity":            { item: null,                   prop: "url"          },
-            "uCol0":                  { item: null,                   prop: "arrayColor"   },
-            "uCol1":                  { item: null,                   prop: "arrayColor"   },
-            "uCol2":                  { item: null,                   prop: "arrayColor"   },
-            "uCol3":                  { item: null,                   prop: "arrayColor"   },
-            "uUseCustomNormal":       { item: null,                   prop: "checked"      },
-            "uUseCustomMasks":        { item: null,                   prop: "checked"      },
-            "uUseCustomAOTex":        { item: null,                   prop: "checked"      },
-        }
-
-        // save weapon finish parameters
-        function save() {
-            var values = {}
-            for (const [param, component] of Object.entries(parameters))
-                values[param] = component.item[component.prop];
-            internal.saveWeaponFinish(JSON.stringify(values));
-        }
-
-        // load weapon finish parameters
-        function load() {
-            const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
-
-            for (const [param, component] of Object.entries(parameters)) {
-                // set shader's value
-                if (param.startsWith("u"))
-                    component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${param}").value`));
-                // else set saved value
-                else {
-                    const value = values[param];
-                    if (value !== undefined)
-                        component.item[component.prop] = value;
-                }
-            }
-
-            // load textures
-            const w = weaponBox.currentKey;
-            const texPath = `${internal.pluginPath()}/assets/textures`;
-
-            for (const [param, file] of Object.entries({
-                    "uGrungeTex": "grunge.tga", 
-                    "uScratchesTex": "scratches.png",
-                    "uBaseColor": `models/${w}/${w}_color.png`, 
-                    "uBaseRough": `models/${w}/${w}_rough.png`, 
-                    "uBaseSurface": `models/${w}/${w}_surface.png`, 
-                    "uBaseMasks": `models/${w}/${w}_masks.png`, 
-                    "uBaseCavity": `models/${w}/${w}_cavity.png`, 
-                }))
-                if (values[param] === undefined || values[param] === "")
-                    parameters[param].item.url = importTexture(`${texPath}/${file}`);
-        }
-        
-        function resetParameter(parameter) {
-            const component = parameters[parameter];
-            const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
-            // first try to find saved value
-            for (const [param, value] of Object.entries(values))
-                if (parameter == param) {
-                    component.item[component.prop] = value;
-                    return;
-                }
-            // else set shader's default
-            if (parameter.startsWith("u"))
-                component.item[component.prop] = JSON.parse(internal.js(`alg.shaders.parameter(0, "${parameter}").value`));
-        }
-
-        function setWeapon(weapon) {
-            const path = `${internal.pluginPath()}/assets/textures/models/${weapon}`;
-            try {
-                parameters["uBaseColor"].item.url = importTexture(`${path}/${weapon}_color.png`);
-                parameters["uBaseRough"].item.url = importTexture(`${path}/${weapon}_rough.png`);
-                parameters["uBaseSurface"].item.url = importTexture(`${path}/${weapon}_surface.png`);
-                parameters["uBaseMasks"].item.url = importTexture(`${path}/${weapon}_masks.png`);
-                parameters["uBaseCavity"].item.url = importTexture(`${path}/${weapon}_cavity.png`);
-            } catch(err) {
-                
-            }
+            "uGrungeTex":             { control: null,                   prop: "url"          },
+            "uScratchesTex":          { control: null,                   prop: "url"          },
+            "uBaseColor":             { control: null,                   prop: "url"          },
+            "uBaseRough":             { control: null,                   prop: "url"          },
+            "uBaseSurface":           { control: null,                   prop: "url"          },
+            "uBaseMasks":             { control: null,                   prop: "url"          },
+            "uBaseCavity":            { control: null,                   prop: "url"          },
+            "uCol0":                  { control: null,                   prop: "arrayColor"   },
+            "uCol1":                  { control: null,                   prop: "arrayColor"   },
+            "uCol2":                  { control: null,                   prop: "arrayColor"   },
+            "uCol3":                  { control: null,                   prop: "arrayColor"   },
+            "uUseCustomNormal":       { control: null,                   prop: "checked"      },
+            "uUseCustomMasks":        { control: null,                   prop: "checked"      },
+            "uUseCustomAOTex":        { control: null,                   prop: "checked"      },
         }
     }
 
@@ -198,75 +152,110 @@ Rectangle {
             expandable: false
             text: "Project Settings"
 
-            SPLabeled {
-                id: econFile
-                text: "Econitem File"
+            RowLayout {
                 Layout.fillWidth: true
-
-                property string filePath: ""
-
-                RowLayout {
-                    Layout.fillWidth: true
                     
-                    Label {
-                        clip: true
-                        opacity: 0.5
-                        elide: Text.ElideLeft
-                        horizontalAlignment: Text.AlignLeft
-                        text: econFileDialog.fileUrl
-                        color: AlgStyle.text.color.normal
-                        Layout.fillWidth: true
-                    }
+                SPButton {
+                    text: "Import"
+                    enabled: econFile.filePath !== ""
+                    icon.source: "./icons/import.png"
+                    icon.width: 15
+                    icon.height: 15
+                    tooltip.text: "Import values from the .econitem file"
+                    label.color: AlgStyle.text.color.normal
+                    backgroundRect.color: "black"
+                    backgroundRect.opacity: hovered ? 0.75 : 0.25
+                }
 
-                    SPButton {
-                        text: "Select"
-                        
-                        onClicked: econFileDialog.open()
+                SPParameter {
+                    id: econFile
+                    Layout.fillWidth: true
 
-                        SPFileDialog {
-                            id: econFileDialog
-                            title: "Select file"
-                            folder: Qt.resolvedUrl(internal.getCs2Path())
-                            nameFilters: [ "CS2 Econ Item (*.econitem)" ]
-                            onAccepted: econFile.filePath = fileUrl.toString().substring(8);
+                    property string filePath: ""
+
+                    SPLabeled {
+                        text: "Econitem File"
+
+                        Label {
+                            clip: true
+                            opacity: 0.5
+                            elide: Text.ElideLeft
+                            horizontalAlignment: Text.AlignLeft
+                            text: econFileDialog.fileUrl
+                            color: AlgStyle.text.color.normal
+                            Layout.fillWidth: true
+                        }
+
+                        SPButton {
+                            text: "Select"
+
+                            onClicked: econFileDialog.open()
+
+                            SPFileDialog {
+                                id: econFileDialog
+                                title: "Select file"
+                                folder: Qt.resolvedUrl(internal.getCs2Path())
+                                nameFilters: [ "CS2 Econ Item (*.econitem)" ]
+                                onAccepted: econFile.filePath = fileUrl.toString().substring(8);
+                            }
                         }
                     }
+                    
+                    onResetRequested: weaponFinish.resetParameter("econFile")
                 }
             }
 
-            SPLabeled {
-                id: texturesFolder
-                text: "Textures Folder"
+            RowLayout {
                 Layout.fillWidth: true
-
-                property string filePath: ""
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    
-                    Label {
-                        clip: true
-                        opacity: 0.5
-                        elide: Text.ElideLeft
-                        horizontalAlignment: Text.AlignLeft
-                        text: texturesFolderDialog.fileUrl
-                        color: AlgStyle.text.color.normal
-                        Layout.fillWidth: true
-                    }
-
-                    SPButton {
-                        text: "Select"
                         
-                        onClicked: texturesFolderDialog.open()
+                SPButton {
+                    text: "Export"
+                    enabled: texturesFolder.filePath !== ""
+                    icon.source: "./icons/export.png"
+                    icon.width: 15
+                    icon.height: 15
+                    tooltip.text: "Export Weapon Finish textures"
+                    label.color: AlgStyle.text.color.normal
+                    backgroundRect.color: "black"
+                    backgroundRect.opacity: hovered ? 0.75 : 0.25
+                }
+                    
+                SPParameter {
+                    id: texturesFolder
+                    Layout.fillWidth: true
 
-                        SPFileDialog {
-                            id: texturesFolderDialog
-                            title: "Select folder"
-                            selectFolder: true
-                            folder: Qt.resolvedUrl(internal.getCs2Path())
-                            onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
+                    property string filePath: ""
+
+                    SPLabeled {
+                        text: "Textures Folder"
+                        Layout.fillWidth: true
+
+                        Label {
+                            clip: true
+                            opacity: 0.5
+                            elide: Text.ElideLeft
+                            horizontalAlignment: Text.AlignLeft
+                            text: texturesFolderDialog.fileUrl
+                            color: AlgStyle.text.color.normal
+                            Layout.fillWidth: true
+                        }
+
+                        SPButton {
+                            text: "Select"
+                            
+                            onClicked: texturesFolderDialog.open()
+
+                            SPFileDialog {
+                                id: texturesFolderDialog
+                                title: "Select folder"
+                                selectFolder: true
+                                folder: Qt.resolvedUrl(internal.getCs2Path())
+                                onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
+                            }
                         }
                     }
+
+                    onResetRequested: weaponFinish.resetParameter("texturesFolder")
                 }
             }
         }
@@ -368,12 +357,14 @@ Rectangle {
                             filters: AlgResourcePicker.TEXTURE
                         }
                     }
+
+                    onResetRequested: weaponFinish.resetParameter(modelData.param)
                 }
 
-                onItemAdded: (i, item) => {
-                    weaponFinish.parameters[model[i].param].item = item;
-                    settings.scopeWidth = Math.max(settings.scopeWidth, item.scopeWidth);
-                    item.scopeWidth = Qt.binding(() => settings.scopeWidth);
+                onItemAdded: (i, control) => {
+                    weaponFinish.parameters[model[i].param].control = control;
+                    settings.scopeWidth = Math.max(settings.scopeWidth, control.scopeWidth);
+                    control.scopeWidth = Qt.binding(() => settings.scopeWidth);
                 }
             }
         }
@@ -399,7 +390,6 @@ Rectangle {
                         id: weaponBox
                         Layout.fillWidth: true
                         map: JSON.parse(internal.getWeaponList())
-                        onCurrentKeyChanged: weaponFinish.setWeapon(currentKey)
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, finishStyle.scopeWidth)
@@ -549,11 +539,11 @@ Rectangle {
                         onResetRequested: weaponFinish.resetParameter(`uCol${index}`)
                     }
 
-                    onItemAdded: (i, item) => {
-                        colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, item.scopeWidth);
-                        item.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
-                        weaponFinish.parameters[`uCol${i}`].item = item;
-                        weaponFinish.parameters[`uCol${i}`].item = item;
+                    onItemAdded: (i, control) => {
+                        colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, control.scopeWidth);
+                        control.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
+                        weaponFinish.parameters[`uCol${i}`].control = control;
+                        weaponFinish.parameters[`uCol${i}`].control = control;
                     }
                 }
             }
@@ -566,8 +556,8 @@ Rectangle {
                     SPRangeSlider {
                         id: wearRange
                         text: "Wear Range"
-                        from: 0.0
-                        to: 1.0
+                        minValue: 0.0
+                        maxValue: 1.0
                         onValueChanged: wearAmount.value = value
                     }
                     onResetRequested: {
@@ -651,8 +641,8 @@ Rectangle {
                         onResetRequested: weaponFinish.resetParameter(modelData.param)
                     }
 
-                    onItemAdded: (i, item) => {
-                        weaponFinish.parameters[model[i].param].item = item.control;
+                    onItemAdded: (i, control) => {
+                        weaponFinish.parameters[model[i].param].control = control.control;
                     }
                 }
             }

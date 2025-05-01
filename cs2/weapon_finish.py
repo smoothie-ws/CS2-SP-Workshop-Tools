@@ -1,3 +1,4 @@
+import json
 import substance_painter as sp
 
 from .log import Log
@@ -103,7 +104,7 @@ class WeaponFinish:
 		if cs2_path is not None:
 			export_path = Path.join(cs2_path, "content", "csgo", "workshop", "paintkits", name)
 		if sp.project.is_open():
-			if sp.project.needs_saving():
+			if sp.project.needs_saving() and sp.project.file_path() is not None:
 				try:
 					sp.project.save()
 				except sp.exception.ProjectError:
@@ -171,26 +172,29 @@ class WeaponFinish:
 
 	@staticmethod
 	def set_up(name:str, weapon:str, finish_style:str, callback):
-		def _set_up():
-			try:
-				# update channel stacks
-				new_stack = {
-					sp.textureset.ChannelType.BaseColor: (sp.textureset.ChannelFormat.sRGB8, None),
-					sp.textureset.ChannelType.Roughness: (sp.textureset.ChannelFormat.L8, None),
-					sp.textureset.ChannelType.User0: (sp.textureset.ChannelFormat.RGB8, "Masks"),
-					sp.textureset.ChannelType.User1: (sp.textureset.ChannelFormat.L8, "Alpha"),
-					sp.textureset.ChannelType.User2: (sp.textureset.ChannelFormat.L8, "Pearlescence")
-				}
+		delayed = False
+		def _set_up(_):
+			if delayed:
+				sp.event.DISPATCHER.disconnect(sp.event.ShelfCrawlingEnded, _set_up)
 
-				allowed_channels = [
-					sp.textureset.ChannelType.BaseColor,
-					sp.textureset.ChannelType.Roughness,
-					sp.textureset.ChannelType.User0,
-					sp.textureset.ChannelType.User1,
-					sp.textureset.ChannelType.User2,
-					sp.textureset.ChannelType.Height,
-					sp.textureset.ChannelType.Normal
-				]
+			# update channel stacks
+			new_stack = {
+				sp.textureset.ChannelType.BaseColor: (sp.textureset.ChannelFormat.sRGB8, None),
+				sp.textureset.ChannelType.Roughness: (sp.textureset.ChannelFormat.L8, None),
+				sp.textureset.ChannelType.User0: (sp.textureset.ChannelFormat.RGB8, "Masks"),
+				sp.textureset.ChannelType.User1: (sp.textureset.ChannelFormat.L8, "Alpha"),
+				sp.textureset.ChannelType.User2: (sp.textureset.ChannelFormat.L8, "Pearlescence")
+			}
+			allowed_channels = [
+				sp.textureset.ChannelType.BaseColor,
+				sp.textureset.ChannelType.Roughness,
+				sp.textureset.ChannelType.User0,
+				sp.textureset.ChannelType.User1,
+				sp.textureset.ChannelType.User2,
+				sp.textureset.ChannelType.Height,
+				sp.textureset.ChannelType.Normal
+			]
+			try:
 				for texture_set in sp.textureset.all_texture_sets():
 					for stack in texture_set.all_stacks():
 						for channel_type, channel in new_stack.items():
@@ -205,40 +209,49 @@ class WeaponFinish:
 						for channel_type, channel in stack.all_channels().items():
 							if channel_type not in allowed_channels:
 								stack.remove_channel(channel_type)
-
-				# update project settings
-				ProjectSettings.set("weapon_finish", {
-					"name": name,
-					"weapon": weapon,
-					"finishStyle": finish_style
-				})
-
-				WeaponFinish.change_finish_style(finish_style, 
-					lambda res, msg: callback(res, 
-						f'The project was set up as Weapon Finish' if res else f'Failed to set up Weapon Finish: {msg}'
-					)
-				)
 			except Exception as e:
-				callback(False, f'Failed to set up weapon finish: {str(e)}')
+				callback(False, f'Failed to set up document channel stack: {str(e)}')
+
+			# update project settings
+			weapon_finish = {
+				"name": name,
+				"weapon": weapon,
+				"finishStyle": finish_style
+			}
+
+			ProjectSettings.set("weapon_finish", weapon_finish)
+
+			WeaponFinish.change_finish_style(finish_style, 
+				lambda res, msg: callback(res, 
+					f'The project was successfully set up as Weapon Finish' if res else f'Failed to set finish style: {msg}'
+				)
+			)
 
 		if sp.resource.Shelf("your_assets").is_crawling():
-			sp.event.DISPATCHER.strong_connect(sp.event.ShelfCrawlingEnded, lambda _: _set_up())
+			delayed = True
+			sp.event.DISPATCHER.strong_connect(sp.event.ShelfCrawlingEnded, _set_up)
 		else:
-			_set_up()
+			_set_up(None)
 
 	@staticmethod
-	def save(parameters):
-		ProjectSettings.set("weapon_finish", parameters)
+	def save(values:dict):
+		weapon_finish = ProjectSettings.get("weapon_finish")
+		for key, value in values.items():
+			weapon_finish[key] = value
+		ProjectSettings.set("weapon_finish", weapon_finish)
 
 	@staticmethod
 	def change_finish_style(finish_style: str, callback):
-		# update shader instance
+		# update shader instance if needed
 		def update_shader(resources):
 			if len(resources) > 0:
-				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{resources[0].identifier().url()}")')
-				callback(True, f'Finish Style was changed to `{finish_style.upper()}`')
+				url = resources[0].identifier().url()
+				sp.js.evaluate(f"""
+					if (alg.shaders.instances()[0].url != "{url}")
+						alg.shaders.updateShaderInstance(0, "{url}")
+				""")
+				callback(True, f'Finish Style was set to `{finish_style.upper()}`')
 			else:
 				callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
 			
 		resource_search(update_shader, "your_assets", "shader", f'cs2_{finish_style}')
-		

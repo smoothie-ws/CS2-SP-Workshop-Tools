@@ -3,30 +3,26 @@ import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
 import QtGraphicalEffects 1.15
 import AlgWidgets 2.0
+import AlgWidgets.Style 2.0
 
 Item {
     id: root
     height: 32
 
-    property alias url: internal.url
-    property alias label: internal.label
+    property string url: ""
+    property string label: "Select texture"
+    property string resourceName: ""
     property alias filters: resourcePicker.filters
-    property alias hovered: mouseArea.hovered
+    property alias hovered: mouseArea.containsMouse
 
-    QtObject {
-        id: internal
-
-        property string url: ""
-        property string label: "Select texture"
-        property string resourceName: ""
-
-        onUrlChanged: {
-            var imgPath = JSON.parse(internal.js(`alg.resources.getResourceInfo("${url}")`)).filePath;
-            if (alg.fileIO.exists(imgPath)) {
-                if (imgPath.endsWith('.jpg') | imgPath.endsWith('.jpeg') | imgPath.endsWith('.png'))
-                    preview.source = 'file:///' + imgPath;
-            } else
-                preview.source = 'image://resources/' + url;
+    onUrlChanged: {
+        if (url !== "") {
+            const info = JSON.parse(internal.js(`alg.resources.getResourceInfo("${url}")`));
+            resourceName = info.name;
+            preview.source = `file:///${info.filePath}`;
+        } else {
+            resourceName = "";
+            preview.source = "";
         }
     }
 
@@ -83,79 +79,89 @@ Item {
             }
         }
 
-        AlgLabel {
-            id: label
-            antialiasing: true
-            x: 16
-            y: background.height * 0.5 - height * 0.5
-            text: rointernalot.resourceName == "" ? internal.label : internal.resourceName
-            color: root.hovered ? Qt.rgba(0.95, 0.95, 0.95, 1.0) : Qt.rgba(0.75, 0.75, 0.75, 1.0)
+        MouseArea {
+            id: mouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
 
-            Behavior on color {
-                ColorAnimation { 
-                    duration: 100
-                    easing.type: Easing.OutQuart
+            onClicked: resourcePicker.show(parent.mapToGlobal(mouse.x, mouse.y))
+
+            DropArea {
+                id: dropArea
+                anchors.fill: parent
+                
+                onDropped: {
+                    var data = null;
+                    if (drop.hasUrls)
+                        data = drop.urls[0];
+                    root.url = data;
+                    drop.accept();
                 }
             }
+        }
 
-            property alias scaleFactor: textScale.factor
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 5
+            spacing: 10
 
-            transform: Scale {
-                id: textScale
-                xScale: factor
-                yScale: factor
-                origin.x: label.x
-                origin.y: label.height * 0.5
+            SPButton {
+                padding: 5
+                implicitWidth: Math.min(20, parent.height)
+                implicitHeight: implicitWidth
+                icon.source: "./icons/close.png"
+                icon.width: implicitWidth * 0.5
+                icon.height: implicitHeight * 0.5
+                tooltip.text: "Clear"
+                backgroundRect.color: "black"
+                backgroundRect.opacity: hovered ? 0.5 : 0.25
 
-                property real factor: 1.0
+                onClicked: root.url = "";
+            }
 
-                Behavior on factor {
-                    NumberAnimation { 
+            Label {
+                id: label
+                antialiasing: true
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                horizontalAlignment: Text.AlignLeft
+                verticalAlignment: Text.AlignVCenter
+                text: root.resourceName == "" ? root.label : root.resourceName
+                color: AlgStyle.text.color.normal
+                opacity: root.hovered ? 1.0 : 0.75
+
+                property alias scaleFactor: textScale.factor
+
+                Behavior on color {
+                    ColorAnimation { 
                         duration: 100
                         easing.type: Easing.OutQuart
+                    }
+                }
+
+                transform: Scale {
+                    id: textScale
+                    xScale: factor
+                    yScale: factor
+                    origin.x: label.x
+                    origin.y: label.height * 0.5
+
+                    property real factor: 1.0
+
+                    Behavior on factor {
+                        NumberAnimation { 
+                            duration: 100
+                            easing.type: Easing.OutQuart
+                        }
                     }
                 }
             }
         }
     }
 
-    MouseArea {
-        id: mouseArea
-        parent: background
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
-
-        property bool hovered: false
-
-        onEntered: hovered = true
-        onExited: hovered = false
-
-        onClicked: resourcePicker.show(parent.mapToGlobal(mouse.x, mouse.y))
-
-        DropArea {
-            id: dropArea
-            anchors.fill: parent
-
-            onEntered: mouseArea.hovered = true
-            onExited: mouseArea.hovered = false
-            
-            onDropped: {
-                var data = null;
-                if (drop.hasUrls)
-                    data = drop.urls[0];
-                internal.url = data;
-                drop.accept();
-            }
-        }
-    }
-
     AlgResourcePicker {
         id: resourcePicker
-
-        onResourceSelected: {
-            internal.url = previewID;
-            internal.resourceName = name;
-        }
+        onResourceSelected: root.url = previewID
     }
 }

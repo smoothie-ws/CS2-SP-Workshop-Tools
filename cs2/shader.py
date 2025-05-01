@@ -33,58 +33,61 @@ def preprocess(code: str, macros: dict={}):
     processed_lines = []
     for line in code.split("\n"):
         if not line.startswith("//:"):
+            line = line.split("//")[0]
             for macro in macros.keys():
                 line = line.replace(macro, macros[macro])
-                
-        stripped_line = line.split("//")[0].strip()
+            
+            line = line.strip()
 
-        #define
-        if stripped_line.startswith("#define"):
-            if current_level() == 0:
-                match = re.match(r"^\s*#\s*define\s+(\w+)\s*(.*)", stripped_line)
-                if match:
-                    macros[match.group(1)] = match.group(2).strip()
-            continue
+            #define
+            if line.startswith("#define"):
+                if current_level() == 0:
+                    match = re.match(r"^\s*#\s*define\s+(\w+)\s*(.*)", line)
+                    if match:
+                        macros[match.group(1)] = match.group(2).strip()
+                continue
 
-        #undef
-        elif stripped_line.startswith("#undef"):
-            if current_level() == 0:
-                match = re.match(r"^\s*#\s*undef\s+(\w+)", stripped_line)
-                if match:
-                    macro_name = match.group(1)
-                    if macro_name in macros:
-                        macros.pop(macro_name)
-            continue
+            #undef
+            elif line.startswith("#undef"):
+                if current_level() == 0:
+                    match = re.match(r"^\s*#\s*undef\s+(\w+)", line)
+                    if match:
+                        macro_name = match.group(1)
+                        if macro_name in macros:
+                            macros.pop(macro_name)
+                continue
 
-        #ifdef
-        elif stripped_line.startswith("#ifdef"):
-            macro = stripped_line[7:].strip()
-            condition_stack.append([macro in macros])
-            continue
+            #ifdef
+            elif line.startswith("#ifdef"):
+                cond = line[7:].strip() in macros
+                condition_stack.append([cond])
+                continue
 
-        #if
-        elif stripped_line.startswith("#if"):
-            condition_stack.append([eval_expr(stripped_line[3:].strip())])
-            continue
+            #if
+            elif line.startswith("#if"):
+                cond = eval_expr(line[3:].strip())
+                condition_stack.append([cond])
+                continue
 
-        #elif
-        elif stripped_line.startswith("#elif"):
-            condition_stack[-1].append(not any(current_branch()) and eval_expr(stripped_line[5:].strip()))
-            continue
+            #elif
+            elif line.startswith("#elif"):
+                cond = not any(current_branch()) and eval_expr(line[5:].strip())
+                condition_stack[-1].append(cond)
+                continue
 
-        #else
-        elif stripped_line.startswith("#else"):
-            condition_stack[-1].append(not any(current_branch()))
-            continue
+            #else
+            elif line.startswith("#else"):
+                cond = not any(current_branch())
+                condition_stack[-1].append(cond)
+                continue
 
-        #endif
-        elif stripped_line.startswith("#endif"):
-            condition_stack.pop()
-            continue
+            #endif
+            elif line.startswith("#endif"):
+                condition_stack.pop()
+                continue
 
-        if not skipping():
-            if line.startswith("//:") or stripped_line != "":
-                processed_lines.append(line)
+        if not skipping() and line != "":
+            processed_lines.append(line)
 
     assert current_level() == 0, "Missing #endif"
 
