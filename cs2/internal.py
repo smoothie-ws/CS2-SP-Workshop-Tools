@@ -1,5 +1,6 @@
 import json
 import substance_painter as sp
+import substance_painter_plugins as sp_plugins
 
 # Qt5 vs Qt6 check
 if sp.application.version_info() < (10, 1, 0):
@@ -43,11 +44,14 @@ class Internal(QtCore.QObject):
     def on_project_about_to_close(self):
         self.projectKindChanged.emit(0)
 
+    def on_settings(self):
+        Log.info("Settings")
+        
     def on_about(self):
         Log.info("About")
         
-    def on_settings(self):
-        Log.info("Settings")
+    def on_uninstall(self):
+        self.uninstallationRequested.emit()
         
     def is_weapon_finish_opened(self):
         return ProjectSettings.get("weapon_finish") is not None
@@ -89,9 +93,9 @@ class Internal(QtCore.QObject):
     decompilationFinished = QtCore.Signal()
     projectKindChanged = QtCore.Signal(int)
     finishStyleReady = QtCore.Signal()
+    uninstallationRequested = QtCore.Signal()
 
     # Slots
-
     @QtCore.Slot(str)
     def info(self, msg:str):
         Log.info(msg)
@@ -151,7 +155,7 @@ class Internal(QtCore.QObject):
         return json.dumps(Settings.get("weapon_list"))
     
     @QtCore.Slot(str, str, str, str)
-    def createWeaponFinish(self, file_path:str, name:str, weapon:str, finish_style:str):
+    def createWeaponFinish(self, file_path:str, finish_name:str, weapon:str, finish_style:str):
         def callback(res, msg):
             self.state = InternalState.Started
             if res:
@@ -160,17 +164,17 @@ class Internal(QtCore.QObject):
             else:
                 Log.error(f'Failed to create weapon finish: {msg}')
         self.state = InternalState.CreatingWeaponFinish
-        WeaponFinish.create(file_path, name, weapon, finish_style, callback)
+        WeaponFinish.create(file_path, finish_name, weapon, finish_style, callback)
 
     @QtCore.Slot(str, str, str)
-    def setupAsWeaponFinish(self, name:str, weapon:str, finish_style:str):
+    def setupAsWeaponFinish(self, finish_name:str, weapon:str, finish_style:str):
         def callback(res, msg):
             if res:
                 self.projectKindChanged.emit(2)
                 Log.warning(msg)
             else:
                 Log.error(f'Failed to set up weapon finish: {msg}')
-        WeaponFinish.set_up(name, weapon, finish_style, callback)
+        WeaponFinish.set_up(finish_name, weapon, finish_style, callback)
 
     @QtCore.Slot(str)
     def changeFinishStyle(self, finish_style: str):
@@ -181,11 +185,20 @@ class Internal(QtCore.QObject):
             else:
                 Log.error(msg)
 
-        WeaponFinish.change_finish_style(finish_style, _change)
+		# update shader instance
+        WeaponFinish.change_finish_style_shader(finish_style, _change)
 
     @QtCore.Slot(str)
-    def saveWeaponFinish(self, values:str):
+    def saveWeaponFinish(self, values: str):
         WeaponFinish.save(json.loads(values))
+
+    @QtCore.Slot()
+    def importWeaponFinishEconItem(self):
+        WeaponFinish.import_econitem()
+
+    @QtCore.Slot()
+    def exportWeaponFinishTextures(self):
+        WeaponFinish.export_textures()
 
     @QtCore.Slot(str, result=str)
     def js(self, code:str):
@@ -195,3 +208,7 @@ class Internal(QtCore.QObject):
             Log.error(f'Failed to evaluate js code: {str(e)}')
             Log.info(code)
     
+    @QtCore.Slot()
+    def uninstallationConfirmed(self):
+        for path in Settings.get("files", []):
+            Path.remove(path)

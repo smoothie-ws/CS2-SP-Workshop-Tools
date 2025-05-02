@@ -11,16 +11,15 @@ import "./SPWidgets/math.js" as MathUtils
 Rectangle {
     id: root
     color: AlgStyle.background.color.mainWindow
-    implicitHeight: mainLayout.height
+    implicitHeight: mainLayout.height + 10
 
     function loadWeaponFinish() {
         weaponFinish.load();
 
         // load base textures
+        const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
         const w = weaponBox.currentKey;
         const texPath = `${internal.pluginPath()}/assets/textures`;
-
-        const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
         for (const [param, file] of Object.entries({
                 "uGrungeTex": "grunge.tga", 
                 "uScratchesTex": "scratches.png", 
@@ -32,8 +31,6 @@ Rectangle {
             }))
             if (values[param] === undefined || values[param] === "")
                 weaponFinish.parameters[param].control.url = importTexture(`${texPath}/${file}`);
-
-        weaponFinish.save();
     }
 
     // when user changes finish style, the corresponding shader instance has outdated parameter values
@@ -72,7 +69,7 @@ Rectangle {
         id: weaponFinish
 
         parameters: {
-            "econFile":               { control: econFile,               prop: "filePath"     },
+            "econitem":               { control: econitem,               prop: "filePath"     },
             "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
             "finishStyle":            { control: finishStyleBox,         prop: "currentKey"   },
             "weapon":                 { control: weaponBox,              prop: "currentKey"   },
@@ -86,7 +83,7 @@ Rectangle {
             "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
             "uWearAmt":               { control: wearAmount,             prop: "value"        },
             "uTexTransform":          { control: texTransform,           prop: "transform"    },
-            "uIgnoreWeaponSizeScale": { control: ignoreTextureSizeScale, prop: "checked"      },
+            "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale, prop: "checked"      },
             "uUsePearlMask":          { control: usePearlescentMask,     prop: "checked"      },
             "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
             "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
@@ -105,7 +102,7 @@ Rectangle {
             "uCol3":                  { control: null,                   prop: "arrayColor"   },
             "uUseCustomNormal":       { control: null,                   prop: "checked"      },
             "uUseCustomMasks":        { control: null,                   prop: "checked"      },
-            "uUseCustomAOTex":        { control: null,                   prop: "checked"      },
+            "uUseCustomAOTex":        { control: null,                   prop: "checked"      }
         }
     }
 
@@ -146,42 +143,61 @@ Rectangle {
         id: mainLayout
         width: root.width
 
-        SPGroup {
-            id: settings
+        Rectangle {
+            id: general
+            color: Qt.rgba(1, 1, 1, 0.05)
+            border.width: 1
+            border.color: Qt.rgba(1, 1, 1, 0.1)
+            radius: 10
             Layout.fillWidth: true
-            expandable: false
-            text: "Project Settings"
+            height: generalLayout.implicitHeight + generalLayout.anchors.margins * 2
 
-            RowLayout {
-                Layout.fillWidth: true
-                    
-                SPButton {
-                    text: "Import"
-                    enabled: econFile.filePath !== ""
-                    icon.source: "./icons/import.png"
-                    icon.width: 15
-                    icon.height: 15
-                    tooltip.text: "Import values from the .econitem file"
-                    label.color: AlgStyle.text.color.normal
-                    backgroundRect.color: "black"
-                    backgroundRect.opacity: hovered ? 0.75 : 0.25
-                }
+            property int seed: 0
 
-                SPParameter {
-                    id: econFile
+            onSeedChanged: {
+                texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
+                texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
+                texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
+            }
+
+            ColumnLayout {
+                id: generalLayout
+                spacing: 10
+                anchors.fill: parent
+                anchors.margins: 10
+
+                RowLayout {
                     Layout.fillWidth: true
+                        
+                    SPButton {
+                        text: "Import"
+                        enabled: econitem.filePath != ""
+                        icon.source: "./icons/import.png"
+                        icon.width: 15
+                        icon.height: 15
+                        tooltip.text: "Import values from the .econitem file"
+                        label.color: AlgStyle.text.color.normal
+                        backgroundRect.color: "black"
+                        backgroundRect.opacity: hovered ? 0.75 : 0.25
 
-                    property string filePath: ""
+                        onClicked: internal.importWeaponFinishEconItem()
+                    }
 
                     SPLabeled {
+                        id: econitem
+                        Layout.fillWidth: true
                         text: "Econitem File"
+
+                        property string filePath: ""
+
+                        onFilePathChanged: weaponFinish.updateEconItemPath(filePath)
 
                         Label {
                             clip: true
                             opacity: 0.5
                             elide: Text.ElideLeft
                             horizontalAlignment: Text.AlignLeft
-                            text: econFileDialog.fileUrl
+                            text: econitem.filePath
                             color: AlgStyle.text.color.normal
                             Layout.fillWidth: true
                         }
@@ -194,48 +210,46 @@ Rectangle {
                             SPFileDialog {
                                 id: econFileDialog
                                 title: "Select file"
-                                folder: Qt.resolvedUrl(internal.getCs2Path())
+                                folder: econitem.filePath.substring(econitem.filePath.lastIndexOf("/"))
                                 nameFilters: [ "CS2 Econ Item (*.econitem)" ]
-                                onAccepted: econFile.filePath = fileUrl.toString().substring(8);
+                                onAccepted: econitem.filePath = fileUrl.toString().substring(8);
                             }
                         }
                     }
-                    
-                    onResetRequested: weaponFinish.resetParameter("econFile")
                 }
-            }
 
-            RowLayout {
-                Layout.fillWidth: true
-                        
-                SPButton {
-                    text: "Export"
-                    enabled: texturesFolder.filePath !== ""
-                    icon.source: "./icons/export.png"
-                    icon.width: 15
-                    icon.height: 15
-                    tooltip.text: "Export Weapon Finish textures"
-                    label.color: AlgStyle.text.color.normal
-                    backgroundRect.color: "black"
-                    backgroundRect.opacity: hovered ? 0.75 : 0.25
-                }
-                    
-                SPParameter {
-                    id: texturesFolder
+                RowLayout {
                     Layout.fillWidth: true
+                            
+                    SPButton {
+                        text: "Export"
+                        enabled: texturesFolder.filePath !== ""
+                        icon.source: "./icons/export.png"
+                        icon.width: 15
+                        icon.height: 15
+                        tooltip.text: "Export Weapon Finish textures"
+                        label.color: AlgStyle.text.color.normal
+                        backgroundRect.color: "black"
+                        backgroundRect.opacity: hovered ? 0.75 : 0.25
 
-                    property string filePath: ""
-
-                    SPLabeled {
-                        text: "Textures Folder"
+                        onClicked: internal.exportWeaponFinishTextures()
+                    }
+                    
+                    SPLabeled { 
+                        id: texturesFolder
                         Layout.fillWidth: true
+                        text: "Textures Folder"
+
+                        property string filePath: ""
+
+                        onFilePathChanged: weaponFinish.updateTexturesFolderPath(filePath)
 
                         Label {
                             clip: true
                             opacity: 0.5
                             elide: Text.ElideLeft
                             horizontalAlignment: Text.AlignLeft
-                            text: texturesFolderDialog.fileUrl
+                            text: texturesFolder.filePath
                             color: AlgStyle.text.color.normal
                             Layout.fillWidth: true
                         }
@@ -249,80 +263,56 @@ Rectangle {
                                 id: texturesFolderDialog
                                 title: "Select folder"
                                 selectFolder: true
-                                folder: Qt.resolvedUrl(internal.getCs2Path())
+                                folder: texturesFolder.filePath
                                 onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
                             }
                         }
                     }
-
-                    onResetRequested: weaponFinish.resetParameter("texturesFolder")
                 }
-            }
-        }
 
-        SPSeparator { Layout.fillWidth: true }
-
-        Rectangle {
-            id: general
-            color: Qt.rgba(1, 1, 1, 0.05)
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.1)
-            radius: 10
-            Layout.fillWidth: true
-            height: 100
-
-            property int seed: 0
-
-            onSeedChanged: {
-                texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
-                texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
-                texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
-            }
-
-            ColumnLayout {
-                id: generalLayout
-                anchors.fill: parent
-                anchors.margins: 10
+                SPSeparator { Layout.fillWidth: true }
 
                 RowLayout {
+                    Layout.fillWidth: true
+
                     SPButton {
                         id: enableLivePreview
                         text: "Live Preview"
                         checkable: true
-                        implicitWidth: 150
-                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                        Layout.fillWidth: true
+                        contentAlignment: Qt.AlignCenter
                     }
 
-                    SPLabeled {
-                        text: "Seed"
-                        enabled: enableLivePreview.checked
+                    SPButton {
+                        id: enablePBRValidation
+                        text: "PBR Validation"
+                        checkable: true
                         Layout.fillWidth: true
-
-                        SPSeparator { Layout.fillWidth: true }
-
-                        SPTextInput {
-                            Layout.preferredWidth: 45
-                            text: general.seed
-                            validator: RegExpValidator { regExp: /^-?[0-9]*/ }
-                            onEditingFinished: general.seed = MathUtils.clamp(parseInt(text), 0, 9999);
-                        }
-
-                        SPButton {
-                            id: randomButton
-                            text: "Random"
-                            tooltip.text: "Generate random seed number"
-
-                            onPressed: general.seed = Math.floor(Math.random() * 1000)
-                        }
+                        contentAlignment: Qt.AlignCenter
                     }
                 }
 
-                SPButton {
-                    id: enablePBRValidation
-                    text: "PBR Validation"
-                    checkable: true
-                    implicitWidth: 150
-                    contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                SPLabeled {
+                    text: "Seed"
+                    enabled: enableLivePreview.checked
+                    Layout.fillWidth: true
+
+                    SPSeparator { Layout.fillWidth: true }
+
+                    SPTextInput {
+                        Layout.preferredWidth: 45
+                        text: general.seed
+                        validator: RegExpValidator { regExp: /^-?[0-9]*/ }
+                        onEditingFinished: general.seed = MathUtils.clamp(parseInt(text), 0, 9999);
+                    }
+
+                    SPButton {
+                        id: randomButton
+                        text: "Random"
+                        tooltip.text: "Generate random seed number"
+
+                        onPressed: general.seed = Math.floor(Math.random() * 1000)
+                    }
                 }
             }
         }
@@ -363,8 +353,8 @@ Rectangle {
 
                 onItemAdded: (i, control) => {
                     weaponFinish.parameters[model[i].param].control = control;
-                    settings.scopeWidth = Math.max(settings.scopeWidth, control.scopeWidth);
-                    control.scopeWidth = Qt.binding(() => settings.scopeWidth);
+                    baseTextures.scopeWidth = Math.max(baseTextures.scopeWidth, control.scopeWidth);
+                    control.scopeWidth = Qt.binding(() => baseTextures.scopeWidth);
                 }
             }
         }
@@ -450,7 +440,7 @@ Rectangle {
 
                 SPParameter {
                     SPButton {
-                        id: ignoreTextureSizeScale
+                        id: ignoreWeaponSizeScale
                         text: "Ignore Weapon Size Scale"
                         Layout.fillWidth: true
                         checkable: true

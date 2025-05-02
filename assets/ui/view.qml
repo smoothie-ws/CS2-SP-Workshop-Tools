@@ -41,6 +41,7 @@ Rectangle {
                 weaponFinishSettings.loadWeaponFinish();
         }
         onFinishStyleReady: weaponFinishSettings.syncWeaponFinish()
+        onUninstallationRequested: confirmUninstallationPopup.show()
     }
 
     // main
@@ -53,14 +54,6 @@ Rectangle {
         RowLayout {
             id: header
             Layout.fillWidth: true
-
-            Label {
-                id: weaponFinishName
-                text: root.projectKind == 2 ? JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"))["name"].upper() : ""
-                color: AlgStyle.text.color.normal
-                font.pixelSize: 14
-                font.bold: true
-            }
 
             SPSeparator { Layout.fillWidth: true }
 
@@ -168,6 +161,10 @@ Rectangle {
     }
 
     // Dialogues
+
+    WeaponFinishInitWindow {
+        id: weaponFinishInitWindow
+    }
 
     SPDialog {
         id: texturesAreMissingPopup
@@ -364,7 +361,58 @@ Rectangle {
         }
     }
 
-    WeaponFinishInitWindow {
-        id: weaponFinishInitWindow
+    Window {
+        id: confirmUninstallationPopup
+        width: 400
+        height: 150
+        modality: Qt.ApplicationModal
+        flags: Qt.Window | Qt.CustomizeWindowHint | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
+        title: "Uninstall CS2 Workshop Tools"
+        color: AlgStyle.background.color.mainWindow
+
+        property real scopeWidth: width * 0.5
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 20
+
+            Text {
+                Layout.fillHeight: true 
+                color: AlgStyle.text.color.normal
+                wrapMode: Text.WordWrap
+                textFormat: Text.RichText
+                lineHeight: 1.4
+                text: "<p>You are about to remove all the files associated with the plugin.</p><p>Are you sure?</p>"
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Item { Layout.fillWidth: true }
+
+                SPButton {
+                    text: "Uninstall"
+                    backgroundRect.opacity: hovered ? 1.0 : 0.65
+                    backgroundRect.color: "white"
+                    label.color: "#262626"
+                    Layout.alignment: Qt.AlignHCenter
+
+                    onClicked: {
+                        confirmUninstallationPopup.close();
+                        internal.uninstallationConfirmed();
+                    }
+                }
+
+                SPButton {
+                    text: "Cancel"
+                    backgroundRect.opacity: hovered ? 0.75 : 0.25
+                    backgroundRect.color: "black"
+                    label.color: AlgStyle.text.color.normal
+                    Layout.alignment: Qt.AlignHCenter
+
+                    onClicked: confirmUninstallationPopup.close()
+                }
+            }
+        }
     }
 }

@@ -1,10 +1,10 @@
 import substance_painter as sp
 
 # Qt5 vs Qt6 check
-# if sp.application.version_info() < (10, 1, 0):
-from PySide2 import QtWidgets, QtQuick, QtCore, QtGui
-# else:
-#     from PySide6 import QtWidgets, QtQuick, QtCore, QtGui
+if sp.application.version_info() < (10, 1, 0):
+    from PySide2 import QtWidgets, QtQuick, QtCore, QtGui
+else:
+    from PySide6 import QtWidgets, QtQuick, QtCore, QtGui
 
 from .path import Path
 from .internal import Internal
@@ -38,10 +38,13 @@ class UI:
 
             # init plugin menu
             menu = QtWidgets.QMenu("CS2 Workshop Tools")
-            about_action = menu.addAction("About...")
-            settings_action = menu.addAction("Settings...")
-            about_action.triggered.connect(self.internal.on_about)
+            settings_action = menu.addAction("Settings")
             settings_action.triggered.connect(self.internal.on_settings)
+            about_action = menu.addAction("About")
+            about_action.triggered.connect(self.internal.on_about)
+            menu.addSeparator()
+            uninstall_action = menu.addAction("Uninstall")
+            uninstall_action.triggered.connect(self.internal.on_uninstall)
             sp.ui.add_menu(menu)
             self.widgets.append(menu)
 

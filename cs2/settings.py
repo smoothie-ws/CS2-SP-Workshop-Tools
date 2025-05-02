@@ -11,6 +11,7 @@ class Settings:
     plugin_path = None
     documents_path = None
 
+    plugin_files: list[str] = None
     plugin_version: str = None
     plugin_settings: dict = None
 
@@ -29,9 +30,10 @@ class Settings:
         if Path.exists(Settings.path):
             try:
                 with open(Settings.path, "r", encoding="utf-8") as f:
-                    data = json.loads(f.read())
+                    data = json.load(f)
             except:
                 pass
+        Settings.plugin_files = data.get("files", [])
         Settings.plugin_version = data.get("version", "0.0.1a")
         Settings.plugin_settings = data.get("settings")
         if Settings.plugin_settings is None:
@@ -42,7 +44,8 @@ class Settings:
         with open(Settings.path, "w", encoding="utf-8") as f:
             json.dump({
                 "version": Settings.plugin_version,
-                "settings": Settings.plugin_settings
+                "settings": Settings.plugin_settings,
+                "files": Settings.plugin_files
             }, f, indent=4, ensure_ascii=False)
 
     @staticmethod
@@ -60,16 +63,19 @@ class Settings:
     @staticmethod
     def get_defaults():
         defaults_path = Settings.get_asset_path("default_plugin_settings.json")
-        error_message = f'Path `{defaults_path}` does not exist'
-
         if Path.exists(defaults_path):
             try:
                 with open(defaults_path, "r", encoding="utf-8") as f:
                     return json.loads(f.read())
             except Exception as e:
-                error_message = str(e)
-        
-        raise SettingsError(f'Failed to get default plugin settings: {error_message}')
+                raise SettingsError(f'Failed to get default plugin settings: {str(e)}')
+        else:
+            raise SettingsError(f'Failed to get default plugin settings: Path `{defaults_path}` does not exist')
+
+    @staticmethod
+    def push_file(path: str):
+        Settings.plugin_files.append(path)
+        Settings.save()
 
     @staticmethod
     def keys() -> dict:

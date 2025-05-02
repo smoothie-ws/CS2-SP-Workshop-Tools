@@ -1,5 +1,4 @@
 import os
-import shutil
 import threading
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
@@ -39,7 +38,7 @@ class Decompiler:
                     w_path = Path.join(temp_models_path, w)
                     mat_path = Path.join(w_path, "materials")
                     if weapon_list.get(w) is None or not Path.exists(mat_path):
-                        rmdir(w_path)
+                        Path.remove(w_path)
                         continue
                     futures.append(executor.submit(Decompiler.process, w, w_path, mat_path, state_callback, ucb))
 
@@ -50,7 +49,7 @@ class Decompiler:
                 w_path = Path.join(temp_models_path, w)
                 Path.replace(w_path, Path.join(models_path, w))
 
-            rmdir(temp_path)
+            Path.remove(temp_path)
             state_callback("Finished")
 
         threading.Thread(target=task).start()
@@ -64,14 +63,14 @@ class Decompiler:
                     for cif in Path.listdir(wf_path):
                         Path.replace(Path.join(wf_path, cif), Path.join(w_path, cif))
                 else:
-                    rmdir(wf_path)
+                    Path.remove(wf_path)
             else:
                 Path.replace(wf_path, Path.join(w_path, wf))
 
         for wf in Path.listdir(w_path):
             wf_path = Path.join(w_path, wf)
             if Path.isdir(wf_path):
-                rmdir(wf_path)
+                Path.remove(wf_path)
             elif "vtex_c" in wf:
                 flag = False
                 for tex in [
@@ -102,14 +101,6 @@ class Decompiler:
         Path.rename(tgt, tgt_path)
         # clear
         Path.remove(src)
-
-
-def rmdir(path):
-    try:
-        shutil.rmtree(path)
-    except:
-        pass
-
 
 def run(cmd:str, cwd:str=None):
     process = subprocess.Popen(

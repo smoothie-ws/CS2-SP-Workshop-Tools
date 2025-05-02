@@ -1,7 +1,5 @@
-import sys
 import shutil
 import substance_painter as sp
-import substance_painter_plugins as sp_plugins
 
 from .ui import UI
 from .log import Log
@@ -11,9 +9,6 @@ from .internal import InternalState
 from .weapon_finish import WeaponFinish
 from .shader import preprocess as shader_preprocess
 from .resource import search as resource_search
-
-
-Settings.plugin_version = "0.0.1a"
 
 
 class Plugin:
@@ -54,11 +49,11 @@ class Plugin:
             shader_source = f.read()
 
         for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
-            shader_file = f'cs2_{fs}.glsl'
-            shader_file_path = Path.join(sp_shaders_path, shader_file)
-            if not Path.exists(shader_file_path):
-                with open(shader_file_path, "w", encoding="utf-8") as f:
+            sp_shader_file_path = Path.join(sp_shaders_path, f'cs2_{fs}.glsl')
+            if not Path.exists(sp_shader_file_path):
+                with open(sp_shader_file_path, "w", encoding="utf-8") as f:
                     f.write(shader_preprocess(shader_source, {"FINISH_STYLE": i}))
+                    Settings.push_file(sp_shader_file_path)
 
         def set_previews(shader_resources):
             for shader_resource in shader_resources:
@@ -68,11 +63,10 @@ class Plugin:
         resource_search(set_previews, "your_assets", "shader", "cs2")
 
         # shader ui
+        sp_shader_ui_path = Path.join(sp_shaders_ui_path, "cs2-ui.qml")
         if not Path.exists(Path.join(sp_shaders_ui_path, "cs2-ui.qml")):
-            shutil.copyfile(
-                Path.join(shader_path, "cs2-ui.qml"), 
-                Path.join(sp_shaders_ui_path, "cs2-ui.qml")
-            )
+            shutil.copyfile(Path.join(shader_path, "cs2-ui.qml"), sp_shader_ui_path)
+            Settings.push_file(sp_shader_ui_path)
 
         # weapon textures
         weapon_list = Settings.get("weapon_list", {}).copy()
@@ -92,5 +86,4 @@ class Plugin:
 
     def fatal(self, msg:str):
         Log.error("An error occured: " + msg)
-        sp_plugins.close_plugin(sys.modules.get(self.__class__.__module__))
         self.close()

@@ -53,6 +53,18 @@ QtObject {
         internal.saveWeaponFinish(JSON.stringify(values));
     }
 
+    function updateEconItemPath(path) {
+        const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+        values["econitem"] = path;
+        internal.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
+    }
+
+    function updateTexturesFolderPath(path) {
+        const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+        values["texturesFolder"] = path;
+        internal.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
+    }
+
     function syncShader() {
         for (const [param, component] of Object.entries(parameters)) 
             if (isShaderParameter(param)) {

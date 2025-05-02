@@ -1,4 +1,6 @@
 import os
+import shutil
+import pathlib
 
 
 class Path:
@@ -8,7 +10,7 @@ class Path:
     
     @staticmethod
     def exists(path:str) -> bool:
-        return os.path.exists(path)
+        return path and os.path.exists(path)
     
     @staticmethod
     def join(*paths) -> str:
@@ -27,5 +29,25 @@ class Path:
         os.replace(src, dst)
     
     @staticmethod
+    def isdir(path:str):
+        return os.path.isdir(path)
+    
+    @staticmethod
     def remove(path:str):
-        os.remove(path)
+        if Path.exists(path):
+            try:
+                if Path.isdir(path):
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
+            except:
+                pass
+
+    @staticmethod
+    def rename(src: str, tgt: str):
+        os.rename(src, tgt)
+
+    @staticmethod
+    def filename(path:str):
+        return pathlib.Path(path).stem
+    
