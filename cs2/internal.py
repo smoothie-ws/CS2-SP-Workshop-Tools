@@ -119,6 +119,10 @@ class Internal(QtCore.QObject):
     @QtCore.Slot(result=int)
     def getState(self):
         return self.state
+    
+    @QtCore.Slot(str)
+    def showInExplorer(self, path:str):
+        Path.show_in_explorer(path)
 
     @QtCore.Slot(bool)
     def ignoreTexturesMissing(self, ignore:bool):

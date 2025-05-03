@@ -1,6 +1,7 @@
 import os
 import shutil
 import pathlib
+import subprocess
 
 
 class Path:
@@ -50,4 +51,14 @@ class Path:
     @staticmethod
     def filename(path:str):
         return pathlib.Path(path).stem
+    
+    @staticmethod
+    def show_in_explorer(path:str):
+        # explorer would choke on forward slashes
+        path = os.path.normpath(path)
+
+        if os.path.isdir(path):
+            subprocess.run(['explorer', path])
+        elif os.path.isfile(path):
+            subprocess.run(['explorer', '/select,', path])
     

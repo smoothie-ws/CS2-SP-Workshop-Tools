@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.7
 import QtQuick.Window 2.15
+import Qt.labs.platform 1.1
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
@@ -15,6 +16,7 @@ Rectangle {
 
     function loadWeaponFinish() {
         weaponFinish.load();
+        weaponFinish.connect();
 
         // load base textures
         const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
@@ -47,8 +49,6 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        weaponFinish.connect();
-
         finishStyleBox.currentKeyChanged.connect(() => 
             internal.changeFinishStyle(finishStyleBox.currentKey)
         );
@@ -61,7 +61,9 @@ Rectangle {
                 weaponFinish.parameters["uBaseSurface"].control.url = importTexture(`${path}/${w}_surface.png`);
                 weaponFinish.parameters["uBaseMasks"].control.url = importTexture(`${path}/${w}_masks.png`);
                 weaponFinish.parameters["uBaseCavity"].control.url = importTexture(`${path}/${w}_cavity.png`);
-            } catch(err) { }
+            } catch(err) { 
+                internal.error(err.toString());
+            }
         });
     }
 
@@ -152,19 +154,20 @@ Rectangle {
             Layout.fillWidth: true
             height: generalLayout.implicitHeight + generalLayout.anchors.margins * 2
 
-            property int seed: 0
-
-            onSeedChanged: {
-                texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
-                texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
-                texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
-            }
-
             ColumnLayout {
                 id: generalLayout
                 spacing: 10
                 anchors.fill: parent
                 anchors.margins: 10
+                
+                Label {
+                    font.bold: true
+                    opacity: enabled ? 1.0 : 0.5
+                    text: "Weapon Finish Settings"
+                    color: AlgStyle.text.color.normal
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: implicitHeight + 10
+                }
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -176,7 +179,6 @@ Rectangle {
                         icon.width: 15
                         icon.height: 15
                         tooltip.text: "Import values from the .econitem file"
-                        label.color: AlgStyle.text.color.normal
                         backgroundRect.color: "black"
                         backgroundRect.opacity: hovered ? 0.75 : 0.25
 
@@ -204,6 +206,9 @@ Rectangle {
 
                         SPButton {
                             text: "Select"
+                            label.color: Qt.rgba(0.0, 0.0, 0.0, 0.75)
+                            backgroundRect.color: "white"
+                            backgroundRect.opacity: hovered ? 0.5 : 0.25
 
                             onClicked: econFileDialog.open()
 
@@ -214,6 +219,14 @@ Rectangle {
                                 nameFilters: [ "CS2 Econ Item (*.econitem)" ]
                                 onAccepted: econitem.filePath = fileUrl.toString().substring(8);
                             }
+                        }
+
+                        SPButton {
+                            text: "Show"
+                            enabled: econitem.filePath != ""
+                            tooltip.text: "Reveal in File Explorer"
+
+                            onClicked: internal.showInExplorer(econitem.filePath)
                         }
                     }
                 }
@@ -256,6 +269,9 @@ Rectangle {
 
                         SPButton {
                             text: "Select"
+                            label.color: Qt.rgba(0.0, 0.0, 0.0, 0.75)
+                            backgroundRect.color: "white"
+                            backgroundRect.opacity: hovered ? 0.5 : 0.25
                             
                             onClicked: texturesFolderDialog.open()
 
@@ -266,6 +282,14 @@ Rectangle {
                                 folder: texturesFolder.filePath
                                 onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
                             }
+                        }
+
+                        SPButton {
+                            text: "Show"
+                            enabled: texturesFolder.filePath != ""
+                            tooltip.text: "Reveal in File Explorer"
+
+                            onClicked: internal.showInExplorer(texturesFolder.filePath)
                         }
                     }
                 }
@@ -281,6 +305,8 @@ Rectangle {
                         checkable: true
                         Layout.fillWidth: true
                         contentAlignment: Qt.AlignCenter
+                        backgroundRect.color: checked ? Qt.rgba(0.75, 0.75, 1.0) : Qt.rgba(0.5, 0.5, 0.5)
+                        backgroundRect.opacity: hovered ? 0.25 : 0.15
                     }
 
                     SPButton {
@@ -289,30 +315,48 @@ Rectangle {
                         checkable: true
                         Layout.fillWidth: true
                         contentAlignment: Qt.AlignCenter
+                        backgroundRect.color: checked ? Qt.rgba(0.75, 0.75, 1.0) : Qt.rgba(0.5, 0.5, 0.5)
+                        backgroundRect.opacity: hovered ? 0.25 : 0.15
                     }
                 }
 
                 SPLabeled {
-                    text: "Seed"
-                    enabled: enableLivePreview.checked
+                    id: weapon
+                    text: "Weapon"
                     Layout.fillWidth: true
 
-                    SPSeparator { Layout.fillWidth: true }
-
-                    SPTextInput {
-                        Layout.preferredWidth: 45
-                        text: general.seed
-                        validator: RegExpValidator { regExp: /^-?[0-9]*/ }
-                        onEditingFinished: general.seed = MathUtils.clamp(parseInt(text), 0, 9999);
+                    SPComboBox {
+                        id: weaponBox
+                        Layout.fillWidth: true
+                        map: JSON.parse(internal.getWeaponList())
                     }
 
-                    SPButton {
-                        id: randomButton
-                        text: "Random"
-                        tooltip.text: "Generate random seed number"
+                    Component.onCompleted: scopeWidth = Math.max(scopeWidth, finishStyle.scopeWidth)
+                }
 
-                        onPressed: general.seed = Math.floor(Math.random() * 1000)
+                SPLabeled {
+                    id: finishStyle
+                    text: "Finish Style"
+                    Layout.fillWidth: true
+
+                    SPComboBox {
+                        id: finishStyleBox
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        map: {
+                            "so": "Solid Color",
+                            "hy": "Hydrographic",
+                            "sp": "Spray Paint",
+                            "an": "Anodized",
+                            "am": "Anodized Multicolored",
+                            "aa": "Anodized Airbrushed",
+                            "cu": "Custom Paint Job",
+                            "aq": "Patina",
+                            "gs": "Gunsmith"
+                        }
                     }
+
+                    Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
                 }
             }
         }
@@ -368,46 +412,39 @@ Rectangle {
             enabled: enableLivePreview.checked
 
             SPGroup {
+                id: common
                 Layout.fillWidth: true
                 text: "Common"
 
-                SPLabeled {
-                    id: weapon
-                    text: "Weapon"
-                    Layout.fillWidth: true
+                property int seed: 0
 
-                    SPComboBox {
-                        id: weaponBox
-                        Layout.fillWidth: true
-                        map: JSON.parse(internal.getWeaponList())
-                    }
-
-                    Component.onCompleted: scopeWidth = Math.max(scopeWidth, finishStyle.scopeWidth)
+                onSeedChanged: {
+                    texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
+                    texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
+                    texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
                 }
 
                 SPLabeled {
-                    id: finishStyle
-                    text: "Finish Style"
+                    text: "Seed"
+                    enabled: enableLivePreview.checked
                     Layout.fillWidth: true
 
-                    SPComboBox {
-                        id: finishStyleBox
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        map: {
-                            "so": "Solid Color",
-                            "hy": "Hydrographic",
-                            "sp": "Spray Paint",
-                            "an": "Anodized",
-                            "am": "Anodized Multicolored",
-                            "aa": "Anodized Airbrushed",
-                            "cu": "Custom Paint Job",
-                            "aq": "Patina",
-                            "gs": "Gunsmith"
-                        }
+                    SPSeparator { Layout.fillWidth: true }
+
+                    SPTextInput {
+                        Layout.preferredWidth: 45
+                        text: common.seed
+                        validator: RegExpValidator { regExp: /^-?[0-9]*/ }
+                        onEditingFinished: common.seed = MathUtils.clamp(parseInt(text), 0, 9999);
                     }
 
-                    Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
+                    SPButton {
+                        id: randomButton
+                        text: "Random"
+                        tooltip.text: "Generate random seed number"
+
+                        onPressed: common.seed = Math.floor(Math.random() * 1000)
+                    }
                 }
 
                 SPParameter {

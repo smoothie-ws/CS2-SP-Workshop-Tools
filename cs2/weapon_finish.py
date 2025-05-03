@@ -1,4 +1,5 @@
 import json
+import math
 import substance_painter as sp
 
 from .log import Log
@@ -304,7 +305,7 @@ class WeaponFinish:
 				})
 
 			# Pearlescence
-			if weapon_finish.get("uUseCustomPearl"):
+			if weapon_finish.get("uUsePearlMask"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_pearl',
 					"channels" : [
@@ -316,7 +317,6 @@ class WeaponFinish:
 						}
 					]
 				})
-
 
 			export_config = {
 				"exportPath": folder_path,
@@ -356,9 +356,16 @@ class WeaponFinish:
 
 	@staticmethod
 	def sync_econ(weapon_finish: dict):
+		# helper functions
+		def uint8(value:float) -> int:
+			return int(math.floor(max(0.0, min(1.0, value)) * 255 + 0.5))
+		
+		def get_bool(param: str) -> bool:
+			return "true" if weapon_finish.get(param) else "false"
+			
 		econitem = weapon_finish.get("econitem")
 		if econitem is not None:
-			textures_folder = weapon_finish.get("texturesFolder", "")
+			textures_folder = weapon_finish.get("texturesFolder")
 			
 			if not Path.exists(textures_folder):
 				Log.error(f'Failed to sync .econitem file: path "{textures_folder}" for textures does not exist')
@@ -369,47 +376,70 @@ class WeaponFinish:
 			if textures_folder[0] == "/":
 				textures_folder = textures_folder[1:]
 
+			# fetch weapon finish parameters
+
 			finish_name = Path.filename(econitem)
+			print(finish_name)
+
 			finish_style = {
 				"so": "SolidColor",
-				"hy": "Hydrographic",
+				"hy": "HydroGraphic",
 				"sp": "SprayPaint",
 				"an": "Anodized",
-				"am": "AnodizedMulticolored",
+				"am": "AnodizedMulticolor",
 				"aa": "AnodizedAirbrushed",
 				"cu": "CustomPaintJob",
 				"aq": "Patina",
 				"gs": "Gunsmith"
 			}.get(weapon_finish.get("finishStyle", "gs"))
 
-			econitem_content = "<!-- kv3 encoding:text:version{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d} format:generic:version{7412167c-06e9-4698-aff2-e63eb59037e7} -->\n"
-			econitem_content +=	WeaponFinish.ECON_TEMPLATE.format(
-				finish_name				=finish_name,
-				finish_style			=finish_style,
-				weapon					=weapon_finish.get("weapon", 				"ak47"			 ),
-				tex_scale				=weapon_finish.get("texScale", 				"1.0"			 ),
-				ignore_weapon_size_scale=weapon_finish.get("ignoreWeaponSizeScale", "false"			 ),
-				tex_rotation			=weapon_finish.get("texRotation", 			"[0.0, 0.0, 0.0]"),
-				tex_offsetx				=weapon_finish.get("texOffsetx", 			"[0.0, 0.0, 0.0]"),
-				tex_offsety				=weapon_finish.get("texOffsety", 			"[0.0, 0.0, 0.0]"),
-				color0					=weapon_finish.get("uCol0", 				"[1.0, 1.0, 1.0]"),
-				color1					=weapon_finish.get("uCol1", 				"[1.0, 1.0, 1.0]"),
-				color2					=weapon_finish.get("uCol2", 				"[1.0, 1.0, 1.0]"),
-				color3					=weapon_finish.get("uCol3", 				"[1.0, 1.0, 1.0]"),
-				wear					=weapon_finish.get("wear", 					"[0.0, 0.5, 1.0]"),
-				pearl_scale				=weapon_finish.get("pearl_scale", 			"0.0"			 ),
-				rough					=weapon_finish.get("rough", 				"0.6"			 ),
-				custom_pearl_mask		=weapon_finish.get("custom_pearl_mask", 	"false"			 ),
-				custom_rough_tex		=weapon_finish.get("custom_rough_tex", 		"false"			 ),
-				custom_normal_map		=weapon_finish.get("custom_normal_map", 	"false"			 ),
-				custom_mat_masks		=weapon_finish.get("custom_mat_masks", 		"false"			 ),
-				custom_ao_tex			=weapon_finish.get("custom_ao_tex", 		"false"			 ),
-				ao_tex_path				=f'{textures_folder}/{finish_name}_ao.tga',
-				normal_tex_path			=f'{textures_folder}/{finish_name}_normal.tga',
-				masks_tex_path			=f'{textures_folder}/{finish_name}_masks.tga',
-				rough_tex_path			=f'{textures_folder}/{finish_name}_rough.tga',
-				albedo_tex_path			=f'{textures_folder}/{finish_name}_color.tga',
-				pearl_tex_path			=f'{textures_folder}/{finish_name}_pearl.tga',
+			wear = weapon_finish.get("wearRange", [0.0, 1.0])
+			wear.insert(1, weapon_finish.get("uWearAmt", 0.5))
+
+			# packed values: [offsetX, offsetY, scale, rotation]
+			tex_transform = weapon_finish.get("uTexTransform", [0.0, 0.0, 1.0, 0.0])
+
+			tex_scale = tex_transform[2]
+			tex_offsetx = weapon_finish.get("texOffsetXRange", [-1.0, 1.0])
+			tex_offsetx.insert(1, tex_transform[0])
+			tex_offsety = weapon_finish.get("texOffsetYRange", [-1.0, 1.0])
+			tex_offsety.insert(1, tex_transform[1])
+			tex_rotation = weapon_finish.get("texRotationRange", [-360.0, 360.0])
+			tex_rotation.insert(1, tex_transform[3])
+
+			# map colors
+			colors = [
+				list(map(uint8, weapon_finish.get(f'uCol{i}', [1.0, 1.0, 1.0])))
+				for i in range(4)
+			]
+
+			econitem_content =	ECON_TEMPLATE.format(
+				finish_name=finish_name,
+				finish_style=finish_style,
+				weapon=weapon_finish.get("weapon", "ak47"),
+				wear=wear,
+				tex_scale=tex_scale,
+				tex_rotation=tex_rotation,
+				tex_offsetx=tex_offsetx,
+				tex_offsety=tex_offsety,
+				ignore_weapon_size_scale=get_bool("uIgnoreWeaponSizeScale"),
+				color0=colors[0],
+				color1=colors[1],
+				color2=colors[2],
+				color3=colors[3],
+				pearl_scale=weapon_finish.get("uPearlScale", 0.0),
+				rough=weapon_finish.get("uPaintRoughness", 0.6),
+				custom_pearl_mask=get_bool("uUsePearlMask"),
+				custom_rough_tex=get_bool("uUseCustomRough"),
+				custom_normal_map=get_bool("uUseCustomNormal"),
+				custom_mat_masks=get_bool("uUseCustomMasks"),
+				custom_ao_tex=get_bool("uUseCustomAOTex"),
+				ao_tex_path=f'{textures_folder}/{finish_name}_ao.tga',
+				normal_tex_path=f'{textures_folder}/{finish_name}_normal.tga',
+				masks_tex_path=f'{textures_folder}/{finish_name}_masks.tga',
+				rough_tex_path=f'{textures_folder}/{finish_name}_rough.tga',
+				albedo_tex_path=f'{textures_folder}/{finish_name}_color.tga',
+				pearl_tex_path=f'{textures_folder}/{finish_name}_pearl.tga',
 			)
 
 			try:
@@ -418,79 +448,82 @@ class WeaponFinish:
 			except Exception as e:
 				Log.error(f'Failed to sync .econitem file: {str(e)}')
 
-	ECON_TEMPLATE = """
+
+ECON_TEMPLATE = """
+<!-- kv3 encoding:text:version{{e21c7f3c-8a33-41c5-9977-a76d3a32aa0d}} format:generic:version{{7412167c-06e9-4698-aff2-e63eb59037e7}} -->
+{{
+	cs2_item_type = "CCS2EconNode_PaintKit"
+	CCS2EconNode_PaintKit = 
 	{{
-		cs2_item_type = "CCS2EconNode_PaintKit"
-		CCS2EconNode_PaintKit = 
+		description_string = "#CSGO_Workshop_EmptyString"
+		description_tag = "#CSGO_Workshop"
+		rarity = "common"
+		composite_material_class = "PaintKit_{finish_style}"
+		composite_material_keys = 
 		{{
-			description_string = "#CSGO_Workshop_EmptyString"
-			description_tag = "#CSGO_Workshop"
-			rarity = "common"
-			composite_material_class = "PaintKit_{finish_style}"
-			composite_material_keys = 
-			{{
-				econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
-				econ_instance.g_flWearAmount = {wear}
-				econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
-				econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
-				exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
-				exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
-				exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
-				exposed_params.g_bUseNormalMap = {custom_normal_map}
-				exposed_params.g_bUsePearlescenceMask = {custom_pearl_mask}
-				exposed_params.g_bUseRoughness = {custom_rough_tex}
-				exposed_params.g_flPatternTexCoordScale = {tex_scale}
-				exposed_params.g_flPearlescentScale = {pearl_scale}
-				exposed_params.g_tPaintRoughness = "{rough_tex_path}"
-				exposed_params.g_tPattern = "{albedo_tex_path}"
-				exposed_params.g_vColor0 = {color0}
-				exposed_params.g_vColor1 = {color1}
-				exposed_params.g_vColor2 = {color2}
-				exposed_params.g_vColor3 = {color3}
-			}}
-			all_composite_material_keys = 
-			{{
-				econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
-				econ_instance.g_flWearAmount = {wear}
-				econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
-				econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
-				exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
-				exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
-				exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
-				exposed_params.g_bUseNormalMap = {custom_normal_map}
-				exposed_params.g_bUsePearlescenceMask = {custom_pearl_mask}
-				exposed_params.g_bUseRoughness = {custom_rough_tex}
-				exposed_params.g_bUseRoughnessByColor = false
-				exposed_params.g_flPaintRoughness = {rough}
-				exposed_params.g_flPatternTexCoordScale = 1.0
-				exposed_params.g_flPearlescentScale = {pearl_scale}
-				exposed_params.g_tFinalAmbientOcclusion = "{ao_tex_path}"
-				exposed_params.g_tNormal = "{normal_tex_path}"
-				exposed_params.g_tPaintByNumberMasks = "{masks_tex_path}"
-				exposed_params.g_tPaintRoughness = "{rough_tex_path}"
-				exposed_params.g_tPattern = "{albedo_tex_path}"
-				exposed_params.g_tPearlescenceMask = "{pearl_tex_path}"
-				exposed_params.g_vColor0 = {color0}
-				exposed_params.g_vColor1 = {color1}
-				exposed_params.g_vColor2 = {color2}
-				exposed_params.g_vColor3 = {color3}
-				exposed_params.g_vPaintMetalness.0 = 0.0
-				exposed_params.g_vPaintMetalness.1 = 0.0
-				exposed_params.g_vPaintMetalness.2 = 0.0
-				exposed_params.g_vPaintMetalness.3 = 0.0
-				exposed_params.g_vPaintRoughness.0 = 0.6
-				exposed_params.g_vPaintRoughness.1 = 0.6
-				exposed_params.g_vPaintRoughness.2 = 0.6
-				exposed_params.g_vPaintRoughness.3 = 0.6
-			}}
-			preview_weapon = "weapon_{weapon}"
-			associate_assets = 
-			[
-				resource_name:"weapons/paints/workshop/{finish_name}.vcompmat",
-			]
+			econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
+			econ_instance.g_flWearAmount = {wear}
+			econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
+			econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
+			exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
+			exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
+			exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
+			exposed_params.g_bUseNormalMap = {custom_normal_map}
+			exposed_params.g_bUsePearlescenceMask = {custom_pearl_mask}
+			exposed_params.g_bUseRoughness = {custom_rough_tex}
+			exposed_params.g_flPatternTexCoordScale = {tex_scale}
+			exposed_params.g_flPearlescentScale = {pearl_scale}
+			exposed_params.g_tPaintRoughness = "{rough_tex_path}"
+			exposed_params.g_tPattern = "{albedo_tex_path}"
+			exposed_params.g_vColor0 = {color0}
+			exposed_params.g_vColor1 = {color1}
+			exposed_params.g_vColor2 = {color2}
+			exposed_params.g_vColor3 = {color3}
 		}}
+		all_composite_material_keys = 
+		{{
+			econ_instance.g_flPatternTexCoordRotation = {tex_rotation}
+			econ_instance.g_flWearAmount = {wear}
+			econ_instance.g_vPatternTexCoordOffset.0 = {tex_offsetx}
+			econ_instance.g_vPatternTexCoordOffset.1 = {tex_offsety}
+			exposed_params.g_bIgnoreWeaponSizeScale = {ignore_weapon_size_scale}
+			exposed_params.g_bOverrideAmbientOcclusion = {custom_ao_tex}
+			exposed_params.g_bOverrideDefaultMasks = {custom_mat_masks}
+			exposed_params.g_bUseNormalMap = {custom_normal_map}
+			exposed_params.g_bUsePearlescenceMask = {custom_pearl_mask}
+			exposed_params.g_bUseRoughness = {custom_rough_tex}
+			exposed_params.g_bUseRoughnessByColor = false
+			exposed_params.g_flPaintRoughness = {rough}
+			exposed_params.g_flPatternTexCoordScale = 1.0
+			exposed_params.g_flPearlescentScale = {pearl_scale}
+			exposed_params.g_tFinalAmbientOcclusion = "{ao_tex_path}"
+			exposed_params.g_tNormal = "{normal_tex_path}"
+			exposed_params.g_tPaintByNumberMasks = "{masks_tex_path}"
+			exposed_params.g_tPaintRoughness = "{rough_tex_path}"
+			exposed_params.g_tPattern = "{albedo_tex_path}"
+			exposed_params.g_tPearlescenceMask = "{pearl_tex_path}"
+			exposed_params.g_vColor0 = {color0}
+			exposed_params.g_vColor1 = {color1}
+			exposed_params.g_vColor2 = {color2}
+			exposed_params.g_vColor3 = {color3}
+			exposed_params.g_vPaintMetalness.0 = 0.0
+			exposed_params.g_vPaintMetalness.1 = 0.0
+			exposed_params.g_vPaintMetalness.2 = 0.0
+			exposed_params.g_vPaintMetalness.3 = 0.0
+			exposed_params.g_vPaintRoughness.0 = 0.6
+			exposed_params.g_vPaintRoughness.1 = 0.6
+			exposed_params.g_vPaintRoughness.2 = 0.6
+			exposed_params.g_vPaintRoughness.3 = 0.6
+		}}
+		preview_weapon = "weapon_{weapon}"
+		associate_assets = 
+		[
+			resource_name:"weapons/paints/workshop/{finish_name}.vcompmat",
+		]
 	}}
-	"""
+}}
+"""
+
 
 class WeaponFinishError(Exception):
     pass

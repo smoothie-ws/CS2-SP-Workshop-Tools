@@ -10,19 +10,12 @@ import "./SPWidgets"
 Rectangle {
     id: root
     color: "#262626"
-    layer.enabled: root.busy
-    layer.effect: GaussianBlur {
-        anchors.fill: root
-        source: root
-        radius: 8
-        samples: 16
-    }
 
     // 0 - closed
     // 1 - regular substance painter project
     // 2 - weapon finish project
     property int projectKind: 0
-    readonly property bool busy: texturesAreMissingPopup.opened || cs2PathIsMissingPopup.opened || decompilingProgressPopup.opened
+    readonly property bool busy: texturesAreMissingPopup.opened || cs2PathIsMissingPopup.opened || decompilingProgressPopup.opened || projectKind != 2
     
     Connections {
         target: internal
@@ -82,6 +75,17 @@ Rectangle {
             ScrollView {
                 anchors.fill: parent
                 clip: true
+                layer.enabled: root.busy
+                layer.effect: GaussianBlur {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    anchors.rightMargin: 15
+                    transparentBorder: true
+                    source: weaponFinishSettings
+                    radius: 4
+                    samples: 8
+                    deviation: 2
+                }
                 
                 WeaponFinishSettings {
                     id: weaponFinishSettings
@@ -90,6 +94,13 @@ Rectangle {
                     anchors.rightMargin: 15
                     enabled: root.projectKind == 2
                 }
+            }
+
+            Rectangle {
+                anchors.fill: parent
+                color: "black"
+                radius: parent.radius
+                opacity: root.projectKind == 2 ? 0.0 : 0.2
             }
 
             ColumnLayout {
