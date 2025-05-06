@@ -15,8 +15,8 @@ Rectangle {
     implicitHeight: mainLayout.height + 10
 
     function loadWeaponFinish() {
-        weaponFinish.load();
         weaponFinish.connect();
+        weaponFinish.load();
 
         // load base textures
         const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));

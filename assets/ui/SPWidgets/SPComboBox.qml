@@ -18,6 +18,8 @@ ComboBox {
     property var currentKey: null
 
     Component.onCompleted: {
+        if (currentKey != null)
+            currentIndex = Object.keys(map).indexOf(currentKey);
         var updating = false;
         function update(f) {
             if (!updating) {

@@ -156,7 +156,7 @@ Window {
             SPComboBox {
                 id: finishStyleBox
                 Layout.fillWidth: true
-                currentIndex: 8
+                currentKey: "gs"
                 map: {
                     "so": "Solid Color",
                     "hy": "Hydrographic",
