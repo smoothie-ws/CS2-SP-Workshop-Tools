@@ -158,6 +158,23 @@ class Internal(QtCore.QObject):
     def getWeaponList(self):
         return json.dumps(Settings.get("weapon_list"))
     
+    @QtCore.Slot(str, result=int)
+    def valWeaponFinishName(self, name: str):
+        cs2_path = Settings.get("cs2_path")
+        if cs2_path:
+            if len(name) > 0:
+                if Path.exists(Path.join(cs2_path, 
+                    "content", "csgo_addons", "workshop_items", "items", "assets", "paintkits", "workshop", 
+                    f'{name}.econitem'
+                )):
+                    return 2
+                else:
+                    return 0
+            else:
+                return 1
+        else:
+            return 0
+        
     @QtCore.Slot(str, str, str, str)
     def createWeaponFinish(self, file_path:str, finish_name:str, weapon:str, finish_style:str):
         def callback(res, msg):
