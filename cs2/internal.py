@@ -49,7 +49,7 @@ class Internal(QtCore.QObject):
         self.pluginSettingsRequested.emit()
         
     def on_help(self):
-        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#contents")
+        Path.startfile(Settings.get_asset_path("index.html"))
         
     def on_clear_docs(self):
         self.clearDocsRequested.emit()

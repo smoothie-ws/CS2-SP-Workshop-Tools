@@ -53,6 +53,11 @@ class Path:
         return pathlib.Path(path).stem
     
     @staticmethod
+    def startfile(path:str):
+        if Path.exists(path):
+            os.startfile(path)
+    
+    @staticmethod
     def show_in_explorer(path:str):
         # explorer would choke on forward slashes
         path = os.path.normpath(path)
