@@ -84,11 +84,11 @@ These shaders are used for live previewing the Weapon Finish settings.
 
 Plugin Settins are available at the `CS2 Workshop Tools` menu:
 
-![image](https://github.com/user-attachments/assets/60b87cd0-ec41-4696-bd58-5a8e3fb3a802)
+![image](https://github.com/user-attachments/assets/4bb34f8c-f739-48e2-af08-2cbaea1789d8)
 
 Here you can customize the list of weapons, the path to CS2, etc:
 
-![image](https://github.com/user-attachments/assets/5d417108-b85d-4b47-8d9c-308785b06a2e)
+![image](https://github.com/user-attachments/assets/7ad3a91c-0a2c-48f3-b506-d30ca20c3316)
 
 ### Base weapon textures
 
