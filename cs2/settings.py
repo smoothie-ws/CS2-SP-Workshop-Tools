@@ -35,23 +35,24 @@ class Settings:
                 pass
         Settings.plugin_files = data.get("files", [])
         Settings.plugin_version = data.get("version", "0.0.1a")
-        Settings.plugin_settings = data.get("settings")
-        if Settings.plugin_settings is None:
+        Settings.plugin_settings = data.get("settings", {})
+        if len(Settings.plugin_settings.keys()) == 0:
             Settings.reset()
 
     @staticmethod
     def save():
+        data = {
+            "version": Settings.plugin_version,
+            "settings": Settings.plugin_settings,
+            "files": Settings.plugin_files
+        }
         with open(Settings.path, "w", encoding="utf-8") as f:
-            json.dump({
-                "version": Settings.plugin_version,
-                "settings": Settings.plugin_settings,
-                "files": Settings.plugin_files
-            }, f, indent=4, ensure_ascii=False)
+            json.dump(data, f, indent=4, ensure_ascii=False)
 
     @staticmethod
     def reset():
         try:
-            for key, value in Settings.get_defaults():
+            for key, value in Settings.get_defaults().items():
                 Settings.set(key, value)
         except SettingsError as e:
             Log.error(f'Failed to reset plugin settings: {str(e)}')

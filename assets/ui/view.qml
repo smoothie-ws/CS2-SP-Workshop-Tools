@@ -34,7 +34,17 @@ Rectangle {
                 weaponFinishSettings.loadWeaponFinish();
         }
         onFinishStyleReady: weaponFinishSettings.syncWeaponFinish()
-        onUninstallationRequested: confirmUninstallationPopup.show()
+        onPluginSettingsRequested: {
+            var screenPosition = parent.mapToGlobal(x, y);
+            pluginSettingsWindow.x = screenPosition.x;
+            pluginSettingsWindow.y = screenPosition.y;
+            try {
+                pluginSettingsWindow.open();
+            } catch (e) {
+                internal.error(e.toString());
+            }
+        }
+        onClearDocsRequested: confirmClearDocsPopup.show()
     }
 
     // main
@@ -206,7 +216,7 @@ Rectangle {
                 lineHeight: 1.4
                 text: "
                     <p>
-                        Base weapon textures are required by the shader to calculate paint wear, dirt, and other effects.
+                        Base weapon textures are required by the shaders to calculate paint wear, dirt, and other effects.
                     </p>
                     <p>
                         If you have Counter-Strike 2 installed on your computer, you can automatically decompile the textures by clicking <b>\"Decompile now\"</b>.
@@ -237,23 +247,32 @@ Rectangle {
 
         content: ColumnLayout {
             width: 400
-            
-            Text {
-                color: AlgStyle.text.color.normal
-                wrapMode: Text.WordWrap
-                textFormat: Text.RichText
+            spacing: 10
+
+            Rectangle {
                 Layout.fillWidth: true
-                text: "
-                    <p>
-                        Counter-Strike 2 path is used to automatically save .econitem files associated with weapon finishes and fast texture exporting.
-                    </p>
-                    <p>
-                        If you have Counter-Strike 2 installed on your computer, you can provide path to its folder location.
-                    </p>
-                    <p>
-                        You can change the path at any time in the plugin settings menu.
-                    </p>
-                "
+                radius: 10
+                height: 115
+                color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
+            
+                Text {
+                    anchors.fill: parent
+                    anchors.margins: 15
+                    color: AlgStyle.text.color.normal
+                    wrapMode: Text.WordWrap
+                    textFormat: Text.RichText
+                    text: "
+                        <p>
+                            Counter-Strike 2 path is used to automatically save .econitem files associated with weapon finishes and fast texture exporting.
+                        </p>
+                        <p>
+                            If you have Counter-Strike 2 installed on your computer, you can provide path to its folder location.
+                        </p>
+                        <p>
+                            You can change the path at any time in the plugin settings menu.
+                        </p>
+                    "
+                }
             }
 
             RowLayout {
@@ -372,13 +391,17 @@ Rectangle {
         }
     }
 
+    PluginSettings {
+        id: pluginSettingsWindow
+    }
+
     Window {
-        id: confirmUninstallationPopup
+        id: confirmClearDocsPopup
         width: 400
         height: 150
         modality: Qt.ApplicationModal
         flags: Qt.Window | Qt.CustomizeWindowHint | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
-        title: "Uninstall CS2 Workshop Tools"
+        title: "Clear CS2 Workshop Tools Documents"
         color: AlgStyle.background.color.mainWindow
 
         property real scopeWidth: width * 0.5
@@ -402,15 +425,15 @@ Rectangle {
                 Item { Layout.fillWidth: true }
 
                 SPButton {
-                    text: "Uninstall"
+                    text: "ClearDocs"
                     backgroundRect.opacity: hovered ? 1.0 : 0.65
                     backgroundRect.color: "white"
                     label.color: "#262626"
                     Layout.alignment: Qt.AlignHCenter
 
                     onClicked: {
-                        confirmUninstallationPopup.close();
-                        internal.uninstallationConfirmed();
+                        confirmClearDocsPopup.close();
+                        internal.clear_docsConfirmed();
                     }
                 }
 
@@ -421,7 +444,7 @@ Rectangle {
                     label.color: AlgStyle.text.color.normal
                     Layout.alignment: Qt.AlignHCenter
 
-                    onClicked: confirmUninstallationPopup.close()
+                    onClicked: confirmClearDocsPopup.close()
                 }
             }
         }

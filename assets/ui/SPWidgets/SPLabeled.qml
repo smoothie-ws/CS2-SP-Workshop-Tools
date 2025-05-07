@@ -6,6 +6,7 @@ import AlgWidgets 2.0
 RowLayout {
     opacity: enabled ? 1.0 : 0.5
     
+    property alias label: label
     property alias text: label.text
     property real scopeWidth: label.width
     

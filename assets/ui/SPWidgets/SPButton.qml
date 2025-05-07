@@ -40,9 +40,9 @@ Button {
 
     contentItem: Item {
         anchors.fill: parent
+        anchors.margins: root.padding
 
         RowLayout {
-            anchors.margins: root.padding
             anchors.left: parseInt(root.contentAlignment & Qt.AlignLeft) != 0 ? parent.left : undefined
             anchors.horizontalCenter: parseInt(root.contentAlignment & Qt.AlignHCenter) != 0 ? parent.horizontalCenter : undefined
             anchors.right: parseInt(root.contentAlignment & Qt.AlignRight) != 0 ? parent.right : undefined

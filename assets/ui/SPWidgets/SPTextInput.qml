@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Controls 2.1
 
 TextInput {
     id: root
@@ -11,10 +12,13 @@ TextInput {
     horizontalAlignment: Text.AlignHCenter
     verticalAlignment: Text.AlignVCenter
 
+    property alias hovered: mouseArea.containsMouse
+    property alias tooltip: tooltip
+
     property Component background: Rectangle {
         color: "black"
         radius: 10
-        opacity: root.focus ? 0.5 : (mouseArea.containsMouse ? 0.3 : 0.15)
+        opacity: root.focus ? 0.5 : (root.hovered ? 0.3 : 0.15)
 
         Behavior on opacity {
             NumberAnimation { duration: 150 }
@@ -27,6 +31,27 @@ TextInput {
         z: parent.z - 1
         anchors.fill: parent
         sourceComponent: root.background
+    }
+
+    ToolTip {
+        id: tooltip
+        visible: root.hovered && text != ""
+        opacity: visible ? 1.0 : 0.0
+        delay: 500
+
+        Behavior on opacity {
+            NumberAnimation { duration: 200 }
+        }
+
+        contentItem: Text {
+            text: tooltip.text
+            color: "#cfcfcf"
+        }
+
+        background: Rectangle {
+            color: Qt.rgba(0.12, 0.12, 0.12)
+            radius: 5
+        }
     }
 
     MouseArea {

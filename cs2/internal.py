@@ -1,4 +1,5 @@
 import json
+import webbrowser
 import substance_painter as sp
 import substance_painter_plugins as sp_plugins
 
@@ -45,13 +46,13 @@ class Internal(QtCore.QObject):
         self.projectKindChanged.emit(0)
 
     def on_settings(self):
-        Log.info("Settings")
+        self.pluginSettingsRequested.emit()
         
-    def on_about(self):
-        Log.info("About")
+    def on_help(self):
+        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#contents")
         
-    def on_uninstall(self):
-        self.uninstallationRequested.emit()
+    def on_clear_docs(self):
+        self.clearDocsRequested.emit()
         
     def is_weapon_finish_opened(self):
         return ProjectSettings.get("weapon_finish") is not None
@@ -93,7 +94,8 @@ class Internal(QtCore.QObject):
     decompilationFinished = QtCore.Signal()
     projectKindChanged = QtCore.Signal(int)
     finishStyleReady = QtCore.Signal()
-    uninstallationRequested = QtCore.Signal()
+    pluginSettingsRequested = QtCore.Signal()
+    clearDocsRequested = QtCore.Signal()
 
     # Slots
     @QtCore.Slot(str)
@@ -127,6 +129,15 @@ class Internal(QtCore.QObject):
     @QtCore.Slot(bool)
     def ignoreTexturesMissing(self, ignore:bool):
         Settings.set("ignore_textures_are_missing", ignore)
+
+    @QtCore.Slot(result=bool)
+    def getIgnoreTexturesMissing(self):
+        return Settings.get("ignore_textures_are_missing", False)
+
+    @QtCore.Slot(str)
+    def savePluginSettings(self, settings:str):
+        for key, value in json.loads(settings).items():
+            Settings.set(key, value)
 
     @QtCore.Slot()
     def startTexturesDecompilation(self):
@@ -230,6 +241,6 @@ class Internal(QtCore.QObject):
             Log.info(code)
     
     @QtCore.Slot()
-    def uninstallationConfirmed(self):
+    def clear_docsConfirmed(self):
         for path in Settings.get("files", []):
             Path.remove(path)

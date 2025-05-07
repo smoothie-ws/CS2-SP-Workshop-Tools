@@ -23,18 +23,6 @@ class WeaponFinish:
 	]
 
 	@staticmethod
-	def get_defaults() -> dict:
-		defaults_path = Settings.get_asset_path("default_weapon_finish_settings.json")
-		if Path.exists(defaults_path):
-			try:
-				with open(defaults_path, "r", encoding="utf-8") as f:
-					return json.loads(f.read())
-			except Exception as e:
-				raise WeaponFinishError(f'Failed to get default Weapon Finish settings: {str(e)}')
-		else:
-			raise WeaponFinishError(f'Failed to get default Weapon Finish settings: Path `{defaults_path}` does not exist')
-
-	@staticmethod
 	def create(file_path:str, finish_name:str, weapon:str, finish_style:str, callback):
 		# create project
 		if sp.project.is_open():
@@ -99,15 +87,10 @@ class WeaponFinish:
 			except Exception as e:
 				callback(False, f'Failed to set up the document channel stack: {str(e)}')
 			
-			# load defaults
-			try:
-				weapon_finish = WeaponFinish.get_defaults()
-			except WeaponFinishError as e:
-				Log.warning(f'Failed to fetch default Weapon Finish settings: {str(e)}')
-				weapon_finish = {}
-
-			weapon_finish["weapon"] = weapon
-			weapon_finish["finishStyle"] = finish_style
+			weapon_finish = {
+				"weapon": weapon,
+				"finishStyle": finish_style
+			}
 
 			# create files associated with the weapon finish
 			cs2_path = Settings.get("cs2_path")
