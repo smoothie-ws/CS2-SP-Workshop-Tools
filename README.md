@@ -1,7 +1,5 @@
 # CS2 Workshop Tools for Substance 3D Painter
 
-![cs2sp_logo](https://github.com/user-attachments/assets/edda828a-586c-4fa3-b0c8-c453bde0e0e1)
-
 # **[Overview](#overview)** • **[Getting started](#getting-started)** • **[Guide](#guide)**
 
 # Disclaimer
@@ -10,6 +8,8 @@ This project is an **unofficial fan-made tool** for creating **[Counter-Strike 2
 
 Since it is currently under active development, there may be some bugs or mistakes.
 If you encounter any, please [report them](https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/issues).
+
+![cs2sp_logo](https://github.com/user-attachments/assets/7df2705d-59c6-4dbd-b700-7c1aa8fcd2ed)
 
 # Table of Contents
 -   **[Overview](#overview)**
