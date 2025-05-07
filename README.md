@@ -1,5 +1,10 @@
-# Contents
+# CS2 Workshop Tools for Substance 3D Painter
 
+![cs2sp_logo](https://github.com/user-attachments/assets/edda828a-586c-4fa3-b0c8-c453bde0e0e1)
+
+# **[Overview](#overview)** • **[Getting started](#getting-started)** • **[Guide](#guide)**
+
+# Table of Contents
 -   **[Disclaimer](#disclaimer)**
 -   **[Overview](#overview)**
     -   [How it works](#how-it-works)
