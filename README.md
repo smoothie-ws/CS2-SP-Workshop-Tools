@@ -88,6 +88,8 @@ Plugin Settins are available at the `CS2 Workshop Tools` menu:
 
 Here you can customize the list of weapons, the path to CS2, etc:
 
+![image](https://github.com/user-attachments/assets/5d417108-b85d-4b47-8d9c-308785b06a2e)
+
 ### Base weapon textures
 
 CS2 SP Workshop Tools shaders require a set of base weapon textures to calculate paint wear, dirt, and other effects.
