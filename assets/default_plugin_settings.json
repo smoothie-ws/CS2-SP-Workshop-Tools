@@ -1,4 +1,5 @@
 {
+    "ignore_textures_are_missing": false,
     "weapon_list": {
         "ak47": "AK-47",
         "aug": "AUG",
@@ -36,5 +37,24 @@
         "xm1014": "XM1014",
         "taser": "Zeus x27"
     },
-    "ignore_textures_are_missing": false
+    "weapon_finish": {
+        "finishStyle": "gs",
+        "wearRange": [0.0, 1.0],
+        "texScale": 1.0,
+        "texRotationRange": [0.0, 0.0],
+        "texOffsetXRange": [0.0, 0.0],
+        "texOffsetYRange": [0.0, 0.0],
+        "uIgnoreWeaponSizeScale": true,
+        "uUsePearlMask": true,
+        "uPearlScale": 0.0,
+        "uUseCustomRough": true,
+        "uPaintRoughness": 0.6,
+        "uCol0": [1.0, 1.0, 1.0],
+        "uCol1": [1.0, 1.0, 1.0],
+        "uCol2": [1.0, 1.0, 1.0],
+        "uCol3": [1.0, 1.0, 1.0],
+        "uUseCustomNormal": true,
+        "uUseCustomMasks": true,
+        "uUseCustomAOTex": true
+    }
 }

@@ -18,7 +18,7 @@ Rectangle {
     readonly property bool busy: texturesAreMissingPopup.opened || cs2PathIsMissingPopup.opened || decompilingProgressPopup.opened || projectKind != 2
     
     Connections {
-        target: internal
+        target: CS2WT
         onTexturesAreMissing: texturesAreMissingPopup.open()
         onCs2PathIsMissing: cs2Path => {
             cs2PathIsMissingPopup.cs2Path = cs2Path;
@@ -38,12 +38,9 @@ Rectangle {
             var screenPosition = parent.mapToGlobal(x, y);
             pluginSettingsWindow.x = screenPosition.x;
             pluginSettingsWindow.y = screenPosition.y;
-            try {
-                pluginSettingsWindow.open();
-            } catch (e) {
-                internal.error(e.toString());
-            }
+            pluginSettingsWindow.open();
         }
+        onPluginAboutToClose: weaponFinishSettings.dumpWeaponFinish()
         onClearDocsRequested: confirmClearDocsPopup.show()
     }
 
@@ -67,10 +64,7 @@ Rectangle {
                 icon.width: 18
                 icon.height: 18
                 Layout.alignment: Qt.AlignCenter
-                onClicked: {
-                    weaponFinishInitWindow.isNew = true;
-                    weaponFinishInitWindow.show();
-                }
+                onClicked: weaponFinishInitWindow.open(true);
             }
         }
 
@@ -138,10 +132,9 @@ Rectangle {
 
                     onClicked: {
                         var screenPosition = parent.mapToGlobal(x, y);
-                        weaponFinishInitWindow.isNew = false;
                         weaponFinishInitWindow.x = screenPosition.x;
                         weaponFinishInitWindow.y = screenPosition.y;
-                        weaponFinishInitWindow.show();
+                        weaponFinishInitWindow.open(false);
                     }
                 }
             }
@@ -155,7 +148,7 @@ Rectangle {
 
             Repeater {
                 model: [
-                    `<b><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a> v${internal.pluginVersion()}</b>`,
+                    `<b><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a> v${CS2WT.pluginVersion()}</b>`,
                     "| Created by <a href=\"https://steamcommunity.com/id/smoothie-ws/\"><b>smoothie</b></a>"
                 ]
                 delegate: Text {
@@ -198,8 +191,8 @@ Rectangle {
         acceptButton.tooltip.text: "Start decompiling now"
         rejectButton.tooltip.text: "Provide the textures later"
 
-        onAccepted: internal.startTexturesDecompilation()
-        onIgnoreRequested: internal.ignoreTexturesAreMissing()
+        onAccepted: CS2WT.startTexturesDecompilation()
+        onIgnoreRequested: CS2WT.setIgnoreTexturesAreMissing(true)
 
         content: Rectangle {
             radius: 10
@@ -241,9 +234,9 @@ Rectangle {
         property string cs2Path: ""
         property bool cs2PathIsValid: false
 
-        onCs2PathChanged: cs2PathIsValid = internal.valCs2Path(cs2Path)
+        onCs2PathChanged: cs2PathIsValid = CS2WT.valCs2Path(cs2Path)
 
-        onAccepted: internal.setCs2Path(cs2Path)
+        onAccepted: CS2WT.setCs2Path(cs2Path)
 
         content: ColumnLayout {
             width: 400
@@ -433,7 +426,7 @@ Rectangle {
 
                     onClicked: {
                         confirmClearDocsPopup.close();
-                        internal.clear_docsConfirmed();
+                        CS2WT.clear_docsConfirmed();
                     }
                 }
 

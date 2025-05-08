@@ -36,8 +36,17 @@ class Settings:
         Settings.plugin_files = data.get("files", [])
         Settings.plugin_version = data.get("version", "0.0.1a")
         Settings.plugin_settings = data.get("settings", {})
-        if len(Settings.plugin_settings.keys()) == 0:
-            Settings.reset()
+
+        # fetch defaults if something is missing
+        defaults_path = Settings.get_asset_path("default_plugin_settings.json")
+        try:
+            with open(defaults_path, "r", encoding="utf-8") as f:
+                defaults = json.loads(f.read())
+            for key, value in defaults.items():
+                if not Settings.contains(key):
+                    Settings.set(key, value)
+        except Exception as e:
+            Log.error(f'Failed to fetch default plugin settings: {str(e)}')
 
     @staticmethod
     def save():
@@ -50,37 +59,17 @@ class Settings:
             json.dump(data, f, indent=4, ensure_ascii=False)
 
     @staticmethod
-    def reset():
-        try:
-            for key, value in Settings.get_defaults().items():
-                Settings.set(key, value)
-        except SettingsError as e:
-            Log.error(f'Failed to reset plugin settings: {str(e)}')
-
-    @staticmethod
     def get_asset_path(*path:list) -> str:
         return Path.join(Settings.plugin_path, "assets", *path)
-
-    @staticmethod
-    def get_defaults():
-        defaults_path = Settings.get_asset_path("default_plugin_settings.json")
-        if Path.exists(defaults_path):
-            try:
-                with open(defaults_path, "r", encoding="utf-8") as f:
-                    return json.loads(f.read())
-            except Exception as e:
-                raise SettingsError(f'Failed to get default plugin settings: {str(e)}')
-        else:
-            raise SettingsError(f'Failed to get default plugin settings: Path `{defaults_path}` does not exist')
-
+    
     @staticmethod
     def push_file(path: str):
         Settings.plugin_files.append(path)
         Settings.save()
 
     @staticmethod
-    def keys() -> dict:
-        return Settings.plugin_settings
+    def keys() -> list:
+        return Settings.plugin_settings.keys()
     
     @staticmethod
     def clear():
@@ -101,7 +90,3 @@ class Settings:
     @staticmethod
     def set(key:str, value):
         Settings.plugin_settings[key] = value
-    
-
-class SettingsError(Exception):
-    pass

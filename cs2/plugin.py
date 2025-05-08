@@ -7,6 +7,7 @@ from .path import Path
 from .settings import Settings
 from .internal import InternalState
 from .weapon_finish import WeaponFinish
+
 from .shader import preprocess as shader_preprocess
 from .resource import search as resource_search
 
@@ -34,7 +35,7 @@ class Plugin:
 
     def close(self):
         if self.internal is not None:
-            self.internal.state = InternalState.Closed
+            self.internal.on_close()
         self.ui.close()
         Log.warning("Plugin closed")
 

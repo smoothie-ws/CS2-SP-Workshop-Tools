@@ -21,11 +21,20 @@ Window {
 
     signal proceed(string name, string weapon, int finishStyle, string fileUrl)
 
+    function open(isCreating) {
+        isNew = isCreating;
+        fileUrl = "";
+        nameInput.name = "";
+        weaponBox.currentKey = "";
+        finishStyleBox.currentKey = CS2WT.getDefaultFinishStyle();
+        show();
+    }
+
     function submit() {
         if (isNew)
-            internal.createWeaponFinish(fileUrl, nameInput.name, weaponBox.currentKey, finishStyleBox.currentKey);
+            CS2WT.createWeaponFinish(fileUrl, nameInput.name, weaponBox.currentKey, finishStyleBox.currentKey);
         else
-            internal.setupAsWeaponFinish(nameInput.name, weaponBox.currentKey, finishStyleBox.currentKey);
+            CS2WT.setupAsWeaponFinish(nameInput.name, weaponBox.currentKey, finishStyleBox.currentKey);
         close();
     }
 
@@ -86,7 +95,7 @@ Window {
             property bool nameIsValid: false
 
             function valName() {
-                const nameStatus = internal.valWeaponFinishName(name);
+                const nameStatus = CS2WT.valWeaponFinishName(name);
                 nameIsValid = nameStatus == 0;
                 switch (nameStatus) {
                     case 1:
@@ -126,6 +135,7 @@ Window {
                     border.color: nameInput.nameIsValid ? "green" : "red"
                     
                     SPTextInput {
+                        text: nameInput.name
                         anchors.fill: parent
                         anchors.margins: parent.border.width + 2
 
@@ -144,7 +154,7 @@ Window {
                 id: weaponBox
                 currentIndex: -1
                 Layout.fillWidth: true
-                map: JSON.parse(internal.getWeaponList())
+                map: JSON.parse(CS2WT.getWeaponList())
             }
         }
         
@@ -156,7 +166,6 @@ Window {
             SPComboBox {
                 id: finishStyleBox
                 Layout.fillWidth: true
-                currentKey: "gs"
                 map: {
                     "so": "Solid Color",
                     "hy": "Hydrographic",

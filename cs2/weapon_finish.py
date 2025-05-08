@@ -1,4 +1,3 @@
-import json
 import math
 import substance_painter as sp
 
@@ -87,10 +86,10 @@ class WeaponFinish:
 			except Exception as e:
 				callback(False, f'Failed to set up the document channel stack: {str(e)}')
 			
-			weapon_finish = {
-				"weapon": weapon,
-				"finishStyle": finish_style
-			}
+			# fetch default weapon finish settings
+			weapon_finish = Settings.get("weapon_finish", {})
+			weapon_finish["weapon"] = weapon
+			weapon_finish["finishStyle"] = finish_style
 
 			# create files associated with the weapon finish
 			cs2_path = Settings.get("cs2_path")
@@ -118,12 +117,9 @@ class WeaponFinish:
 			else:
 				Log.warning("CS2 path not found. Please set it in the plugin settings menu")
 
-			# update project settings
-			ProjectSettings.set("weapon_finish", weapon_finish)
-
 			# update shader instance
 			WeaponFinish.change_finish_style_shader(finish_style, 
-				lambda res, msg: callback(res, 
+				lambda res, msg: callback(res, weapon_finish,
 					f'The project was successfully set up as Weapon Finish' if res else f'Failed to set finish style: {msg}'
 				)
 			)
@@ -328,15 +324,6 @@ class WeaponFinish:
 		else:
 			Log.error(f'Failed to export textures: Path {folder_path} does not exists')
 
-
-	@staticmethod
-	def save(values:dict):
-		weapon_finish: dict = ProjectSettings.get("weapon_finish")
-		for key, value in values.items():
-			weapon_finish[key] = value
-		ProjectSettings.set("weapon_finish", weapon_finish)
-		WeaponFinish.sync_econ(weapon_finish)
-
 	@staticmethod
 	def sync_econ(weapon_finish: dict):
 		# helper functions
@@ -345,7 +332,7 @@ class WeaponFinish:
 		
 		def get_bool(param: str) -> bool:
 			return "true" if weapon_finish.get(param) else "false"
-			
+		
 		econitem = weapon_finish.get("econitem")
 		if econitem is not None:
 			textures_folder = weapon_finish.get("texturesFolder")
@@ -360,10 +347,7 @@ class WeaponFinish:
 				textures_folder = textures_folder[1:]
 
 			# fetch weapon finish parameters
-
 			finish_name = Path.filename(econitem)
-			print(finish_name)
-
 			finish_style = {
 				"so": "SolidColor",
 				"hy": "HydroGraphic",
@@ -506,7 +490,3 @@ ECON_TEMPLATE = """
 	}}
 }}
 """
-
-
-class WeaponFinishError(Exception):
-    pass

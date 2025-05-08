@@ -1,7 +1,5 @@
 import json
-import webbrowser
 import substance_painter as sp
-import substance_painter_plugins as sp_plugins
 
 # Qt5 vs Qt6 check
 if sp.application.version_info() < (10, 1, 0):
@@ -32,7 +30,7 @@ class Internal(QtCore.QObject):
         super().__init__()
         self.state = InternalState.Closed
         self.root = root
-        self.root.setContextProperty("internal", self)
+        self.root.setContextProperty("CS2WT", self)
 
         self.missing_weapon_list = {}
     
@@ -44,6 +42,11 @@ class Internal(QtCore.QObject):
 
     def on_project_about_to_close(self):
         self.projectKindChanged.emit(0)
+
+    def on_close(self):
+        self.state = InternalState.Closed
+        if self.is_weapon_finish_opened():
+            self.pluginAboutToClose.emit()
 
     def on_settings(self):
         self.pluginSettingsRequested.emit()
@@ -94,6 +97,7 @@ class Internal(QtCore.QObject):
     decompilationFinished = QtCore.Signal()
     projectKindChanged = QtCore.Signal(int)
     finishStyleReady = QtCore.Signal()
+    pluginAboutToClose = QtCore.Signal()
     pluginSettingsRequested = QtCore.Signal()
     clearDocsRequested = QtCore.Signal()
 
@@ -126,18 +130,26 @@ class Internal(QtCore.QObject):
     def showInExplorer(self, path:str):
         Path.show_in_explorer(path)
 
-    @QtCore.Slot(bool)
-    def ignoreTexturesMissing(self, ignore:bool):
-        Settings.set("ignore_textures_are_missing", ignore)
-
-    @QtCore.Slot(result=bool)
-    def getIgnoreTexturesMissing(self):
-        return Settings.get("ignore_textures_are_missing", False)
-
+    @QtCore.Slot(result=str)
+    def getPluginSettings(self):
+        return json.dumps(Settings.plugin_settings)
+    
     @QtCore.Slot(str)
-    def savePluginSettings(self, settings:str):
+    def setPluginSettings(self, settings:str):
         for key, value in json.loads(settings).items():
             Settings.set(key, value)
+
+    @QtCore.Slot(result=str)
+    def getWeaponList(self):
+        return json.dumps(Settings.get("weapon_list"))
+    
+    @QtCore.Slot(result=str)
+    def getDefaultFinishStyle(self):
+        return Settings.get("weapon_finish", {}).get("finishStyle", "gs")
+    
+    @QtCore.Slot(bool)
+    def setIgnoreTexturesAreMissing(self, ignore:bool):
+        Settings.set("ignore_textures_are_missing", ignore)
 
     @QtCore.Slot()
     def startTexturesDecompilation(self):
@@ -165,10 +177,6 @@ class Internal(QtCore.QObject):
         else:
             return False
 
-    @QtCore.Slot(result=str)
-    def getWeaponList(self):
-        return json.dumps(Settings.get("weapon_list"))
-    
     @QtCore.Slot(str, result=int)
     def valWeaponFinishName(self, name: str):
         cs2_path = Settings.get("cs2_path")
@@ -188,10 +196,11 @@ class Internal(QtCore.QObject):
         
     @QtCore.Slot(str, str, str, str)
     def createWeaponFinish(self, file_path:str, finish_name:str, weapon:str, finish_style:str):
-        def callback(res, msg):
+        def callback(res, weapon_finish, msg):
             self.state = InternalState.Started
             if res:
-                self.projectKindChanged.emit(2)
+                ProjectSettings.set("weapon_finish", weapon_finish)
+                self.on_project_opened()
                 Log.warning(msg)
             else:
                 Log.error(f'Failed to create weapon finish: {msg}')
@@ -221,8 +230,12 @@ class Internal(QtCore.QObject):
         WeaponFinish.change_finish_style_shader(finish_style, _change)
 
     @QtCore.Slot(str)
-    def saveWeaponFinish(self, values: str):
-        WeaponFinish.save(json.loads(values))
+    def dumpWeaponFinish(self, values:str):
+        ProjectSettings.set("weapon_finish", json.loads(values))
+        
+    @QtCore.Slot()
+    def syncWeaponFinish(self):
+        WeaponFinish.sync_econ(ProjectSettings.get("weapon_finish"))
 
     @QtCore.Slot()
     def importWeaponFinishEconItem(self):

@@ -14,14 +14,17 @@ Rectangle {
     color: AlgStyle.background.color.mainWindow
     implicitHeight: mainLayout.height + 10
 
+    property bool ready: false
+
     function loadWeaponFinish() {
-        weaponFinish.connect();
+        ready = false;
         weaponFinish.load();
+        weaponFinish.connect();
 
         // load base textures
-        const values = JSON.parse(internal.js("alg.project.settings.value(\"weapon_finish\")"));
+        const values = JSON.parse(CS2WT.js("alg.project.settings.value(\"weapon_finish\")"));
         const w = weaponBox.currentKey;
-        const texPath = `${internal.pluginPath()}/assets/textures`;
+        const texPath = `${CS2WT.pluginPath()}/assets/textures`;
         for (const [param, file] of Object.entries({
                 "uGrungeTex": "grunge.tga", 
                 "uScratchesTex": "scratches.png", 
@@ -33,6 +36,11 @@ Rectangle {
             }))
             if (values[param] === undefined || values[param] === "")
                 weaponFinish.parameters[param].control.url = importTexture(`${texPath}/${file}`);
+        ready = true;
+    }
+
+    function dumpWeaponFinish() {
+        weaponFinish.dump();
     }
 
     // when user changes finish style, the corresponding shader instance has outdated parameter values
@@ -41,7 +49,7 @@ Rectangle {
     }
 
     function importTexture(url) {
-        return JSON.parse(internal.js(`alg.resources.importSessionResource("${url}", "texture")`));
+        return JSON.parse(CS2WT.js(`alg.resources.importSessionResource("${url}", "texture")`));
     }
 
     PainterPlugin {
@@ -49,20 +57,23 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        finishStyleBox.currentKeyChanged.connect(() => 
-            internal.changeFinishStyle(finishStyleBox.currentKey)
-        );
+        finishStyleBox.currentKeyChanged.connect(() => {
+            if (ready)
+                CS2WT.changeFinishStyle(finishStyleBox.currentKey)
+        });
         weaponBox.currentKeyChanged.connect(() => {
-            const w = weaponBox.currentKey;
-            const path = `${internal.pluginPath()}/assets/textures/models/${w}`;
-            try {
-                weaponFinish.parameters["uBaseColor"].control.url = importTexture(`${path}/${w}_color.png`);
-                weaponFinish.parameters["uBaseRough"].control.url = importTexture(`${path}/${w}_rough.png`);
-                weaponFinish.parameters["uBaseSurface"].control.url = importTexture(`${path}/${w}_surface.png`);
-                weaponFinish.parameters["uBaseMasks"].control.url = importTexture(`${path}/${w}_masks.png`);
-                weaponFinish.parameters["uBaseCavity"].control.url = importTexture(`${path}/${w}_cavity.png`);
-            } catch(err) { 
-                internal.error(err.toString());
+            if (ready) {
+                const w = weaponBox.currentKey;
+                const path = `${CS2WT.pluginPath()}/assets/textures/models/${w}`;
+                try {
+                    weaponFinish.parameters["uBaseColor"].control.url = importTexture(`${path}/${w}_color.png`);
+                    weaponFinish.parameters["uBaseRough"].control.url = importTexture(`${path}/${w}_rough.png`);
+                    weaponFinish.parameters["uBaseSurface"].control.url = importTexture(`${path}/${w}_surface.png`);
+                    weaponFinish.parameters["uBaseMasks"].control.url = importTexture(`${path}/${w}_masks.png`);
+                    weaponFinish.parameters["uBaseCavity"].control.url = importTexture(`${path}/${w}_cavity.png`);
+                } catch(err) { 
+                    CS2WT.error(err.toString());
+                }
             }
         });
     }
@@ -182,7 +193,7 @@ Rectangle {
                         backgroundRect.color: "black"
                         backgroundRect.opacity: hovered ? 0.75 : 0.25
 
-                        onClicked: internal.importWeaponFinishEconItem()
+                        onClicked: CS2WT.importWeaponFinishEconItem()
                     }
 
                     SPLabeled {
@@ -226,7 +237,7 @@ Rectangle {
                             enabled: econitem.filePath != ""
                             tooltip.text: "Reveal in File Explorer"
 
-                            onClicked: internal.showInExplorer(econitem.filePath)
+                            onClicked: CS2WT.showInExplorer(econitem.filePath)
                         }
                     }
                 }
@@ -245,7 +256,7 @@ Rectangle {
                         backgroundRect.color: "black"
                         backgroundRect.opacity: hovered ? 0.75 : 0.25
 
-                        onClicked: internal.exportWeaponFinishTextures()
+                        onClicked: CS2WT.exportWeaponFinishTextures()
                     }
                     
                     SPLabeled { 
@@ -289,7 +300,7 @@ Rectangle {
                             enabled: texturesFolder.filePath != ""
                             tooltip.text: "Reveal in File Explorer"
 
-                            onClicked: internal.showInExplorer(texturesFolder.filePath)
+                            onClicked: CS2WT.showInExplorer(texturesFolder.filePath)
                         }
                     }
                 }
@@ -328,7 +339,7 @@ Rectangle {
                     SPComboBox {
                         id: weaponBox
                         Layout.fillWidth: true
-                        map: JSON.parse(internal.getWeaponList())
+                        map: JSON.parse(CS2WT.getWeaponList())
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, finishStyle.scopeWidth)
