@@ -1,6 +1,17 @@
-# Contents
+# CS2 Workshop Tools for Substance 3D Painter
 
--   **[Disclaimer](#disclaimer)**
+# **[Overview](#overview)** • **[Getting started](#getting-started)** • **[Guide](#guide)**
+
+# Disclaimer
+
+This project is an **unofficial fan-made tool** for creating **[Counter-Strike 2 Weapon Finishes](https://www.counter-strike.net/workshop/workshopfinishes)** with **[Adobe Substance 3D Painter](https://www.adobe.com/products/substance3d/apps/painter.html)** and in no way affiliated with **[Valve](https://www.valvesoftware.com/)**, **[Counter-Strike 2](https://www.counter-strike.net/cs2)**, **[Adobe](https://www.adobe.com/)** or **[Substance 3D Painter](https://www.adobe.com/products/substance3d/apps/painter.html).**
+
+Since it is currently under active development, there may be some bugs or mistakes.
+If you encounter any, please [report them](https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/issues).
+
+![cs2sp_logo](https://github.com/user-attachments/assets/7df2705d-59c6-4dbd-b700-7c1aa8fcd2ed)
+
+# Table of Contents
 -   **[Overview](#overview)**
     -   [How it works](#how-it-works)
 -   **[Getting started](#getting-started)**
@@ -14,13 +25,6 @@
         -   [New Project](#new-project)
         -   [From existing Project](#from-existing-project)
     -   [Weapon Finish Workflow](#weapon-finish-workflow)
-
-# Disclaimer
-
-This project is an **unofficial fan-made tool** for creating **[Counter-Strike 2 Weapon Finishes](https://www.counter-strike.net/workshop/workshopfinishes)** with **[Adobe Substance 3D Painter](https://www.adobe.com/products/substance3d/apps/painter.html)** and in no way affiliated with **[Valve](https://www.valvesoftware.com/)**, **[Counter-Strike 2](https://www.counter-strike.net/cs2)**, **[Adobe](https://www.adobe.com/)** or **[Substance 3D Painter](https://www.adobe.com/products/substance3d/apps/painter.html).**
-
-Since it is currently under active development, there may be some bugs or mistakes.
-If you encounter any, please [report them](https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/issues).
 
 # Overview
 
