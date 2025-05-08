@@ -37,17 +37,6 @@ class Settings:
         Settings.plugin_version = data.get("version", "0.0.1a")
         Settings.plugin_settings = data.get("settings", {})
 
-        # fetch defaults if something is missing
-        defaults_path = Settings.get_asset_path("default_plugin_settings.json")
-        try:
-            with open(defaults_path, "r", encoding="utf-8") as f:
-                defaults = json.loads(f.read())
-            for key, value in defaults.items():
-                if not Settings.contains(key):
-                    Settings.set(key, value)
-        except Exception as e:
-            Log.error(f'Failed to fetch default plugin settings: {str(e)}')
-
     @staticmethod
     def save():
         data = {

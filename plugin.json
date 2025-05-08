@@ -1,3 +1,92 @@
 {
-    "version": "0.0.1a"
+    "version": "0.0.1a",
+    "settings": {
+        "ignore_textures_are_missing": false,
+        "weapon_list": {
+            "ak47": "AK-47",
+            "aug": "AUG",
+            "awp": "AWP",
+            "bizon": "PP-Bizon",
+            "cz75a": "CZ75-Auto",
+            "deagle": "Desert Eagle",
+            "elite": "Dual Berettas",
+            "famas": "FAMAS",
+            "fiveseven": "Five-SeveN",
+            "glock18": "Glock-18",
+            "g3sg1": "G3SG1",
+            "galilar": "Galil AR",
+            "mac10": "MAC-10",
+            "m249": "M249",
+            "m4a1_silencer": "M4A1-S",
+            "m4a4": "M4A4",
+            "mag7": "MAG-7",
+            "mp5sd": "MP5-SD",
+            "mp7": "MP7",
+            "mp9": "MP9",
+            "negev": "Negev",
+            "nova": "Nova",
+            "hkp2000": "P2000",
+            "p250": "P250",
+            "p90": "P90",
+            "revolver": "R8 Revolver",
+            "sawedoff": "Sawed-Off",
+            "scar20": "SCAR-20",
+            "sg556": "SG 553",
+            "ssg08": "SSG 08",
+            "tec9": "Tec-9",
+            "ump45": "UMP-45",
+            "usp_silencer": "USP-S",
+            "xm1014": "XM1014",
+            "taser": "Zeus x27"
+        },
+        "weapon_finish": {
+            "finishStyle": "gs",
+            "texScale": 1,
+            "texRotationRange": [
+                0,
+                0
+            ],
+            "texOffsetXRange": [
+                0,
+                0
+            ],
+            "texOffsetYRange": [
+                0,
+                0
+            ],
+            "uIgnoreWeaponSizeScale": true,
+            "wearRange": [
+                0,
+                1
+            ],
+            "uUsePearlMask": true,
+            "uPearlScale": 0,
+            "uUseCustomRough": true,
+            "uPaintRoughness": 0.6,
+            "uCol0": [
+                1,
+                1,
+                1
+            ],
+            "uCol1": [
+                1,
+                1,
+                1
+            ],
+            "uCol2": [
+                1,
+                1,
+                1
+            ],
+            "uCol3": [
+                1,
+                1,
+                1
+            ],
+            "uUseCustomNormal": true,
+            "uUseCustomMasks": true,
+            "uUseCustomAOTex": false
+        }
+    },
+    "files": []
 }

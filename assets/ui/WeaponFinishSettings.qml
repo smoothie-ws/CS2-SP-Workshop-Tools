@@ -44,16 +44,16 @@ Rectangle {
     }
 
     // when user changes finish style, the corresponding shader instance has outdated parameter values
-    function syncWeaponFinish() {
+    function syncWeaponFinishShader() {
         weaponFinish.syncShader();
+    }
+
+    function syncWeaponFinishEcon() {
+        weaponFinish.syncEcon();
     }
 
     function importTexture(url) {
         return JSON.parse(CS2WT.js(`alg.resources.importSessionResource("${url}", "texture")`));
-    }
-
-    PainterPlugin {
-        onProjectAboutToSave: weaponFinish.save()
     }
 
     Component.onCompleted: {

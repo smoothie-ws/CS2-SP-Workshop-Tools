@@ -4,7 +4,6 @@ import substance_painter as sp
 from .log import Log
 from .path import Path
 from .settings import Settings
-from .project_settings import ProjectSettings
 from .resource import search as resource_search
 
 
@@ -146,8 +145,8 @@ class WeaponFinish:
 		resource_search(update_shader, "your_assets", "shader", f'cs2_{finish_style}')
 
 	@staticmethod
-	def import_econitem():
-		econitem_path = ProjectSettings.get("weapon_finish").get("econitem")
+	def import_econitem(weapon_finish: dict):
+		econitem_path = weapon_finish.get("econitem")
 		if Path.exists(econitem_path):
 			with open(econitem_path, "r", encoding="utf-8") as f:
 				econitem_content = f.read()
@@ -155,8 +154,7 @@ class WeaponFinish:
 			Log.error(f'Failed to import parameters from .econitem: Path {econitem_path} does not exists')
 
 	@staticmethod
-	def export_textures():
-		weapon_finish: dict = ProjectSettings.get("weapon_finish")
+	def export_textures(weapon_finish: dict):
 		folder_path = weapon_finish.get("texturesFolder")
 
 		if Path.exists(folder_path):
@@ -361,18 +359,15 @@ class WeaponFinish:
 			}.get(weapon_finish.get("finishStyle", "gs"))
 
 			wear = weapon_finish.get("wearRange", [0.0, 1.0])
-			wear.insert(1, weapon_finish.get("uWearAmt", 0.5))
 
 			# packed values: [offsetX, offsetY, scale, rotation]
 			tex_transform = weapon_finish.get("uTexTransform", [0.0, 0.0, 1.0, 0.0])
+			# radians to degrees
+			tex_transform[3] = tex_transform[3] * 57.295779513
 
-			tex_scale = tex_transform[2]
 			tex_offsetx = weapon_finish.get("texOffsetXRange", [-1.0, 1.0])
-			tex_offsetx.insert(1, tex_transform[0])
 			tex_offsety = weapon_finish.get("texOffsetYRange", [-1.0, 1.0])
-			tex_offsety.insert(1, tex_transform[1])
 			tex_rotation = weapon_finish.get("texRotationRange", [-360.0, 360.0])
-			tex_rotation.insert(1, tex_transform[3])
 
 			# map colors
 			colors = [
@@ -380,15 +375,15 @@ class WeaponFinish:
 				for i in range(4)
 			]
 
-			econitem_content =	ECON_TEMPLATE.format(
+			econitem_content = ECON_TEMPLATE.format(
 				finish_name=finish_name,
 				finish_style=finish_style,
 				weapon=weapon_finish.get("weapon", "ak47"),
-				wear=wear,
-				tex_scale=tex_scale,
-				tex_rotation=tex_rotation,
-				tex_offsetx=tex_offsetx,
-				tex_offsety=tex_offsety,
+				wear=[wear[0], weapon_finish.get("uWearAmt", 0.5), wear[1]],
+				tex_offsetx=[tex_offsetx[0], tex_transform[0], tex_offsetx[1]],
+				tex_offsety=[tex_offsety[0], tex_transform[1], tex_offsety[1]],
+				tex_scale=tex_transform[2],
+				tex_rotation=[tex_rotation[0], tex_transform[3], tex_rotation[1]],
 				ignore_weapon_size_scale=get_bool("uIgnoreWeaponSizeScale"),
 				color0=colors[0],
 				color1=colors[1],

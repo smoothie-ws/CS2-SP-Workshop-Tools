@@ -58,7 +58,7 @@ class Internal(QtCore.QObject):
         self.clearDocsRequested.emit()
         
     def is_weapon_finish_opened(self):
-        return ProjectSettings.get("weapon_finish") is not None
+        return sp.project.is_open() and ProjectSettings.get("weapon_finish") is not None
     
     def emit_textures_are_missing(self):
         if len(self.missing_weapon_list) > 0 and not Settings.get("ignore_textures_are_missing"):
@@ -186,11 +186,11 @@ class Internal(QtCore.QObject):
                     "content", "csgo_addons", "workshop_items", "items", "assets", "paintkits", "workshop", 
                     f'{name}.econitem'
                 )):
-                    return 2
+                    return 3
                 else:
-                    return 0
+                    return 1
             else:
-                return 1
+                return 2
         else:
             return 0
         
@@ -230,20 +230,23 @@ class Internal(QtCore.QObject):
         WeaponFinish.change_finish_style_shader(finish_style, _change)
 
     @QtCore.Slot(str)
-    def dumpWeaponFinish(self, values:str):
-        ProjectSettings.set("weapon_finish", json.loads(values))
+    def dumpWeaponFinish(self, weapon_finish:str):
+        ProjectSettings.set("weapon_finish", json.loads(weapon_finish))
         
-    @QtCore.Slot()
-    def syncWeaponFinish(self):
-        WeaponFinish.sync_econ(ProjectSettings.get("weapon_finish"))
+    @QtCore.Slot(str)
+    def syncWeaponFinish(self, weapon_finish:str):
+        self.dumpWeaponFinish(weapon_finish)
+        WeaponFinish.sync_econ(json.loads(weapon_finish))
 
-    @QtCore.Slot()
-    def importWeaponFinishEconItem(self):
-        WeaponFinish.import_econitem()
+    @QtCore.Slot(str)
+    def importWeaponFinishEconItem(self, weapon_finish:str):
+        self.dumpWeaponFinish(weapon_finish)
+        WeaponFinish.import_econitem(json.loads(weapon_finish))
 
-    @QtCore.Slot()
-    def exportWeaponFinishTextures(self):
-        WeaponFinish.export_textures()
+    @QtCore.Slot(str)
+    def exportWeaponFinishTextures(self, weapon_finish:str):
+        self.dumpWeaponFinish(weapon_finish)
+        WeaponFinish.export_textures(json.loads(weapon_finish))
 
     @QtCore.Slot(str, result=str)
     def js(self, code:str):
@@ -254,6 +257,6 @@ class Internal(QtCore.QObject):
             Log.info(code)
     
     @QtCore.Slot()
-    def clear_docsConfirmed(self):
+    def clearDocsConfirmed(self):
         for path in Settings.get("files", []):
             Path.remove(path)

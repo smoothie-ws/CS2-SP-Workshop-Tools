@@ -17,6 +17,10 @@ Rectangle {
     property int projectKind: 0
     readonly property bool busy: texturesAreMissingPopup.opened || cs2PathIsMissingPopup.opened || decompilingProgressPopup.opened || projectKind != 2
     
+    PainterPlugin {
+        onProjectAboutToSave: weaponFinishSettings.syncWeaponFinishEcon()
+    }
+
     Connections {
         target: CS2WT
         onTexturesAreMissing: texturesAreMissingPopup.open()
@@ -33,7 +37,7 @@ Rectangle {
             if (projectKind == 2)
                 weaponFinishSettings.loadWeaponFinish();
         }
-        onFinishStyleReady: weaponFinishSettings.syncWeaponFinish()
+        onFinishStyleReady: weaponFinishSettings.syncWeaponFinishShader()
         onPluginSettingsRequested: {
             var screenPosition = parent.mapToGlobal(x, y);
             pluginSettingsWindow.x = screenPosition.x;
@@ -276,7 +280,7 @@ Rectangle {
                     radius: 13.5
                     height: 30
                     border.width: 2
-                    border.color: cs2PathIsMissingPopup.cs2PathIsValid ? "green" : "red"
+                    border.color: cs2PathIsMissingPopup.cs2PathIsValid ? "transparent" : "red"
                     Layout.fillWidth: true
                     
                     SPTextInput {
@@ -426,7 +430,7 @@ Rectangle {
 
                     onClicked: {
                         confirmClearDocsPopup.close();
-                        CS2WT.clear_docsConfirmed();
+                        CS2WT.clearDocsConfirmed();
                     }
                 }
 

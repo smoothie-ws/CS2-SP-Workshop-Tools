@@ -26,19 +26,23 @@ Window {
     function open() {
         try {
             const settings = JSON.parse(CS2WT.getPluginSettings());
-
-            cs2Path = settings["cs2_path"];
-            ignoreTexturesAreMissing.checked = settings["ignore_textures_are_missing"];
-
-            const m = [];
-            for (const [value, text] of Object.entries(settings["weapon_list"]))
-                m.push({value: value, text: text});
-            weaponList = m;
-            
-            for (const [param, value] of Object.entries(settings["weapon_finish"])) {
-                const component = weaponFinish.parameters[param];
-                if (component !== undefined)
-                    component.control[component.prop] = value;
+        
+            if ("cs2_path" in settings)
+                cs2Path = settings["cs2_path"];
+            if ("ignore_textures_are_missing" in settings)
+                ignoreTexturesAreMissing.checked = settings["ignore_textures_are_missing"];
+            if ("weapon_list" in settings) {
+                const m = [];
+                for (const [value, text] of Object.entries(settings["weapon_list"]))
+                    m.push({value: value, text: text});
+                weaponList = m;
+            }
+            if ("weapon_finish" in settings) {
+                for (const [param, value] of Object.entries(settings["weapon_finish"])) {
+                    const component = weaponFinish.parameters[param];
+                    if (component !== undefined)
+                        component.control[component.prop] = value;
+                }
             }
 
             show();
@@ -150,7 +154,7 @@ Window {
                             radius: 13.5
                             height: 30
                             border.width: 2
-                            border.color: root.cs2PathIsValid ? "green" : "red"
+                            border.color: root.cs2PathIsValid ? "transparent" : "red"
                             Layout.fillWidth: true
                             
                             SPTextInput {

@@ -17,7 +17,7 @@ Window {
     property bool isNew: true
     property string fileUrl: ""
 
-    property real scopeWidth: width * 0.25
+    property real scopeWidth: width - 250
 
     signal proceed(string name, string weapon, int finishStyle, string fileUrl)
 
@@ -88,59 +88,35 @@ Window {
         SPLabeled {
             id: nameInput
             text: "Name"
+            enabled: nameStatus > 0
             scopeWidth: root.scopeWidth
             Layout.fillWidth: true
 
-            property string name: ""
-            property bool nameIsValid: false
+            property string name: null
+            property int nameStatus: 1
+            property bool nameIsValid: nameStatus < 2;
 
             function valName() {
-                const nameStatus = CS2WT.valWeaponFinishName(name);
-                nameIsValid = nameStatus == 0;
-                switch (nameStatus) {
-                    case 1:
-                        nameStatusLabel.text = "Name cannot be empty";
-                        break;
-                    case 2:
-                        nameStatusLabel.text = "This name is already in use";
-                        break;
-                    default:
-                        nameStatusLabel.text = "";
-                }
+                nameStatus = CS2WT.valWeaponFinishName(name);
             }
-
-            Component.onCompleted: valName()
 
             onNameChanged: valName()
 
-            RowLayout {
+            Rectangle {
+                color: "transparent"
+                radius: 13.5
+                width: 100
+                height: 30
+                border.width: 2
+                border.color: nameInput.nameStatus > 0 ? (nameInput.nameIsValid ? "transparent" : "red") : "transparent"
                 Layout.fillWidth: true
                 
-                Label {
-                    id: nameStatusLabel
-                    clip: true
-                    text: "Name cannot be empty"
-                    color: Qt.rgba(0.85, 0.5, 0.5, 0.5)
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignRight
-                    Layout.fillWidth: true
-                }
+                SPTextInput {
+                    text: nameInput.name
+                    anchors.fill: parent
+                    anchors.margins: parent.border.width + 2
 
-                Rectangle {
-                    color: "transparent"
-                    radius: 13.5
-                    width: 100
-                    height: 30
-                    border.width: 2
-                    border.color: nameInput.nameIsValid ? "green" : "red"
-                    
-                    SPTextInput {
-                        text: nameInput.name
-                        anchors.fill: parent
-                        anchors.margins: parent.border.width + 2
-
-                        onTextEdited: nameInput.name = text
-                    }
+                    onTextEdited: nameInput.name = text
                 }
             }
         }
@@ -185,7 +161,40 @@ Window {
         RowLayout {
             Layout.fillWidth: true
 
-            Item { Layout.fillWidth: true }
+            Label {
+                id: nameStatusLabel
+                clip: true
+                opacity: 0.75
+                Layout.fillWidth: true
+                text: switch (nameInput.nameStatus) {
+                    case 0:
+                        "Missing CS2 Path";
+                        break;
+                    case 1:
+                        "";
+                        break;
+                    case 2:
+                        "Name cannot be empty";
+                        break;
+                    case 3:
+                        "This name is already in use";
+                        break;
+                }
+                color: switch (nameInput.nameStatus) {
+                    case 0:
+                        Qt.rgba(0.85, 0.85, 0.5);
+                        break;
+                    case 1:
+                        Qt.rgba(0.85, 0.85, 0.85);
+                        break;
+                    case 2:
+                        Qt.rgba(0.85, 0.5, 0.5);
+                        break;
+                    case 3:
+                        Qt.rgba(0.85, 0.5, 0.5);
+                        break;
+                }
+            }
 
             SPButton {
                 id: proceedButton

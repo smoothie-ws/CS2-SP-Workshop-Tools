@@ -27,7 +27,7 @@ class Decompiler:
             temp_models_path = Path.join(temp_path, "weapons", "models")
             state_callback("Extracting textures from pak01_dir.vpk")
             run(f'Source2Viewer-CLI.exe -i "{pak_path}" --vpk_filepath "weapons\models" -e "vtex_c" -o "{temp_path}"', Decompiler.vrf_path)
-            with ThreadPoolExecutor(max_workers=12) as executor:
+            with ThreadPoolExecutor(max_workers=6) as executor:
                 futures = []
                 # decompile
                 def ucb(w):

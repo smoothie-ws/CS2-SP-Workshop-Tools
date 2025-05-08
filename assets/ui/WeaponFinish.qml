@@ -10,6 +10,13 @@ QtObject {
             return param.startsWith("u");
     }
 
+    function getWeaponFinish() {
+        const w = {};
+        for (const [param, component] of Object.entries(parameters))
+            w[param] = component.control[component.prop];
+        return w;
+    }
+
     // connect widgets to shader
     function connect() {
         for (const [param, component] of Object.entries(parameters)) 
@@ -41,15 +48,12 @@ QtObject {
 
     // dump weapon finish parameters
     function dump() {
-        const w = {};
-        for (const [param, component] of Object.entries(parameters))
-            w[param] = component.control[component.prop];
-        CS2WT.dumpWeaponFinish(JSON.stringify(w));
+        CS2WT.dumpWeaponFinish(JSON.stringify(getWeaponFinish()));
     }
 
-    // sync weapon finish
-    function sync() {
-        CS2WT.syncWeaponFinish();
+    // sync weapon finish econ parameters
+    function syncEcon() {
+        CS2WT.syncWeaponFinish(JSON.stringify(getWeaponFinish()));
     }
 
     function updateEconItemPath(path) {
