@@ -1,9 +1,7 @@
+import os
 import json
 import substance_painter as sp
 import substance_painter_plugins as sp_plugins
-
-from .log import Log
-from .path import Path
 
 
 class Settings:
@@ -19,15 +17,15 @@ class Settings:
     def load():
         # init paths
         for path in sp_plugins.path:
-            for plugin in Path.listdir(Path.join(path, "plugins")):
+            for plugin in os.path.listdir(os.path.join(path, "plugins")):
                 if plugin == "CS2 Workshop Tools":
-                    Settings.plugin_path = Path.join(path, "plugins", plugin).replace("\\", "/")
+                    Settings.plugin_path = os.path.join(path, "plugins", plugin).replace("\\", "/")
         Settings.documents_path = sp.js.evaluate("alg.documents_directory")
-        Settings.path = Path.join(Settings.plugin_path, "plugin.json")
+        Settings.path = os.path.join(Settings.plugin_path, "plugin.json")
 
         # load data
         data = {}
-        if Path.exists(Settings.path):
+        if os.path.exists(Settings.path):
             try:
                 with open(Settings.path, "r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -47,10 +45,6 @@ class Settings:
         with open(Settings.path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
 
-    @staticmethod
-    def get_asset_path(*path:list) -> str:
-        return Path.join(Settings.plugin_path, "assets", *path)
-    
     @staticmethod
     def push_file(path: str):
         Settings.plugin_files.append(path)

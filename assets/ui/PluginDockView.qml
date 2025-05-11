@@ -24,10 +24,7 @@ Rectangle {
     Connections {
         target: CS2WT
         onTexturesAreMissing: texturesAreMissingPopup.open()
-        onCs2PathIsMissing: cs2Path => {
-            cs2PathIsMissingPopup.cs2Path = cs2Path;
-            cs2PathIsMissingPopup.open();
-        }
+        onCs2PathIsMissing: cs2PathIsMissingPopup.open()
         onDecompilationStarted: decompilingProgressPopup.open()
         onDecompilationStateChanged: state => decompilingProgressPopup.decompilationState = state;
         onDecompilationUpdated: (progress, weapon) => decompilingProgressPopup.update(progress, weapon)
@@ -386,10 +383,6 @@ Rectangle {
                 }
             }
         }
-    }
-
-    PluginSettings {
-        id: pluginSettingsWindow
     }
 
     Window {

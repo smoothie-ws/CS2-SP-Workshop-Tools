@@ -1,90 +1,39 @@
-import shutil
 import substance_painter as sp
 
-from .ui import UI
-from .log import Log
-from .path import Path
-from .settings import Settings
-from .internal import InternalState
-from .weapon_finish import WeaponFinish
-
-from .shader import preprocess as shader_preprocess
-from .resource import search as resource_search
+from .internal import Internal
+from .ui.qml import QtWidgets
+from .ui.widgets import PluginMenu, PluginDockView, PluginSettingsView
+from .utils.path import Path
 
 
 class Plugin:
-    def __init__(self):
-        self.ui = UI()
-        self.internal = self.ui.internal
-        self.internal.state = InternalState.Preparing
-        self.internal.missing_weapon_list = self.checkout_weapon_textures()
-        
-        self.ui.load(Settings.get_asset_path("ui", "view.qml"), self.start, self.fatal)
+    widgets = None
+    internal = None
 
-    def start(self):
-        Log.warning(f'Plugin started (version {Settings.plugin_version})')
-        self.internal.emit_textures_are_missing()
-        if sp.project.is_open():
-            self.internal.on_project_opened()
-        connections = {
-            sp.event.ProjectOpened: lambda _: self.internal.on_project_opened(),
-            sp.event.ProjectAboutToClose: lambda _: self.internal.on_project_about_to_close()
-        }
-        for event, callback in connections.items():
-            sp.event.DISPATCHER.connect_strong(event, callback)
+    def init():
+        Plugin.widgets = []
+        Plugin.internal = Internal()
 
-    def close(self):
-        if self.internal is not None:
-            self.internal.on_close()
-        self.ui.close()
-        Log.warning("Plugin closed")
+        # plugin menu
+        menu = PluginMenu("CS2 Workshop Tools")
+        menu.settings_action.triggered.connect(Plugin.settings_window.show)
+        menu.help_action.triggered.connect(Plugin.internal.on_help)
+        menu.clear_docs_action.triggered.connect(Plugin.internal.on_clear_docs)
+        sp.ui.add_menu(menu)
 
-    def checkout_weapon_textures(self):
-        sp_shaders_path = Path.join(Settings.documents_path, "assets", "shaders")
-        sp_shaders_ui_path = Path.join(sp_shaders_path, "custom-ui")
+        # dock widget
+        dock_view = PluginDockView(menu, Plugin.internal, Path.get_asset_path("ui", "icons", "logo.png"))
+        dock_widget = sp.ui.add_dock_widget(QtWidgets.QWidget.createWindowContainer(dock_view))
 
-        shader_path = Settings.get_asset_path("shader")
+        # settings window
+        Plugin.settings_window = QtWidgets.QMainWindow(menu)
+        settings_view = PluginSettingsView(Plugin.settings_window, Plugin.internal, Path.get_asset_path("ui", "icons", "logo.png"))
 
-        # shader files
-        with open(Settings.get_asset_path("shader", "cs2.glsl"), "r", encoding="utf-8") as f:
-            shader_source = f.read()
+        Plugin.widgets.append(menu)
+        Plugin.widgets.append(dock_widget)
 
-        for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
-            sp_shader_file_path = Path.join(sp_shaders_path, f'cs2_{fs}.glsl')
-            if not Path.exists(sp_shader_file_path):
-                with open(sp_shader_file_path, "w", encoding="utf-8") as f:
-                    f.write(shader_preprocess(shader_source, {"FINISH_STYLE": i}))
-                    Settings.push_file(sp_shader_file_path)
-
-        def set_previews(shader_resources):
-            for shader_resource in shader_resources:
-                name = shader_resource.identifier().name
-                shader_resource.set_custom_preview(Settings.get_asset_path("ui", "icons", f'{name}.png'))
-
-        resource_search(set_previews, "your_assets", "shader", "cs2")
-
-        # shader ui
-        sp_shader_ui_path = Path.join(sp_shaders_ui_path, "cs2-ui.qml")
-        if not Path.exists(Path.join(sp_shaders_ui_path, "cs2-ui.qml")):
-            shutil.copyfile(Path.join(shader_path, "cs2-ui.qml"), sp_shader_ui_path)
-            Settings.push_file(sp_shader_ui_path)
-
-        # weapon textures
-        weapon_list = Settings.get("weapon_list", {}).copy()
-        models_path = Settings.get_asset_path("textures", "models")
-        if Path.exists(models_path):
-            for weapon in Path.listdir(models_path):
-                weapon_path = Path.join(models_path, weapon)
-                if (Path.exists(Path.join(weapon_path, f'{weapon}_color.png')) and
-                    Path.exists(Path.join(weapon_path, f'{weapon}_cavity.png')) and
-                    Path.exists(Path.join(weapon_path, f'{weapon}_masks.png')) and
-                    Path.exists(Path.join(weapon_path, f'{weapon}_rough.png')) and
-                    Path.exists(Path.join(weapon_path, f'{weapon}_surface.png'))):
-                    if weapon_list.get(weapon) is not None:
-                        weapon_list.pop(weapon)
-
-        return weapon_list
-
-    def fatal(self, msg:str):
-        Log.error("An error occured: " + msg)
-        self.close()
+    def close():
+        if Plugin.internal is not None:
+            Plugin.internal.on_close()
+        for widget in Plugin.widgets:
+            sp.ui.delete_ui_element(widget)

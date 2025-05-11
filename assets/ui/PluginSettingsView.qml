@@ -5,13 +5,8 @@ import QtQuick.Controls 2.15
 import AlgWidgets.Style 2.0
 import "./SPWidgets"
 
-Window {
+Rectangle {
     id: root
-    minimumWidth: 730
-    minimumHeight: 500
-    modality: Qt.ApplicationModal
-    flags: Qt.Window | Qt.CustomizeWindowHint | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
-    title: "CS2 Workshop Tools Settings"
     color: AlgStyle.background.color.mainWindow
 
     property string cs2Path: ""
@@ -26,7 +21,9 @@ Window {
     function open() {
         try {
             const settings = JSON.parse(CS2WT.getPluginSettings());
-        
+
+            CS2WT.info(weaponFinish.parameters["uCol0"].control == null);
+
             if ("cs2_path" in settings)
                 cs2Path = settings["cs2_path"];
             if ("ignore_textures_are_missing" in settings)
@@ -460,7 +457,6 @@ Window {
                             Repeater {
                                 model: ["Color0", "Color1", "Color2", "Color3"]
                                 delegate: SPLabeled {
-                                    id: colorPickerWidget
                                     text: modelData
 
                                     property alias arrayColor: colorPicker.arrayColor
@@ -472,7 +468,7 @@ Window {
 
                                 onItemAdded: (i, control) => {
                                     weaponFinish.parameters[`uCol${i}`].control = control;
-                                    weaponFinish.parameters[`uCol${i}`].control = control;
+                                    CS2WT.info(weaponFinish.parameters["uCol0"].control == null);
                                 }
                             }
 

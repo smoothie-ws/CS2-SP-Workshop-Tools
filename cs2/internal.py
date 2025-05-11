@@ -1,18 +1,18 @@
 import json
+import shutil
+import webbrowser
 import substance_painter as sp
 
-# Qt5 vs Qt6 check
-if sp.application.version_info() < (10, 1, 0):
-    from PySide2 import QtCore, QtQml
-else:
-    from PySide6 import QtCore, QtQml
-
-from .log import Log
-from .path import Path
+from .settings import Settings
 from .weapon_finish import WeaponFinish
 from .project_settings import ProjectSettings
-from .settings import Settings
-from .decompiler import Decompiler
+from .resource import search as resource_search
+
+from .ui.qml import QtCore, QmlInternal
+from .utils.log import Log
+from .utils.path import Path
+from .utils.shader import preprocess as shader_preprocess
+from .utils.decompiler import Decompiler
 
 
 class InternalState:
@@ -23,16 +23,10 @@ class InternalState:
     CreatingWeaponFinish = 4
 
 
-class Internal(QtCore.QObject):
-    "Bridge class between python and qml"
-
-    def __init__(self, root:QtQml.QQmlContext):
-        super().__init__()
+class Internal(QmlInternal):
+    def __init__(self):
+        super().__init__("CS2WT")
         self.state = InternalState.Closed
-        self.root = root
-        self.root.setContextProperty("CS2WT", self)
-
-        self.missing_weapon_list = {}
     
     def on_project_opened(self):
         if self.is_weapon_finish_opened():
@@ -52,24 +46,63 @@ class Internal(QtCore.QObject):
         self.pluginSettingsRequested.emit()
         
     def on_help(self):
-        Path.startfile(Settings.get_asset_path("index.html"))
+        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#table-of-contents")
         
     def on_clear_docs(self):
         self.clearDocsRequested.emit()
         
     def is_weapon_finish_opened(self):
-        return sp.project.is_open() and ProjectSettings.get("weapon_finish") is not None
+        return sp.project.is_open() and ProjectSettings.get("weapon_finish")
     
-    def emit_textures_are_missing(self):
-        if len(self.missing_weapon_list) > 0 and not Settings.get("ignore_textures_are_missing"):
+    def checkout_weapon_textures(self):
+        sp_shaders_path = Path.join(Settings.documents_path, "assets", "shaders")
+        sp_shaders_ui_path = Path.join(sp_shaders_path, "custom-ui")
+
+        shader_path = Path.get_asset_path("shader")
+
+        # shader files
+        with open(Path.get_asset_path("shader", "cs2.glsl"), "r", encoding="utf-8") as f:
+            shader_source = f.read()
+
+        for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
+            sp_shader_file_path = Path.join(sp_shaders_path, f'cs2_{fs}.glsl')
+            if not Path.exists(sp_shader_file_path):
+                with open(sp_shader_file_path, "w", encoding="utf-8") as f:
+                    f.write(shader_preprocess(shader_source, {"FINISH_STYLE": i}))
+                    Settings.push_file(sp_shader_file_path)
+
+        def set_previews(shader_resources):
+            for shader_resource in shader_resources:
+                name = shader_resource.identifier().name
+                shader_resource.set_custom_preview(Path.get_asset_path("ui", "icons", f'{name}.png'))
+
+        resource_search(set_previews, "your_assets", "shader", "cs2")
+
+        # shader ui
+        sp_shader_ui_path = Path.join(sp_shaders_ui_path, "cs2-ui.qml")
+        if not Path.exists(Path.join(sp_shaders_ui_path, "cs2-ui.qml")):
+            shutil.copyfile(Path.join(shader_path, "cs2-ui.qml"), sp_shader_ui_path)
+            Settings.push_file(sp_shader_ui_path)
+
+        # weapon textures
+        weapon_list = Settings.get("weapon_list", {}).copy()
+        models_path = Path.get_asset_path("textures", "models")
+        if Path.exists(models_path):
+            for weapon in Path.listdir(models_path):
+                weapon_path = Path.join(models_path, weapon)
+                if (Path.exists(Path.join(weapon_path, f'{weapon}_color.png')) and
+                    Path.exists(Path.join(weapon_path, f'{weapon}_cavity.png')) and
+                    Path.exists(Path.join(weapon_path, f'{weapon}_masks.png')) and
+                    Path.exists(Path.join(weapon_path, f'{weapon}_rough.png')) and
+                    Path.exists(Path.join(weapon_path, f'{weapon}_surface.png'))):
+                    if weapon_list.get(weapon) is not None:
+                        weapon_list.pop(weapon)
+
+        if len(weapon_list) > 0 and not Settings.get("ignore_textures_are_missing"):
             self.texturesAreMissing.emit()
-    
+
     def emit_cs2_path_is_missing(self):
-        path = Path.join("C:\\Program Files (x86)", "Steam", "steamapps", "common", "Counter-Strike Global Offensive")
-        if Path.exists(path):
-            self.cs2PathIsMissing.emit(path)
-        else:
-            self.cs2PathIsMissing.emit("")
+        self.cs2PathIsMissing.emit()
 
     def decompile_textures(self, cs2_path:str):
         def state_changed(state):
@@ -82,7 +115,7 @@ class Internal(QtCore.QObject):
         self.decompilationStarted.emit()
         Decompiler.decompile(
             Path.join(cs2_path, "game", "csgo", "pak01_dir.vpk"), 
-            Settings.get_asset_path("textures"),
+            Path.get_asset_path("textures"),
             self.missing_weapon_list,
             state_changed,
             self.decompilationUpdated.emit

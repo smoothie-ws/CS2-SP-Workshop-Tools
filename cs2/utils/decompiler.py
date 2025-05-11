@@ -4,7 +4,6 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
 from .path import Path
-from .settings import Settings
 
 
 class Decompiler:
@@ -14,7 +13,7 @@ class Decompiler:
     @staticmethod
     def decompile(pak_path:str, out_path:str, weapon_list:dict, state_callback, update_callback):
         Decompiler.progress = 0.0
-        Decompiler.vrf_path = Settings.get_asset_path("vrf")
+        Decompiler.vrf_path = Path.get_asset_path("vrf")
         weapon_list_len = len(weapon_list)
 
         models_path = Path.join(out_path, "models")

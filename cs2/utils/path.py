@@ -3,8 +3,14 @@ import shutil
 import pathlib
 import subprocess
 
+from ..settings import Settings
+
 
 class Path:
+    @staticmethod
+    def get_asset_path(*path:list) -> str:
+        return Path.join(Settings.plugin_path, "assets", *path)
+    
     @staticmethod
     def norm(path: str) -> str:
         return os.path.normpath(path).replace("\\", "/")
@@ -51,11 +57,6 @@ class Path:
     @staticmethod
     def filename(path:str):
         return pathlib.Path(path).stem
-    
-    @staticmethod
-    def startfile(path:str):
-        if Path.exists(path):
-            os.startfile(path)
     
     @staticmethod
     def show_in_explorer(path:str):

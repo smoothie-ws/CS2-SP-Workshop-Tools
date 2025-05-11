@@ -1,8 +1,8 @@
 import math
 import substance_painter as sp
 
-from .log import Log
-from .path import Path
+from .utils.log import Log
+from .utils.path import Path
 from .settings import Settings
 from .resource import search as resource_search
 

@@ -2,7 +2,7 @@ import substance_painter as sp
 
 
 class Log:
-    channel = "CS2 WT"
+    channel = "CS2 Workshop Tools"
 
     @staticmethod
     def info(msg:str):
