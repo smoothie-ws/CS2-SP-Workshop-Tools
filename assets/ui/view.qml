@@ -6,6 +6,7 @@ import QtGraphicalEffects 1.15
 import Painter 1.0
 import AlgWidgets.Style 2.0
 import "./SPWidgets"
+import "./WeaponFinishWidgets"
 
 Rectangle {
     id: root
@@ -45,7 +46,8 @@ Rectangle {
         onClearDocsRequested: confirmClearDocsPopup.show()
     }
 
-    // main
+    // Main Layout
+
     ColumnLayout {
         anchors.fill: root
         anchors.margins: 10
@@ -175,11 +177,17 @@ Rectangle {
         
     }
 
-    // Dialogues
+    // Windows
 
     WeaponFinishInitWindow {
         id: weaponFinishInitWindow
     }
+
+    PluginSettingsWindow {
+        id: pluginSettingsWindow
+    }
+
+    // Dialogues
 
     SPDialog {
         id: texturesAreMissingPopup

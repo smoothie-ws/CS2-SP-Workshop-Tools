@@ -3,16 +3,12 @@ import shutil
 import webbrowser
 import substance_painter as sp
 
+from .ui import QtCore, QtQml
+from .utils import Log, Path, shader_preprocess, Decompiler
 from .settings import Settings
 from .weapon_finish import WeaponFinish
 from .project_settings import ProjectSettings
 from .resource import search as resource_search
-
-from .ui.qml import QtCore, QmlInternal
-from .utils.log import Log
-from .utils.path import Path
-from .utils.shader import preprocess as shader_preprocess
-from .utils.decompiler import Decompiler
 
 
 class InternalState:
@@ -23,11 +19,16 @@ class InternalState:
     CreatingWeaponFinish = 4
 
 
-class Internal(QmlInternal):
+class Internal(QtCore.QObject):
+    "Bridge class between python and qml"
+
     def __init__(self):
-        super().__init__("CS2WT")
+        super().__init__()
         self.state = InternalState.Closed
     
+    def connect_context(self, context: QtQml.QQmlContext):
+        context.setContextProperty("CS2WT", self)
+
     def on_project_opened(self):
         if self.is_weapon_finish_opened():
             self.projectKindChanged.emit(2)

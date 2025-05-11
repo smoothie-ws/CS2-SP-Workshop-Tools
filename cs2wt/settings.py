@@ -17,7 +17,7 @@ class Settings:
     def load():
         # init paths
         for path in sp_plugins.path:
-            for plugin in os.path.listdir(os.path.join(path, "plugins")):
+            for plugin in os.listdir(os.path.join(path, "plugins")):
                 if plugin == "CS2 Workshop Tools":
                     Settings.plugin_path = os.path.join(path, "plugins", plugin).replace("\\", "/")
         Settings.documents_path = sp.js.evaluate("alg.documents_directory")

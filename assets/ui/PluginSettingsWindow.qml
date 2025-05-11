@@ -5,8 +5,13 @@ import QtQuick.Controls 2.15
 import AlgWidgets.Style 2.0
 import "./SPWidgets"
 
-Rectangle {
+Window {
     id: root
+    minimumWidth: 400
+    minimumHeight: 250
+    modality: Qt.ApplicationModal
+    flags: Qt.Window | Qt.CustomizeWindowHint | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
+    title: "CS2 Workshop Tools Settings"
     color: AlgStyle.background.color.mainWindow
 
     property string cs2Path: ""
@@ -21,8 +26,6 @@ Rectangle {
     function open() {
         try {
             const settings = JSON.parse(CS2WT.getPluginSettings());
-
-            CS2WT.info(weaponFinish.parameters["uCol0"].control == null);
 
             if ("cs2_path" in settings)
                 cs2Path = settings["cs2_path"];
@@ -41,8 +44,6 @@ Rectangle {
                         component.control[component.prop] = value;
                 }
             }
-
-            show();
         } catch (e) {
             CS2WT.error(`Failed to open Plugin Settings: ${e.toString()}`);
         }

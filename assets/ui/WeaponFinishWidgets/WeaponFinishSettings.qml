@@ -6,8 +6,8 @@ import Qt.labs.platform 1.1
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
-import "./SPWidgets"
-import "./SPWidgets/math.js" as MathUtils
+import "../SPWidgets"
+import "../SPWidgets/math.js" as MathUtils
 
 Rectangle {
     id: root
