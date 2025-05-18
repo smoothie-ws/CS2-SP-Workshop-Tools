@@ -7,8 +7,8 @@ import "./SPWidgets"
 
 Window {
     id: root
-    minimumWidth: 400
-    minimumHeight: 250
+    minimumWidth: 735
+    minimumHeight: 450
     modality: Qt.ApplicationModal
     flags: Qt.Window | Qt.CustomizeWindowHint | Qt.WindowSystemMenuHint | Qt.WindowTitleHint | Qt.WindowCloseButtonHint
     title: "CS2 Workshop Tools Settings"
@@ -40,10 +40,12 @@ Window {
             if ("weapon_finish" in settings) {
                 for (const [param, value] of Object.entries(settings["weapon_finish"])) {
                     const component = weaponFinish.parameters[param];
+                    CS2WT.info(param);
                     if (component !== undefined)
                         component.control[component.prop] = value;
                 }
             }
+            show();
         } catch (e) {
             CS2WT.error(`Failed to open Plugin Settings: ${e.toString()}`);
         }
@@ -105,13 +107,13 @@ Window {
             "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
             "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
             "uPaintRoughness":        { control: paintRoughness,         prop: "value"        },
-            "uCol0":                  { control: null,                   prop: "arrayColor"   },
-            "uCol1":                  { control: null,                   prop: "arrayColor"   },
-            "uCol2":                  { control: null,                   prop: "arrayColor"   },
-            "uCol3":                  { control: null,                   prop: "arrayColor"   },
-            "uUseCustomNormal":       { control: null,                   prop: "checked"      },
-            "uUseCustomMasks":        { control: null,                   prop: "checked"      },
-            "uUseCustomAOTex":        { control: null,                   prop: "checked"      }
+            "uCol0":                  { control: col0,                   prop: "arrayColor"   },
+            "uCol1":                  { control: col1,                   prop: "arrayColor"   },
+            "uCol2":                  { control: col2,                   prop: "arrayColor"   },
+            "uCol3":                  { control: col3,                   prop: "arrayColor"   },
+            "uUseCustomNormal":       { control: useCustomNormal,        prop: "checked"      },
+            "uUseCustomMasks":        { control: useCustomMasks,         prop: "checked"      },
+            "uUseCustomAOTex":        { control: useCustomAOTex,         prop: "checked"      }
         }
     }
 
@@ -410,6 +412,7 @@ Window {
                                 text: "Ignore Weapon Size Scale"
                                 checkable: true
                                 tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
+                                Layout.fillWidth: true
                                 contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                             }
 
@@ -455,21 +458,39 @@ Window {
                                 SPSeparator { Layout.fillWidth: true }
                             }
 
-                            Repeater {
-                                model: ["Color0", "Color1", "Color2", "Color3"]
-                                delegate: SPLabeled {
-                                    text: modelData
-
-                                    property alias arrayColor: colorPicker.arrayColor
-
-                                    SPColorButton { 
-                                        id: colorPicker
-                                    }
+                            SPLabeled {
+                                id: col0
+                                text: "Color0"
+                                property alias arrayColor: colorPicker0.arrayColor
+                                SPColorButton { 
+                                    id: colorPicker0
                                 }
+                            }
 
-                                onItemAdded: (i, control) => {
-                                    weaponFinish.parameters[`uCol${i}`].control = control;
-                                    CS2WT.info(weaponFinish.parameters["uCol0"].control == null);
+                            SPLabeled {
+                                id: col1
+                                text: "Color1"
+                                property alias arrayColor: colorPicker1.arrayColor
+                                SPColorButton { 
+                                    id: colorPicker1
+                                }
+                            }
+
+                            SPLabeled {
+                                id: col2
+                                text: "Color2"
+                                property alias arrayColor: colorPicker2.arrayColor
+                                SPColorButton { 
+                                    id: colorPicker2
+                                }
+                            }
+
+                            SPLabeled {
+                                id: col3
+                                text: "Color3"
+                                property alias arrayColor: colorPicker3.arrayColor
+                                SPColorButton { 
+                                    id: colorPicker3
                                 }
                             }
 
@@ -529,23 +550,31 @@ Window {
                                 SPSeparator { Layout.fillWidth: true }
                             }
 
-                            Repeater {
-                                model: [
-                                    { param: "uUseCustomNormal",    text: "Custom Normal Map"        },
-                                    { param: "uUseCustomMasks",     text: "Custom Material Mask"     },
-                                    { param: "uUseCustomAOTex",     text: "Custom Ambient Occlusion" }
-                                ]
-                                delegate: SPButton {
-                                    checkable: true
-                                    text: modelData.text
-                                    tooltip.text: `Whether to use ${text.toLowerCase()} or the weapon default one`
-                                    Layout.fillWidth: true
-                                    contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
-                                }
+                            SPButton {
+                                id: useCustomNormal
+                                checkable: true
+                                text: "Custom Normal Map"
+                                tooltip.text: `Whether to use custom normal map or the weapon default one`
+                                Layout.fillWidth: true
+                                contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                            }
 
-                                onItemAdded: (i, control) => {
-                                    weaponFinish.parameters[model[i].param].control = control;
-                                }
+                            SPButton {
+                                id: useCustomMasks
+                                checkable: true
+                                text: "Custom Material Mask"
+                                tooltip.text: `Whether to use custom material mask or the weapon default one`
+                                Layout.fillWidth: true
+                                contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                            }
+
+                            SPButton {
+                                id: useCustomAOTex
+                                checkable: true
+                                text: "Custom Ambient Occlusion"
+                                tooltip.text: `Whether to use custom ambient occlusion or the weapon default one`
+                                Layout.fillWidth: true
+                                contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                             }
                         }
                     }

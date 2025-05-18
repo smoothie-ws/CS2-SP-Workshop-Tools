@@ -84,9 +84,12 @@
                 1
             ],
             "uUseCustomNormal": true,
-            "uUseCustomMasks": true,
-            "uUseCustomAOTex": false
-        }
+            "uUseCustomMasks": false,
+            "uUseCustomAOTex": true,
+            "weapon": "ak47",
+            "econitem": "C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive/content/csgo_addons/workshop_items/items/assets/paintkits/workshop/.econitem"
+        },
+        "cs2_path": "C:/Program Files (x86)/Steam/steamapps/common/Counter-Strike Global Offensive"
     },
     "files": []
 }
