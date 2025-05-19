@@ -1,36 +1,31 @@
 import substance_painter as sp
 
 from .ui import UI
-from .internal import Internal, InternalState
 from .settings import Settings
 from .utils.log import Log
 
-class Plugin:
-    internal = Internal()
 
+class Plugin:
     @staticmethod
     def start():
         Settings.load()
         try:
-            UI.init(Plugin.internal)
-            Plugin.internal.state = InternalState.Preparing
+            UI.init()
+            Log.warning(f'Plugin started (version {Settings.plugin_version})')
 
             connections = {
-                sp.event.ProjectOpened: lambda _: Plugin.internal.on_project_opened(),
-                sp.event.ProjectAboutToClose: lambda _: Plugin.internal.on_project_about_to_close()
+                sp.event.ProjectOpened: lambda _: UI.dock_view.internal.on_project_opened(),
+                sp.event.ProjectAboutToClose: lambda _: UI.dock_view.internal.on_project_about_to_close()
             }
             for event, callback in connections.items():
                 sp.event.DISPATCHER.connect_strong(event, callback)
 
-            Log.warning(f'Plugin started (version {Settings.plugin_version})')
-
-            Plugin.internal.checkout_weapon_textures()
+            UI.dock_view.internal.checkout_weapon_textures()
             if sp.project.is_open():
-                Plugin.internal.on_project_opened()
-
+                UI.dock_view.internal.on_project_opened()
         except Exception as e:
-            Log.error(f'Fatal error occured: {str(e)}')
             UI.close()
+            Log.error(f'Fatal error occured: {str(e)}')
 
     @staticmethod
     def close():

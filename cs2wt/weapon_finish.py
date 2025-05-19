@@ -4,7 +4,7 @@ import substance_painter as sp
 from .utils.log import Log
 from .utils.path import Path
 from .settings import Settings
-from .resource import search as resource_search
+from .utils.resource import search as resource_search
 
 
 class WeaponFinish:

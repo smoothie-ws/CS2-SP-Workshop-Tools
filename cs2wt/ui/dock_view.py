@@ -1,34 +1,34 @@
 import json
 import shutil
-import webbrowser
 import substance_painter as sp
 
-from .ui import QtCore, QtQml
-from .utils import Log, Path, shader_preprocess, Decompiler
-from .settings import Settings
-from .weapon_finish import WeaponFinish
-from .project_settings import ProjectSettings
-from .resource import search as resource_search
+
+from ..settings import Settings
+from ..weapon_finish import WeaponFinish
+from ..project_settings import ProjectSettings
+from ..utils import Log, Path, Decompiler, shader_preprocess, resource_search
+
+from .qml import QmlInternal, QmlWidget, QtCore, QtWidgets, QtGui
 
 
-class InternalState:
-    Started = 0
-    Closed = 1
-    Preparing = 2
-    Decompiling = 3
-    CreatingWeaponFinish = 4
-
-
-class Internal(QtCore.QObject):
-    "Bridge class between python and qml"
-
-    def __init__(self):
+class DockView(QmlWidget):
+    def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__()
-        self.state = InternalState.Closed
-    
-    def connect_context(self, context: QtQml.QQmlContext):
-        context.setContextProperty("CS2WT", self)
+        self.internals.append(DockInternal())
+        self.widget = None
 
+        def cb(container: QtWidgets.QWidget):
+            container.setWindowIcon(icon)
+            container.setWindowTitle("CS2 Workshop Tools")
+            self.widget = sp.ui.add_dock_widget(container)
+
+        self.load(path, cb)
+    
+
+class DockInternal(QmlInternal):
+    def __init__(self):
+        super().__init__("CS2WT")
+        
     def on_project_opened(self):
         if self.is_weapon_finish_opened():
             self.projectKindChanged.emit(2)
@@ -39,18 +39,8 @@ class Internal(QtCore.QObject):
         self.projectKindChanged.emit(0)
 
     def on_close(self):
-        self.state = InternalState.Closed
         if self.is_weapon_finish_opened():
             self.pluginAboutToClose.emit()
-
-    def on_settings(self):
-        self.pluginSettingsRequested.emit()
-        
-    def on_help(self):
-        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#table-of-contents")
-        
-    def on_clear_docs(self):
-        self.clearDocsRequested.emit()
         
     def is_weapon_finish_opened(self):
         return sp.project.is_open() and ProjectSettings.get("weapon_finish")
@@ -110,7 +100,6 @@ class Internal(QtCore.QObject):
             if state != "Finished":
                 self.decompilationStateChanged.emit(state)
             else:
-                self.state = InternalState.Started
                 self.decompilationFinished.emit()
         
         self.decompilationStarted.emit()
@@ -132,51 +121,13 @@ class Internal(QtCore.QObject):
     projectKindChanged = QtCore.Signal(int)
     finishStyleReady = QtCore.Signal()
     pluginAboutToClose = QtCore.Signal()
-    pluginSettingsRequested = QtCore.Signal()
-    clearDocsRequested = QtCore.Signal()
 
     # Slots
-    @QtCore.Slot(str)
-    def info(self, msg:str):
-        Log.info(msg)
-    
-    @QtCore.Slot(str)
-    def warning(self, msg:str):
-        Log.warning(msg)
-
-    @QtCore.Slot(str)
-    def error(self, msg:str):
-        Log.error(msg)
-
-    @QtCore.Slot(result=str)
-    def pluginVersion(self):
-        return Settings.plugin_version
-    
-    @QtCore.Slot(result=str)
-    def pluginPath(self):
-        return Settings.plugin_path
-
-    @QtCore.Slot(result=int)
-    def getState(self):
-        return self.state
-    
-    @QtCore.Slot(str)
-    def showInExplorer(self, path:str):
-        Path.show_in_explorer(path)
-
-    @QtCore.Slot(result=str)
-    def getPluginSettings(self):
-        return json.dumps(Settings.plugin_settings)
-    
     @QtCore.Slot(str)
     def setPluginSettings(self, settings:str):
         for key, value in json.loads(settings).items():
             Settings.set(key, value)
 
-    @QtCore.Slot(result=str)
-    def getWeaponList(self):
-        return json.dumps(Settings.get("weapon_list"))
-    
     @QtCore.Slot(result=str)
     def getDefaultFinishStyle(self):
         return Settings.get("weapon_finish", {}).get("finishStyle", "gs")
@@ -187,22 +138,16 @@ class Internal(QtCore.QObject):
 
     @QtCore.Slot()
     def startTexturesDecompilation(self):
-        self.state = InternalState.Decompiling
         cs2_path = Settings.get("cs2_path")
         if cs2_path is not None:
             self.decompile_textures(cs2_path)
         else:
             self.emit_cs2_path_is_missing()
 
-    @QtCore.Slot(result=str)
-    def getCs2Path(self):
-        return Settings.get("cs2_path", "")
-
     @QtCore.Slot(str, result=bool)
     def setCs2Path(self, cs2_path: str):
         Settings.set("cs2_path", cs2_path)
-        if self.state == InternalState.Decompiling:
-            self.decompile_textures(cs2_path)
+        self.decompile_textures(cs2_path)
 
     @QtCore.Slot(str, result=bool)
     def valCs2Path(self, path: str):
@@ -231,14 +176,12 @@ class Internal(QtCore.QObject):
     @QtCore.Slot(str, str, str, str)
     def createWeaponFinish(self, file_path:str, finish_name:str, weapon:str, finish_style:str):
         def callback(res, weapon_finish, msg):
-            self.state = InternalState.Started
             if res:
                 ProjectSettings.set("weapon_finish", weapon_finish)
                 self.on_project_opened()
                 Log.warning(msg)
             else:
                 Log.error(f'Failed to create weapon finish: {msg}')
-        self.state = InternalState.CreatingWeaponFinish
         WeaponFinish.create(file_path, finish_name, weapon, finish_style, callback)
 
     @QtCore.Slot(str, str, str)
@@ -281,16 +224,3 @@ class Internal(QtCore.QObject):
     def exportWeaponFinishTextures(self, weapon_finish:str):
         self.dumpWeaponFinish(weapon_finish)
         WeaponFinish.export_textures(json.loads(weapon_finish))
-
-    @QtCore.Slot(str, result=str)
-    def js(self, code:str):
-        try:
-            return json.dumps(sp.js.evaluate(code))
-        except Exception as e:
-            Log.error(f'Failed to evaluate js code: {str(e)}')
-            Log.info(code)
-    
-    @QtCore.Slot()
-    def clearDocsConfirmed(self):
-        for path in Settings.get("files", []):
-            Path.remove(path)
