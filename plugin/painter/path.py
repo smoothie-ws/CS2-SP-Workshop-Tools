@@ -5,12 +5,12 @@ import subprocess
 
 
 class Path:
-    plugin = None
-    settings = None
-    documents = None
+    plugin: str = ""
+    settings: str = ""
+    documents: str = ""
 
     @staticmethod
-    def asset(*paths: list) -> str:
+    def asset(*paths: str) -> str:
         return Path.join(Path.plugin, "assets", *paths)
     
     @staticmethod
@@ -23,7 +23,7 @@ class Path:
     
     @staticmethod
     def exists(path: str) -> bool:
-        return path and os.path.exists(path)
+        return path is not None and os.path.exists(path)
     
     @staticmethod
     def join(*paths) -> str:
@@ -34,23 +34,23 @@ class Path:
         return os.listdir(path)
 
     @staticmethod
-    def makedirs(path: str):
+    def makedirs(path: str) -> None:
         os.makedirs(path)
 
     @staticmethod
-    def copy(src: str, dst: str):
+    def copy(src: str, dst: str) -> None:
         shutil.copyfile(src, dst)
     
     @staticmethod
-    def replace(src: str, dst: str):
+    def replace(src: str, dst: str) -> None:
         os.replace(src, dst)
     
     @staticmethod
-    def isdir(path: str):
+    def isdir(path: str) -> bool:
         return os.path.isdir(path)
     
     @staticmethod
-    def remove(path: str):
+    def remove(path: str) -> bool:
         if Path.exists(path):
             try:
                 if Path.isdir(path):
@@ -63,15 +63,15 @@ class Path:
         return False
 
     @staticmethod
-    def rename(src: str, tgt: str):
+    def rename(src: str, tgt: str) -> None:
         os.rename(src, tgt)
 
     @staticmethod
-    def filename(path: str):
+    def filename(path: str) -> str:
         return pathlib.Path(path).stem
     
     @staticmethod
-    def show_in_explorer(path: str):
+    def show_in_explorer(path: str) -> None:
         path = Path.norm(path) # explorer would choke on forward slashes
         if os.path.isdir(path):
             subprocess.run(['explorer', path])
@@ -79,7 +79,7 @@ class Path:
             subprocess.run(['explorer', '/select,', path])
 
     @staticmethod
-    def read(path: str, default: str = None) -> str:
+    def read(path: str, default: str = "") -> str:
         try:
             with open(Path.norm(path), "r", encoding="utf-8") as f:
                 return f.read()
@@ -87,10 +87,10 @@ class Path:
             return default
         
     @staticmethod
-    def write(path: str, data: str):
+    def write(path: str, data: str) -> int:
         try:
             with open(Path.norm(path), "w", encoding="utf-8") as f:
                 return f.write(data)
         except:
-            return None
+            return 0
         

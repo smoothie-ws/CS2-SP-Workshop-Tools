@@ -3,28 +3,29 @@ import substance_painter as sp
 
 from .log import Log
 from .path import Path
+from .plugin import Plugin
 from .ui import QtQuickWidgets, QtWidgets, QtCore, QtGui
+
 
 class QmlView(QtCore.QObject):
     "Bridge class between Python and QML"
 
     @classmethod
-    def from_plugin_file(cls, path: str, *args, **kwargs):
-        kwargs["path"] = Path.join(Path.plugin, "view", path)
-        return cls(*args, **kwargs)
+    def plugin_file(cls, path: str):
+        return Path.join(Path.plugin, "view", path)
     
     def __init__(self, name: str = "Plugin", path: str = None):
         super().__init__()
         self.name = name
         self.view = QtQuickWidgets.QQuickWidget()
-        self.view.setResizeMode(QtQuickWidgets.QQuickWidget.SizeRootObjectToView)
+        self.view.setResizeMode(QtQuickWidgets.QQuickWidget.ResizeMode.SizeRootObjectToView)
         
         if path is not None:
             self.load(path)
     
     def load(self, path: str, callback = None):
         def start(status: QtQuickWidgets.QQuickWidget.Status):
-            if status == QtQuickWidgets.QQuickWidget.Ready:
+            if status == QtQuickWidgets.QQuickWidget.Status.Ready:
                 if callback is not None:
                     callback(self.view)
             else:
@@ -53,6 +54,10 @@ class QmlView(QtCore.QObject):
             Log.error(f'Failed to evaluate js code: {str(e)}')
             Log.info(code)
     
+    @QtCore.Slot(str, result=str)
+    def asset(self, path: str) -> str:
+        return "file:" + Path.asset(path)
+    
     @QtCore.Slot(str)
     def info(self, msg: str):
         Log.info(msg)
@@ -65,6 +70,18 @@ class QmlView(QtCore.QObject):
     def error(self, msg: str):
         Log.error(msg)
 
+    @QtCore.Slot(result=str)
+    def getPluginPath(self) -> str:
+        return Path.plugin
+    
+    @QtCore.Slot(result=str)
+    def getPluginVersion(self) -> str:
+        return Plugin.version
+    
+    @QtCore.Slot(result=str)
+    def getPluginSettings(self) -> str:
+        return json.dumps(Plugin.settings)
+        
         
 class QmlWindow(QmlView):
     def __init__(self, title: str, icon: QtGui.QIcon = None, name: str = "Plugin", path: str = None):

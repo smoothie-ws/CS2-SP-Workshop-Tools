@@ -36,12 +36,10 @@ class UI:
         def set(layout: bytes):
             return sp.ui.set_layout(layout)
 
-    @property
     @staticmethod
-    def mode():
+    def get_mode():
         return sp.ui.get_current_mode()
 
-    @mode.setter
     @staticmethod
     def set_mode(mode: sp.ui.UIMode) -> None:
         sp.ui.switch_to_mode(mode)
@@ -65,10 +63,11 @@ class UI:
 
     @staticmethod
     def add_menu(menu: QtWidgets.QMenu):
-        return UI.add_widget(sp.ui.add_menu(menu))
+        sp.ui.add_menu(menu)
+        return UI.add_widget(menu)
 
     @staticmethod
-    def add_action(menu: sp.ui.ApplicationMenu, action: QtWidgets.QAction):
+    def add_action(menu: sp.ui.ApplicationMenu, action: QtWidgets.QWidgetAction):
         return UI.add_widget(sp.ui.add_action(menu, action))
 
     @staticmethod
