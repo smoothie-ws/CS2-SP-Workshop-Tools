@@ -1,6 +1,6 @@
 import webbrowser
 
-from .utils import Shader
+from .utils import Decompiler, Shader
 from .weapon_finish import WeaponFinish
 from .painter import UI, Plugin, Path, QmlView, Resource
 from .painter.qml import QtWidgets, QtGui
@@ -18,24 +18,9 @@ class CS2WT(Plugin):
         
     @classmethod
     def on_start(cls):
-        icon = QtGui.QIcon(Path.asset("ui", "icons", "logo.png"))
-        
-        # plugin menu
-        menu = UI.add_menu(QtWidgets.QMenu("CS2 Workshop Tools"))
-        
-        menu.addAction("Help").triggered.connect(CS2WT.on_help)
-        menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
-        menu.addSeparator()
-        menu.addAction("Clear documents").triggered.connect(CS2WT.on_clear_docs)
-        # dock widget
-        CS2WT.dock_view = DockView(QmlView.plugin_file("DockView.qml"), icon)
-        # settings window
-        CS2WT.settings_window = SettingsWindow(QmlView.plugin_file("SettingsView.qml"), icon)
-        # clear docs window
-        CS2WT.clear_docs_window = ClearDocsWindow(QmlView.plugin_file("ClearDocsView.qml"), icon)
-        
-        CS2WT.checkout_weapon_textures()
-        
+        CS2WT.init_ui()
+        CS2WT.checkout()
+    
     @classmethod
     def on_close(cls):
         if WeaponFinish.is_open():
@@ -47,6 +32,11 @@ class CS2WT(Plugin):
             CS2WT.dock_view.projectKindChanged.emit(2)
         else:
             CS2WT.dock_view.projectKindChanged.emit(1)
+
+    @classmethod
+    def on_project_about_to_save(cls):
+        if WeaponFinish.is_open():
+            CS2WT.dock_view.projectAboutToSave.emit()
 
     @classmethod
     def on_project_about_to_close(cls):
@@ -65,7 +55,24 @@ class CS2WT(Plugin):
         CS2WT.clear_docs_window.open()
 
     @staticmethod
-    def checkout_weapon_textures():
+    def init_ui():
+        icon = QtGui.QIcon(Path.asset("ui", "icons", "logo.png"))
+        
+        # plugin menu
+        menu = UI.add_menu(QtWidgets.QMenu("CS2 Workshop Tools"))
+        menu.addAction("Help").triggered.connect(CS2WT.on_help)
+        menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
+        menu.addSeparator()
+        menu.addAction("Clear documents").triggered.connect(CS2WT.on_clear_docs)
+        # dock widget
+        CS2WT.dock_view = DockView(QmlView.view_path("DockView.qml"), icon)
+        # settings window
+        CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
+        # clear docs window
+        CS2WT.clear_docs_window = ClearDocsWindow(QmlView.view_path("ClearDocsView.qml"), icon)
+        
+    @staticmethod
+    def checkout():
         sp_shaders_path = Path.join(Path.documents, "assets", "shaders")
         sp_shaders_ui_path = Path.join(sp_shaders_path, "custom-ui")
 
@@ -95,24 +102,7 @@ class CS2WT(Plugin):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
             Plugin.push_file(sp_shader_ui_path)
 
-        # weapon textures
-        weapon_list = Plugin.settings.get("weapon_list", {}).copy()
-        models_path = Path.asset("textures", "models")
-        if Path.exists(models_path):
-            for weapon in Path.listdir(models_path):
-                flag = True
-                weapon_path = Path.join(models_path, weapon)
-                for tex in ["color", "cavity", "masks", "rough", "surface"]:
-                    if not Path.exists(Path.join(weapon_path, f'{weapon}_{tex}.png')):
-                        flag = False
-                        break
-                    
-                if flag and weapon_list.get(weapon) is not None:
-                    weapon_list.pop(weapon)
-                    
-        if len(weapon_list) > 0 and not Plugin.settings.get("ignore_textures_are_missing"):
+        missing_weapon_list = Decompiler.checkout_weapon_textures()
+        if len(missing_weapon_list) > 0 and not Plugin.settings.get("ignore_textures_are_missing"):
             CS2WT.dock_view.texturesAreMissing.emit()
-
-    @staticmethod
-    def emit_cs2_path_is_missing():
-        CS2WT.dock_view.cs2PathIsMissing.emit()
+            

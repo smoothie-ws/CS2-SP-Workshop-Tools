@@ -3,18 +3,37 @@ import threading
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-from ..painter import Path
+from ..painter import Path, Plugin
 
 
 class Decompiler:
+    weapon_list = []
     progress = 0.0
     vrf_path = ""
 
     @staticmethod
-    def decompile(pak_path: str, out_path: str, weapon_list:dict, state_callback, update_callback):
+    def checkout_weapon_textures() -> list:
+        weapon_list = Plugin.settings.get("weapon_list", {}).copy()
+        models_path = Path.asset("textures", "models")
+        if Path.exists(models_path):
+            for weapon in Path.listdir(models_path):
+                flag = True
+                weapon_path = Path.join(models_path, weapon)
+                for tex in ["color", "cavity", "masks", "rough", "surface"]:
+                    if not Path.exists(Path.join(weapon_path, f'{weapon}_{tex}.png')):
+                        flag = False
+                        break
+                    
+                if flag and weapon_list.get(weapon) is not None:
+                    weapon_list.pop(weapon)
+        
+        return weapon_list
+            
+    @staticmethod
+    def decompile(pak_path: str, out_path: str, state_callback, update_callback):
         Decompiler.progress = 0.0
         Decompiler.vrf_path = Path.asset("vrf")
-        weapon_list_len = len(weapon_list)
+        weapon_list_len = len(Decompiler.weapon_list)
 
         models_path = Path.join(out_path, "models")
         if not Path.exists(models_path):
@@ -25,7 +44,7 @@ class Decompiler:
             temp_path = Path.join(out_path, "temp")
             temp_models_path = Path.join(temp_path, "weapons", "models")
             state_callback("Extracting textures from pak01_dir.vpk")
-            Decompiler.run(f'-i "{pak_path}" --vpk_filepath "weapons\models" -e "vtex_c" -o "{temp_path}"')
+            Decompiler.run(f'-i "{pak_path}" --vpk_filepath "weapons/models" -e "vtex_c" -o "{temp_path}"')
             with ThreadPoolExecutor(max_workers=6) as executor:
                 futures = []
                 # decompile
@@ -36,7 +55,7 @@ class Decompiler:
                 for w in Path.listdir(temp_models_path):
                     w_path = Path.join(temp_models_path, w)
                     mat_path = Path.join(w_path, "materials")
-                    if weapon_list.get(w) is None or not Path.exists(mat_path):
+                    if w in Decompiler.weapon_list or not Path.exists(mat_path):
                         Path.remove(w_path)
                         continue
                     futures.append(executor.submit(Decompiler.process, w, w_path, mat_path, state_callback, ucb))

@@ -8,9 +8,39 @@ import "./SPWidgets"
 SPDialog {
     id: root
     color: AlgStyle.background.color.mainWindow
+    confirm.enabled: nameInput.nameIsValid && root.meshFile !== "" && weaponBox.currentIndex != -1
+    confirm.text: root.isNew ? "Create" : "Proceed"
+    message.text: switch (nameInput.nameStatus) {
+        case 0:
+            "Missing CS2 Path";
+            break;
+        case 1:
+            "";
+            break;
+        case 2:
+            "Name cannot be empty";
+            break;
+        case 3:
+            "This name is already in use";
+            break;
+    }
+    message.color: switch (nameInput.nameStatus) {
+        case 0:
+            Qt.rgba(0.85, 0.85, 0.5);
+            break;
+        case 1:
+            Qt.rgba(0.85, 0.5, 0.5);
+            break;
+        case 2:
+            Qt.rgba(0.85, 0.5, 0.5);
+            break;
+        case 3:
+            Qt.rgba(0.85, 0.5, 0.5);
+            break;
+    }
 
     property bool isNew: true
-    property string fileUrl: ""
+    property string meshFile: ""
 
     property real scopeWidth: width - 250
 
@@ -19,25 +49,25 @@ SPDialog {
         
         function onOpened(isNew) {
             root.isNew = isNew;
-            root.fileUrl = "";
+            root.meshFile = "";
             nameInput.name = "";
             weaponBox.currentKey = "";
-            finishStyleBox.currentKey = Plugin.getDefaultFinishStyle();
+            styleBox.currentKey = Plugin.getDefaultStyle();
         }
     }
 
-    function confirm() {
-        Plugin.confirm(JSON.stringify({
-            file_path: fileUrl,
-            finish_name: nameInput.name,
-            weapon: weaponBox.currentKey,
-            finish_style: finishStyleBox.currentKey
-        }));
+    function getData() {
+        return {
+            mesh: meshFile,
+            name: nameInput.name,
+            style: styleBox.currentKey,
+            weapon: weaponBox.currentKey
+        }
     }
 
-    onFileUrlChanged: {
+    onMeshFileChanged: {
         for (const w of Object.keys(weaponBox.map))
-            if (fileUrl.toLowerCase().indexOf(w.toLowerCase()) != -1) {
+            if (meshFile.toLowerCase().indexOf(w.toLowerCase()) != -1) {
                 weaponBox.currentKey = w;
                 return;
             }
@@ -52,7 +82,7 @@ SPDialog {
             Layout.fillWidth: true
             
             Label {
-                text: root.fileUrl
+                text: root.meshFile
                 clip: true
                 color: AlgStyle.text.color.normal
                 opacity: 0.5
@@ -70,13 +100,16 @@ SPDialog {
                     id: fileDialog
                     title: "Select file"
                     nameFilters: [ "Mesh Files (*.fbx *.abc *.obj *.dae *.ply *.gltf *.glb *.usd *.usda *.usdc *.usdz)" ]
-                    onAccepted: root.fileUrl = fileUrl.toString().substring(8);
+                    onAccepted: root.meshFile = fileUrl.toString().substring(8);
                 }
             }
         }
     }
 
-    SPSeparator { Layout.fillWidth: true }
+    SPSeparator { 
+        visible: root.isNew
+        Layout.fillWidth: true 
+    }
 
     SPLabeled {
         id: nameInput
@@ -86,14 +119,8 @@ SPDialog {
         Layout.fillWidth: true
 
         property string name: null
-        property int nameStatus: 1
+        property int nameStatus: Plugin.valWeaponFinishName(name)
         property bool nameIsValid: nameStatus < 2;
-
-        function valName() {
-            nameStatus = Plugin.valWeaponFinishName(name);
-        }
-
-        onNameChanged: valName()
 
         Rectangle {
             color: "transparent"
@@ -133,7 +160,7 @@ SPDialog {
         Layout.fillWidth: true
 
         SPComboBox {
-            id: finishStyleBox
+            id: styleBox
             Layout.fillWidth: true
             map: {
                 "so": "Solid Color",
@@ -146,70 +173,6 @@ SPDialog {
                 "aq": "Patina",
                 "gs": "Gunsmith"
             }
-        }
-    }
-
-    Item { Layout.fillHeight: true }
-
-    RowLayout {
-        Layout.fillWidth: true
-
-        Label {
-            id: nameStatusLabel
-            clip: true
-            opacity: 0.75
-            Layout.fillWidth: true
-            text: switch (nameInput.nameStatus) {
-                case 0:
-                    "Missing Plugin Path";
-                    break;
-                case 1:
-                    "";
-                    break;
-                case 2:
-                    "Name cannot be empty";
-                    break;
-                case 3:
-                    "This name is already in use";
-                    break;
-            }
-            color: switch (nameInput.nameStatus) {
-                case 0:
-                    Qt.rgba(0.85, 0.85, 0.5);
-                    break;
-                case 1:
-                    Qt.rgba(0.85, 0.85, 0.85);
-                    break;
-                case 2:
-                    Qt.rgba(0.85, 0.5, 0.5);
-                    break;
-                case 3:
-                    Qt.rgba(0.85, 0.5, 0.5);
-                    break;
-            }
-        }
-
-        SPButton {
-            id: confirmButton
-            enabled: nameInput.nameIsValid && root.fileUrl !== "" && weaponBox.currentIndex != -1
-            text: root.isNew ? "Create" : "Proceed"
-            background.opacity: hovered ? 1.0 : 0.65
-            background.color: "white"
-            label.color: "#262626"
-            Layout.alignment: Qt.AlignHCenter
-
-            onClicked: root.confirm()
-        }
-
-        SPButton {
-            id: cancelButton
-            text: "Cancel"
-            background.opacity: hovered ? 0.75 : 0.25
-            background.color: "black"
-            label.color: AlgStyle.text.color.normal
-            Layout.alignment: Qt.AlignHCenter
-
-            onClicked: root.close()
         }
     }
 }

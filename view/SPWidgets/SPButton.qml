@@ -7,18 +7,17 @@ SPControl {
     implicitHeight: Math.max(checker.height, icon.height, label.height) + padding * 2.0
     implicitWidth: checker.width + icon.width + label.width + padding * 2.0
 
+    property alias text: label.text
+    property alias font: label.font
     property alias icon: icon
     property alias label: label
     property alias checker: checker
     property alias background: background
     property alias padding: content.anchors.margins
 
-    property alias text: label.text
-    property alias font: label.font
-    property alias checkable: checker.visible
-
     property int contentAlignment: Qt.AlignCenter
     property bool checked: false
+    property bool checkable: false
 
     cursorShape: Qt.PointingHandCursor
     onPressed: {
@@ -33,14 +32,20 @@ SPControl {
         NumberAnimation { duration: 50 }
     }
 
-    Rectangle {
-        id: background
+    onCheckableChanged: checker.visible = checkable
+    
+    Item {
         anchors.fill: parent
-        color: root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
-        radius: 15
 
-        Behavior on color {
-            ColorAnimation { duration: 250 }
+        Rectangle {
+            id: background
+            anchors.fill: parent
+            color: root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
+            radius: 15
+
+            Behavior on color {
+                ColorAnimation { duration: 250 }
+            }
         }
 
         Item {

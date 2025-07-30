@@ -1,116 +1,54 @@
 import json
-import substance_painter as sp
 
 from .utils import Decompiler
 from .weapon_finish import WeaponFinish
-from .painter import UI, Log, Path, Plugin, ProjectSettings
+from .painter import UI, Log, Path, Plugin, ProjectSettings, QmlWindow
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
 
 
 class WeaponFinishInitWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("Create Weapon Finish", icon, "Plugin", path)
-        self.window.setMinimumSize(400, 250)
+        self.window.setMinimumSize(400, 260)
         self.is_new = False
     
     opened = QtCore.Signal(bool)
     
     def open(self, is_new: bool):
-        super().open()
+        self.show()
         self.is_new = is_new
         self.opened.emit(is_new)
     
     def on_confirmed(self, data: str):
         d: dict = json.loads(data)
+        mesh_file: str = d.get("mesh", "")
+        # fetch default weapon finish settings
+        weapon_finish = Plugin.settings.get("weapon_finish", {})
+        weapon_finish["name"] = d.get("name")
+        weapon_finish["style"] = d.get("style")
+        weapon_finish["weapon"] = d.get("weapon")
         
-        file_path = d.get("file_path")
-        finish_name = d.get("finish_name")
-        weapon = d.get("weapon")
-        finish_style = d.get("finish_style")
-        
+        def callback(res: bool, msg: str):
+            if res:
+                from . import CS2WT
+                ProjectSettings.set("weapon_finish", weapon_finish)
+                CS2WT.dock_view.projectKindChanged.emit(2)
+                Log.warning(msg)
+            else:
+                Log.error(f'Failed to set up weapon finish: {msg}')
+                
         if self.is_new:
-            def callback(res, weapon_finish, msg):
-                if res:
-                    ProjectSettings.set("weapon_finish", weapon_finish)
-                    self.on_project_opened()
-                    Log.warning(msg)
-                else:
-                    Log.error(f'Failed to create weapon finish: {msg}')
-            WeaponFinish.create(file_path, finish_name, weapon, finish_style, callback)
+            WeaponFinish.create(mesh_file, weapon_finish, callback)
         else:
-            def callback(res, msg):
-                if res:
-                    self.projectKindChanged.emit(2)
-                    Log.warning(msg)
-                else:
-                    Log.error(f'Failed to set up weapon finish: {msg}')
-            WeaponFinish.set_up(finish_name, weapon, finish_style, callback)
+            WeaponFinish.set_up(weapon_finish, callback)
             
     @QtCore.Slot(result=str)
-    def getDefaultFinishStyle(self):
-        return Plugin.settings.get("weapon_finish", {}).get("finishStyle", "gs")
+    def getDefaultStyle(self):
+        return Plugin.settings.get("weapon_finish", {}).get("style", "gs")
 
     @QtCore.Slot(result=str)
     def getWeaponList(self):
         return json.dumps(Plugin.settings.get("weapon_list"))
-
-    
-class DockView(QmlView):
-    def __init__(self, path: str, icon: QtGui.QIcon):
-        super().__init__("Plugin")
-        self.wf_init_window = WeaponFinishInitWindow(QmlView.plugin_file("WeaponFinishInitWindow.qml"), icon)
-        
-        def cb(container: QtWidgets.QWidget):
-            container.setWindowIcon(icon)
-            container.setWindowTitle("CS2 Workshop Tools")
-            UI.add_dock(container)
-
-        self.load(path, cb)
-        
-    def decompile_textures(self, cs2_path: str):
-        def state_changed(state):
-            if state != "Finished":
-                self.decompilationStateChanged.emit(state)
-            else:
-                self.decompilationFinished.emit()
-        
-        self.decompilationStarted.emit()
-        Decompiler.decompile(
-            Path.join(cs2_path, "game", "csgo", "pak01_dir.vpk"), 
-            Path.asset("textures"),
-            self.missing_weapon_list,
-            state_changed,
-            self.decompilationUpdated.emit
-        )
-
-    # signals
-    texturesAreMissing = QtCore.Signal()
-    cs2PathIsMissing = QtCore.Signal(str)
-    decompilationStarted = QtCore.Signal()
-    decompilationUpdated = QtCore.Signal(float, str)
-    decompilationStateChanged = QtCore.Signal(str)
-    decompilationFinished = QtCore.Signal()
-    projectKindChanged = QtCore.Signal(int)
-    finishStyleReady = QtCore.Signal()
-    pluginAboutToClose = QtCore.Signal()
-
-    # slots
-    @QtCore.Slot(bool)
-    def setIgnoreTexturesAreMissing(self, ignore:bool):
-        Plugin.settings["ignore_textures_are_missing"] = ignore
-
-    @QtCore.Slot()
-    def startTexturesDecompilation(self):
-        cs2_path = Plugin.settings.get("cs2_path")
-        if cs2_path is not None:
-            self.decompile_textures(cs2_path)
-        else:
-            self.emit_cs2_path_is_missing()
-
-    @QtCore.Slot(str, result=bool)
-    def setCs2Path(self, cs2_path: str):
-        Plugin.settings["cs2_path"] = cs2_path
-        self.decompile_textures(cs2_path)
 
     @QtCore.Slot(str, result=int)
     def valWeaponFinishName(self, name: str):
@@ -129,17 +67,89 @@ class DockView(QmlView):
         else:
             return 0
         
+
+class DecompilationPopup(QmlWindow):
+    def __init__(self, path: str, icon: QtGui.QIcon):
+        super().__init__("Decompilation", icon, "Plugin", path)
+        self.window.setMinimumSize(400, 260)
+        
+    def decompile_textures(self, cs2_path: str):
+        def state_changed(state):
+            if state != "Finished":
+                self.decompilationStateChanged.emit(state)
+            else:
+                self.decompilationFinished.emit()
+        
+        self.decompilationStarted.emit()
+        Decompiler.decompile(
+            Path.join(cs2_path, "game", "csgo", "pak01_dir.vpk"), 
+            Path.asset("textures"),
+            state_changed,
+            self.decompilationUpdated.emit
+        )
+
+    # signals
+    decompilationStarted = QtCore.Signal()
+    decompilationUpdated = QtCore.Signal(float, str)
+    decompilationStateChanged = QtCore.Signal(str)
+    decompilationFinished = QtCore.Signal()
+
+    # slots
+    @QtCore.Slot(bool)
+    def setIgnoreTexturesAreMissing(self, ignore:bool):
+        Plugin.settings["ignore_textures_are_missing"] = ignore
+
+    @QtCore.Slot()
+    def startTexturesDecompilation(self):
+        cs2_path = Plugin.settings.get("cs2_path")
+        if cs2_path is not None and len(cs2_path) > 0:
+            self.decompile_textures(cs2_path)
+        else:
+            from . import CS2WT
+            CS2WT.settings_window.open()
+            # self.cs2PathIsMissing.emit()
+
+    @QtCore.Slot(str, result=bool)
+    def valCs2Path(self, path: str):
+        return Path.exists(Path.join(path, "game", "csgo", "pak01_dir.vpk"))
+        
     @QtCore.Slot(str)
-    def changeFinishStyle(self, finish_style: str):
-        def _change(res: bool, msg: str):
+    def setCs2Path(self, cs2_path: str):
+        Plugin.settings["cs2_path"] = cs2_path
+        self.decompile_textures(cs2_path)
+
+        
+class DockView(QmlView):
+    def __init__(self, path: str, icon: QtGui.QIcon):
+        super().__init__("Plugin")
+        self.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon)
+        
+        def cb(container: QtWidgets.QWidget):
+            container.setWindowIcon(icon)
+            container.setWindowTitle("CS2 Workshop Tools")
+            UI.add_dock(container)
+
+        self.load(path, cb)
+        
+    # signals
+    cs2PathIsMissing = QtCore.Signal()
+    projectKindChanged = QtCore.Signal(int)
+    projectAboutToSave = QtCore.Signal()
+    styleReady = QtCore.Signal()
+    pluginAboutToClose = QtCore.Signal()
+
+    # slots
+    @QtCore.Slot(str)
+    def changeStyle(self, finish_style: str):
+        def change(res: bool, msg: str):
             if res:
                 Log.warning(msg) 
-                self.finishStyleReady.emit()
+                self.styleReady.emit()
             else:
                 Log.error(msg)
 
         # update shader instance
-        WeaponFinish.change_finish_style_shader(finish_style, _change)
+        WeaponFinish.change_finish_style_shader(finish_style, change)
 
     @QtCore.Slot(bool)
     def initWeaponFinish(self, is_new: bool):
@@ -182,6 +192,10 @@ class SettingsWindow(QmlDialog):
         for key, value in json.loads(data).items():
             Plugin.settings[key] = value
             
+    @QtCore.Slot(str, result=bool)
+    def valCs2Path(self, path: str):
+        return Path.exists(Path.join(path, "game", "csgo", "pak01_dir.vpk"))
+        
 
 class ClearDocsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):

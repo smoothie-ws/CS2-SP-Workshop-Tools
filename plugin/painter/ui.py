@@ -2,13 +2,14 @@ import substance_painter as sp
 
 # qt5 vs qt6 check
 if sp.application.version_info() < (10, 1, 0):
-    from PySide2 import QtQuickWidgets, QtWidgets, QtCore, QtGui
+    from PySide2 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui
 else:
-    from PySide6 import QtQuickWidgets, QtWidgets, QtCore, QtGui
+    from PySide6 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui
 
 
 class UI:
     widgets: list[QtWidgets.QWidget] = []
+    windows: list[QtWidgets.QMainWindow] = []
     
     class MainWindow:
         @staticmethod
@@ -50,6 +51,11 @@ class UI:
         return widget
     
     @staticmethod
+    def add_window(window: QtWidgets.QMainWindow):
+        UI.windows.append(window)
+        return window
+        
+    @staticmethod
     def add_toolbar(title: str, object_name: str, ui_modes: int = sp.ui.UIMode.Edition) -> QtWidgets.QToolBar:
         return UI.add_widget(sp.ui.add_toolbar(title, object_name, ui_modes))
 
@@ -72,11 +78,20 @@ class UI:
 
     @staticmethod
     def remove_widget(widget: QtWidgets.QWidget):
-        sp.ui.delete_ui_element(widget)
-        UI.widgets.remove(widget)
+        if widget in UI.widgets:
+            sp.ui.delete_ui_element(widget)
+            UI.widgets.remove(widget)
+
+    @staticmethod
+    def remove_window(window: QtWidgets.QMainWindow):
+        if window in UI.windows:
+            window.destroy()
+            UI.windows.remove(window)
 
     @staticmethod
     def clear():
-        for widget in UI.widgets:
-            UI.remove_widget(widget)
+        while len(UI.widgets) > 0:
+            UI.remove_widget(UI.widgets[0])
+        while len(UI.windows) > 0:
+            UI.remove_window(UI.windows[0])
     

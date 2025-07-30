@@ -1,6 +1,17 @@
 {
     "version": "0.0.1a",
-    "files": [],
+    "files": [
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/custom-ui/cs2-ui.qml",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_so.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_hy.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_sp.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_an.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_am.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_aa.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_cu.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_aq.glsl",
+        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_gs.glsl"
+    ],
     "settings": {
         "cs2_path": "",
         "weapon_list": {
@@ -41,7 +52,7 @@
             "taser": "Zeus x27"
         },
         "weapon_finish": {
-            "finishStyle": null,
+            "style": "gs",
             "texScale": 1,
             "texRotationRange": [
                 0,
@@ -87,7 +98,8 @@
             "uUseCustomNormal": true,
             "uUseCustomMasks": true,
             "uUseCustomAOTex": true,
-            "weapon": null
+            "name": "",
+            "weapon": "aug"
         },
         "ignore_textures_are_missing": false
     }

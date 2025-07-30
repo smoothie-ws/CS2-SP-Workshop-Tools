@@ -18,7 +18,7 @@ SPDialog {
         property bool weaponIsValid: false
 
         property var weaponFinish: {
-            "finishStyle":            { control: finishStyleBox,         prop: "currentKey"   },
+            "style":                  { control: styleBox,               prop: "currentKey"   },
             "texScale":               { control: texScale,               prop: "value"        },
             "texRotationRange":       { control: texRotation,            prop: "range"        },
             "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
@@ -141,6 +141,7 @@ SPDialog {
                             anchors.fill: parent
                             anchors.margins: parent.border.width + 2
                             text: internal.cs2Path
+                            tooltip.text: "CS2 path is used to sync .econitem files and fast texture exporting"
 
                             onTextEdited: internal.cs2Path = text
                         }
@@ -358,7 +359,7 @@ SPDialog {
                             Layout.fillWidth: true
 
                             SPComboBox {
-                                id: finishStyleBox
+                                id: styleBox
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 map: {

@@ -1,17 +1,18 @@
+from abc import abstractmethod
 import json
 import substance_painter as sp
 
 from .log import Log
 from .path import Path
 from .plugin import Plugin
-from .ui import QtQuickWidgets, QtWidgets, QtCore, QtGui
+from .ui import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui
 
 
 class QmlView(QtCore.QObject):
     "Bridge class between Python and QML"
 
     @classmethod
-    def plugin_file(cls, path: str):
+    def view_path(cls, path: str):
         return Path.join(Path.plugin, "view", path)
     
     def __init__(self, name: str = "Plugin", path: str = None):
@@ -82,9 +83,13 @@ class QmlView(QtCore.QObject):
     def getPluginSettings(self) -> str:
         return json.dumps(Plugin.settings)
         
-        
+    
 class QmlWindow(QmlView):
     def __init__(self, title: str, icon: QtGui.QIcon = None, name: str = "Plugin", path: str = None):
+        def on_closed(event: QtGui.QCloseEvent):
+            self.closed.emit()
+            event.accept()
+            
         self.window = QtWidgets.QMainWindow(
             parent=sp.ui.get_main_window(),
             flags=QtCore.Qt.WindowType.Window | 
@@ -95,13 +100,9 @@ class QmlWindow(QmlView):
         self.window.setWindowIcon(icon)
         self.window.setWindowTitle(title)
         self.window.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
-        super().__init__(name, path)
-        
-        def on_closed(event: QtGui.QCloseEvent):
-            self.closed.emit()
-            event.accept()
-            
         self.window.closeEvent = on_closed
+        
+        super().__init__(name, path)
     
     opened = QtCore.Signal()
     closed = QtCore.Signal()
@@ -113,18 +114,21 @@ class QmlWindow(QmlView):
                 callback(container)
         super().load(path, cb)
 
-    def open(self):
+    def show(self):
         screen_geometry = QtWidgets.QApplication.primaryScreen().availableGeometry()
-        x = (screen_geometry.width() - self.window.width()) // 2
-        y = (screen_geometry.height() - self.window.height()) // 2
-        self.window.move(x, y)
+        self.window.move(
+            (screen_geometry.width() - self.window.width()) // 2, 
+            (screen_geometry.height() - self.window.height()) // 2
+        )
         self.window.show()
+        
+    def open(self):
+        self.show()
         self.opened.emit()
 
     @QtCore.Slot()
     def close(self):
         self.window.close()
-        self.closed.emit()
 
 
 class QmlDialog(QmlWindow):
@@ -139,8 +143,8 @@ class QmlDialog(QmlWindow):
 
     # to override
     
-    def on_confirmed(self, data: str):
-        pass
+    @abstractmethod
+    def on_confirmed(self, data: str): ...
 
-    def on_cancelled(self):
-        pass
+    @abstractmethod
+    def on_cancelled(self): ...

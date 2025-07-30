@@ -1,7 +1,5 @@
 # CS2 Workshop Tools for Substance 3D Painter
 
-# Please disregard for now
-
 # **[Overview](#overview)** • **[Getting started](#getting-started)** • **[Guide](#guide)**
 
 # Disclaimer
@@ -24,10 +22,11 @@ If you encounter any, please [report them](https://github.com/smoothie-ws/CS2-SP
         -   [Base weapon textures](#base-weapon-textures)
 -   **[Guide](#guide)**
     -   [Creating Weapon Finish](#creating-weapon-finish)
-        -   [New Project](#new-project)
-        -   [From existing Project](#from-existing-project)
+        -   [From existing project](#from-existing-project)
+        -   [New project](#new-project)
     -   [Weapon Finish Workflow](#weapon-finish-workflow)
-
+-   **[Uninstallation](#uninstallation)**
+  
 # Overview
 
 ## How it works
@@ -36,7 +35,7 @@ The **Substance 3D Painter CS2 Worskhop Tools** are distributed as a plugin for 
 
 It manages projects, resources and handles texture exporting via the [Substance 3D Painter Python API](https://helpx.adobe.com/substance-3d-painter-python.html).
 
-It also provides 9 `GLSL` shaders for each of the Weapon Finish Styles, which are:
+It also provides 9 [GLSL](https://helpx.adobe.com/substance-3d-painter/scripting-and-development/api-reference/shader-api.html) shaders for each of the Weapon Finish Styles, which are:
 
 -   [Solid Color](https://www.counter-strike.net/workshop/workshopfinishes#solidcolorstyle)
 -   [Hydrographic](https://www.counter-strike.net/workshop/workshopfinishes#hydrographic)
@@ -66,7 +65,7 @@ These shaders are used for live previewing the Weapon Finish settings.
 
     - The plugin should be located in the folder from which `Substance 3D Painter` loads Python plugins.
 
-        > **Example**: `C:\Users\<user>\Documents\Adobe\Adobe Substance 3D Painter\python\plugins`
+        > **Example** (Windows): `C:/Users/<user>/Documents/Adobe/Adobe Substance 3D Painter/python/plugins`
 
     - You can get the `python` folder path through the `Python` menu of `Substance 3D Painter` with the `Plugins Folder` option:
 
@@ -92,7 +91,7 @@ Plugin Settins are available at the `CS2 Workshop Tools` menu:
 
 ![image](https://github.com/user-attachments/assets/4bb34f8c-f739-48e2-af08-2cbaea1789d8)
 
-Here you can customize the list of weapons, the path to CS2, etc:
+Here you can customize the CS2 path, list of the weapons, default weapon finish settings, etc:
 
 ![image](https://github.com/user-attachments/assets/7ad3a91c-0a2c-48f3-b506-d30ca20c3316)
 
@@ -100,9 +99,9 @@ Here you can customize the list of weapons, the path to CS2, etc:
 
 CS2 SP Workshop Tools shaders require a set of base weapon textures to calculate paint wear, dirt, and other effects.
 
-**The plugin does not provide the textures by default due to the large size of the files.**
-However, If you have Counter-Strike 2 installed on your computer, you can automatically decompile the textures with the plugin.
-Otherwise, you will need to provide the textures manually.
+**The plugin does not provide the textures by default!**
+
+However, If you have Counter-Strike 2 installed on your computer, you can automatically decompile the textures with the plugin. Otherwise, you will need to provide the textures manually.
 
 When you launch the plugin it checks the textures and if some of them are missing this popup will open:
 
@@ -122,8 +121,10 @@ Once everything's ready decompilation will start:
 
 ## Creating Weapon Finish
 
-### New Project
+### From existing project
 
-### From existing Project
+### New project
 
 ## Weapon Finish Workflow
+
+# Uninstallation

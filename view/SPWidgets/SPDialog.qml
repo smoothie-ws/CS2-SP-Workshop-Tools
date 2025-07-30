@@ -8,6 +8,7 @@ Rectangle {
     color: AlgStyle.background.color.mainWindow
 
     default property alias data: content.data
+    property alias message: messageLabel
     property alias confirm: confirmButton
     property alias cancel: cancelButton
     
@@ -40,13 +41,17 @@ Rectangle {
             id: content
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 25
+            spacing: 10
         }
 
         RowLayout {
             Layout.fillWidth: true
 
-            Item { Layout.fillWidth: true }
+            Label {
+                id: messageLabel
+                opacity: 0.75
+                Layout.fillWidth: true
+            }
 
             SPButton {
                 id: confirmButton

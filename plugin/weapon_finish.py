@@ -22,34 +22,38 @@ class WeaponFinish:
 		return sp.project.is_open() and ProjectSettings.get("weapon_finish") is not None
     
 	@staticmethod
-	def create(file_path: str, finish_name: str, weapon: str, finish_style: str, callback):
+	def create(mesh_file: str, weapon_finish: dict, callback):
 		# create project
 		if sp.project.is_open():
 			if sp.project.needs_saving() and sp.project.file_path() is not None:
 				try:
 					sp.project.save()
-				except:
-					pass
+				except Exception as e:
+					callback(False, f'Failed to save current project: {e}')
+					return
 			sp.project.close()
 		try:
 			sp.project.create(
-				mesh_file_path=file_path, 
+				mesh_file_path=mesh_file, 
 				settings=sp.project.Settings(
 					import_cameras=False,
 					normal_map_format=sp.project.NormalMapFormat.OpenGL,
 					tangent_space_mode=sp.project.TangentSpace.PerVertex
 				)
 			)
-			sp.project.execute_when_not_busy(lambda: WeaponFinish.set_up(finish_name, weapon, finish_style, callback))
-		except Exception as e:
+			sp.project.execute_when_not_busy(lambda: WeaponFinish.set_up(weapon_finish, callback))
+		except sp.exception.ProjectError as e:
 			callback(False, f'Failed to create Weapon finish: {str(e)}')
 
 	@staticmethod
-	def set_up(finish_name: str, weapon: str, finish_style: str, callback):
+	def set_up(weapon_finish: dict, callback):
 		delayed = False
-		def _set_up(_):
+		finish_name: str = weapon_finish["name"]
+		finish_style: str = weapon_finish["style"]
+  
+		def proceed(_):
 			if delayed:
-				sp.event.DISPATCHER.disconnect(sp.event.ShelfCrawlingEnded, _set_up)
+				sp.event.DISPATCHER.disconnect(sp.event.ShelfCrawlingEnded, proceed)
 
 			# update the document channel stack
 			new_stack = {
@@ -86,11 +90,6 @@ class WeaponFinish:
 			except Exception as e:
 				callback(False, f'Failed to set up the document channel stack: {str(e)}')
 			
-			# fetch default weapon finish settings
-			weapon_finish = Plugin.settings.get("weapon_finish", {})
-			weapon_finish["weapon"] = weapon
-			weapon_finish["finishStyle"] = finish_style
-
 			# create files associated with the weapon finish
 			cs2_path = Plugin.settings.get("cs2_path")
 			if cs2_path is not None and Path.exists(cs2_path):
@@ -119,16 +118,18 @@ class WeaponFinish:
 
 			# update shader instance
 			WeaponFinish.change_finish_style_shader(finish_style, 
-				lambda res, msg: callback(res, weapon_finish,
-					f'The project was successfully set up as Weapon Finish ({finish_style})' if res else f'Failed to set finish style: {msg}'
+				lambda res, msg: callback(res,
+					f'The project was successfully set up as Weapon Finish ({finish_style.upper()})' 
+     				if res else 
+         			f'Failed to set finish style: {msg}'
 				)
 			)
 
 		if sp.resource.Shelf("your_assets").is_crawling():
 			delayed = True
-			sp.event.DISPATCHER.connect_strong(sp.event.ShelfCrawlingEnded, _set_up)
+			sp.event.DISPATCHER.connect_strong(sp.event.ShelfCrawlingEnded, proceed)
 		else:
-			_set_up(None)
+			proceed(None)
 
 	@staticmethod
 	def change_finish_style_shader(finish_style: str, callback):
@@ -143,7 +144,7 @@ class WeaponFinish:
 			else:
 				callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
 			
-		Resource.search(update_shader, "your_assets", "shader", f'cs2_{finish_style}')
+		Resource.search(update_shader, "your_assets", "shader", f'cs2_{finish_style.lower()}')
 
 	@staticmethod
 	def import_econ(weapon_finish: dict):
@@ -188,7 +189,7 @@ class WeaponFinish:
 				"cu": "CustomPaintJob",
 				"aq": "Patina",
 				"gs": "Gunsmith"
-			}.get(weapon_finish.get("finishStyle", "gs"))
+			}.get(weapon_finish.get("style", "gs"))
 
 			wear = weapon_finish.get("wearRange", [0.0, 1.0])
 
@@ -291,7 +292,7 @@ class WeaponFinish:
 			}
 			
 			# Masks
-			if weapon_finish.get("finishStyle", "gs") != "cu" and weapon_finish.get("uUseCustomMasks"):
+			if weapon_finish.get("style", "gs") != "cu" and weapon_finish.get("uUseCustomMasks"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_masks',
 					"channels" : [
