@@ -11,7 +11,7 @@ class Resource:
             if len(resources) > 0:
                 callback(resources)
             elif retries > 0:
-                sp.resource.Shelves.refresh_all()
+                Resource.refresh()
                 Resource.search(callback, shelf, usage, name, retries - 1)
             else:
                 callback([])
@@ -29,3 +29,8 @@ class Resource:
             sp.event.DISPATCHER.connect_strong(sp.event.ShelfCrawlingEnded, cb)
         else:
             search_shelf()
+
+    @staticmethod
+    def refresh():
+        sp.resource.Shelves.refresh_all()
+        

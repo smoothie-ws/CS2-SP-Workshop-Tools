@@ -18,8 +18,22 @@ class WeaponFinish:
 	]
 
 	@staticmethod
+	def current() -> dict:
+		return ProjectSettings.get("weapon_finish")
+    
+	@staticmethod
+	def dump(weapon_finish: dict):
+		ProjectSettings.set("weapon_finish", weapon_finish)
+        
+	@staticmethod
+	def set(key: str, value):
+		weapon_finish = WeaponFinish.current()
+		weapon_finish[key] = value
+		WeaponFinish.dump(weapon_finish)
+    
+	@staticmethod
 	def is_open() -> bool:
-		return sp.project.is_open() and ProjectSettings.get("weapon_finish") is not None
+		return sp.project.is_open() and WeaponFinish.current() is not None
     
 	@staticmethod
 	def create(mesh_file: str, weapon_finish: dict, callback):
@@ -109,7 +123,8 @@ class WeaponFinish:
 				)
 				if not Path.exists(econitem):
 					weapon_finish["econitem"] = econitem
-					WeaponFinish.export_econ(weapon_finish)
+					WeaponFinish.dump(weapon_finish)
+					WeaponFinish.export_econ()
 				else:
 					Log.warning(f'Failed to create .econitem file: path "{econitem}" already exists')
 
@@ -147,7 +162,8 @@ class WeaponFinish:
 		Resource.search(update_shader, "your_assets", "shader", f'cs2_{finish_style.lower()}')
 
 	@staticmethod
-	def import_econ(weapon_finish: dict):
+	def import_econ():
+		weapon_finish: dict = WeaponFinish.current()
 		econitem_path = weapon_finish.get("econitem", "")
 		if Path.exists(econitem_path):
 			with open(econitem_path, "r", encoding="utf-8") as f:
@@ -156,7 +172,8 @@ class WeaponFinish:
 			Log.error(f'Failed to import parameters from .econitem: Path {econitem_path} does not exists')
 
 	@staticmethod
-	def export_econ(weapon_finish: dict):
+	def export_econ():
+		weapon_finish: dict = WeaponFinish.current()
 		# helper functions
 		def uint8(value:float) -> int:
 			return int(math.floor(max(0.0, min(1.0, value)) * 255 + 0.5))
@@ -244,7 +261,8 @@ class WeaponFinish:
 				Log.error(f'Failed to sync .econitem file: {str(e)}')
 
 	@staticmethod
-	def export_textures(weapon_finish: dict):
+	def export_textures():
+		weapon_finish: dict = WeaponFinish.current()
 		folder_path = weapon_finish.get("texturesFolder", "")
 
 		if Path.exists(folder_path):

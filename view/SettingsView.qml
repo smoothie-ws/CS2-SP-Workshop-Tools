@@ -10,29 +10,6 @@ SPDialog {
     color: AlgStyle.background.color.mainWindow
     confirm.text: "Save"
 
-    Connections {
-        target: Plugin
-
-        function onDecompilationStarted() {
-            decompilationPopup.open();
-            onDecompilationUpdated(0.0, "Decompilation started")
-        }
-
-        function onDecompilationStateChanged(state) {
-            decompilationPopup.currentState = state;
-        }
-
-        function onDecompilationUpdated(p, msg) {
-            decompilationPopup.progress = p;
-            decompilationPopup.log += `\n[${Plugin.time()}]: ${msg}`;
-        }
-
-        function onDecompilationFinished() {
-            decompilationPopup.close();
-            weaponListWidgets.refresh();
-        }
-    }
-
     QtObject {
         id: internal
         
@@ -68,7 +45,7 @@ SPDialog {
             const id = weaponIdInput.text.trim();
             const name = weaponNameInput.text.trim();
             let exists = false;
-            for (const weapon of internal.weaponList)
+            for (const weapon of weaponList)
                 if (weapon.value == id || weapon.text == name) {
                     exists = true;
                     break;
@@ -77,18 +54,35 @@ SPDialog {
         }
 
         function addWeapon() {
-            internal.weaponList = [{
+            weaponList.push({
                 value: weaponIdInput.text.trim(),
                 text: weaponNameInput.text.trim()
-            }].concat(internal.weaponList);
+            });
             weaponIdInput.text = "";
             weaponNameInput.text = "";
             weaponIsValid = false;
+            syncWeaponList();
+        }
+
+        function remWeapon(weapon) {
+            for (let i = 0; i < weaponList.length; ++i) {
+                const w = weaponList[i];
+                if (w.value == weapon) {
+                    weaponList.splice(i, 1);
+                    syncWeaponList();
+                    return;
+                }
+            }
+        }
+
+        function syncWeaponList() {
+            weaponListWidgets.widgets = [];
+            weaponListRepater.model = weaponList;
         }
 
         function startDecompilation() {
             const m = [];
-            for (const weapon of internal.weaponList)
+            for (const weapon of weaponList)
                 m.push(weapon.value);
             Plugin.startDecompilation(m);
         }
@@ -125,9 +119,36 @@ SPDialog {
                     if (component !== undefined)
                         component.control[component.prop] = value;
                 }
-            weaponListWidgets.refresh();
+            internal.syncWeaponList();
         } catch (e) {
             Plugin.error(`Failed to open Plugin Settings: ${e.toString()}`);
+        }
+    }
+
+    DecompilationPopup {
+        id: decompilationPopup
+
+        Connections {
+            target: Plugin
+
+            function onDecompilationStarted() {
+                decompilationPopup.open();
+                onDecompilationUpdated(0.0, "Decompilation started")
+            }
+
+            function onDecompilationStateChanged(state) {
+                decompilationPopup.currentState = state;
+            }
+
+            function onDecompilationUpdated(progress, msg) {
+                decompilationPopup.progress = progress;
+                decompilationPopup.log += `[${Plugin.time()}]: ${msg}\n`;
+            }
+
+            function onDecompilationFinished() {
+                decompilationPopup.close();
+                weaponListWidgets.refresh();
+            }
         }
     }
 
@@ -218,7 +239,6 @@ SPDialog {
                         }
 
                         SPButton {
-                            id: decompileButton
                             text: "Decompile"
                             enabled: internal.cs2PathIsValid
                             icon.source: Plugin.asset("icons/export.png")
@@ -231,7 +251,7 @@ SPDialog {
                         }
 
                         SPButton {
-                            id: refreshButton
+                            text: "Refresh"
                             icon.source: "./SPWidgets/icons/cycle.png"
                             icon.width: 15
                             icon.height: 15
@@ -308,13 +328,11 @@ SPDialog {
                                     
                                     function refresh() {
                                         for (const widget of widgets)
-                                            widget.missingTextures = !Plugin.checkWeaponTextures(widget.weaponId);
+                                            widget.refresh();
                                     }
                                     
-                                    Component.onCompleted: refresh()
-                                    
                                     Repeater {
-                                        model: internal.weaponList
+                                        id: weaponListRepater
 
                                         delegate: Item {
                                             id: weapon
@@ -325,6 +343,10 @@ SPDialog {
                                             readonly property string weaponName: modelData.text
                                             
                                             property bool missingTextures: true
+
+                                            function refresh() {
+                                                missingTextures = !Plugin.checkWeaponTextures(weaponId);
+                                            }
 
                                             RowLayout {
                                                 spacing: 10
@@ -373,13 +395,14 @@ SPDialog {
                                                     background.color: "black"
                                                     background.opacity: hovered ? 0.5 : 0.25
 
-                                                    onClicked: internal.weaponList = internal.weaponList.filter(w => w.value != modelData.value)
+                                                    onClicked: internal.remWeapon(modelData.value)
                                                 }
                                             }
                                         }
 
                                         onItemAdded: (i, item) => {
                                             weaponListWidgets.widgets.push(item);
+                                            item.refresh();
                                         }
                                     }
                                 }
@@ -610,73 +633,6 @@ SPDialog {
                                 onItemAdded: (i, item) => internal.weaponFinish[model[i].id].control = item
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-    
-    SPPopup {
-        id: decompilationPopup
-        anchors.centerIn: parent
-        title: "Decompiling"
-        ignorable: false
-        closable: false
-        acceptable: false
-        cancelable: false
-
-        property real progress: 0.0
-        property string log: ""
-        property string currentState: "Decompiling"
-
-        content: ColumnLayout {
-            width: 400
-            spacing: 15
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Label {
-                    text: `${decompilationPopup.currentState}...`
-                    color: AlgStyle.text.color.normal
-                    Layout.fillWidth: true
-                }
-
-                Label {
-                    color: AlgStyle.text.color.normal
-                    text: `${parseInt(decompilationPopup.progress * 100)}%`
-                }
-            }
-
-            Rectangle {
-                height: 10
-                radius: 5
-                Layout.fillWidth: true
-                color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
-
-                Rectangle {
-                    height: parent.height
-                    radius: parent.radius
-                    width: Math.max(height, decompilationPopup.progress * parent.width)
-                    color: AlgStyle.text.color.normal
-                }
-            }
-            
-            Rectangle {
-                height: 50
-                radius: 5
-                Layout.fillWidth: true
-                color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
-
-                ScrollView {
-                    anchors.fill: parent
-                    clip: true
-
-                    Text {
-                        text: decompilationPopup.log
-                        color: AlgStyle.text.color.normal
-                        anchors.fill: parent
-                        anchors.margins: 10
                     }
                 }
             }

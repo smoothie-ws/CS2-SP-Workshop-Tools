@@ -4,6 +4,7 @@ import substance_painter as sp
 from .ui import UI
 from .log import Log
 from .path import Path
+from .resource import Resource
 
 
 class Plugin:
@@ -76,6 +77,9 @@ class Plugin:
         UI.clear()
         Plugin.save()
         cls.on_close()
+        while len(Plugin.files) > 0:
+            Path.remove(Plugin.files.pop(0))
+        Resource.refresh()
         Log.warning("Plugin closed")
     
     # to override

@@ -76,7 +76,7 @@ class Path:
     
     @staticmethod
     def show_in_explorer(path: str) -> None:
-        path = Path.norm(path) # explorer would choke on forward slashes
+        path = path.replace("/", "\\") # explorer would choke on forward slashes
         if os.path.isdir(path):
             subprocess.run(['explorer', path])
         elif os.path.isfile(path):

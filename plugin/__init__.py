@@ -1,16 +1,16 @@
 import webbrowser
 
-from .utils import Decompiler, Shader
+from .utils import Shader
 from .weapon_finish import WeaponFinish
 from .painter import UI, Plugin, Path, QmlView, Resource
 from .painter.qml import QtWidgets, QtGui
-from .controller import DockView, SettingsWindow, ClearDocsWindow
+from .controller import MainView, SettingsWindow, WeaponFinishInitWindow
 
 
 class CS2WT(Plugin):
-    dock_view: DockView = None
+    main_view: MainView = None
     settings_window: SettingsWindow = None
-    clear_docs_window: ClearDocsWindow = None
+    wf_init_window: WeaponFinishInitWindow = None
 
     @classmethod
     def start(cls, path):
@@ -24,23 +24,23 @@ class CS2WT(Plugin):
     @classmethod
     def on_close(cls):
         if WeaponFinish.is_open():
-            CS2WT.dock_view.pluginAboutToClose.emit()
+            CS2WT.main_view.pluginAboutToClose.emit()
     
     @classmethod
     def on_project_opened(cls):
         if WeaponFinish.is_open():
-            CS2WT.dock_view.projectKindChanged.emit(2)
+            CS2WT.main_view.projectKindChanged.emit(2)
         else:
-            CS2WT.dock_view.projectKindChanged.emit(1)
+            CS2WT.main_view.projectKindChanged.emit(1)
 
     @classmethod
     def on_project_about_to_save(cls):
         if WeaponFinish.is_open():
-            CS2WT.dock_view.projectAboutToSave.emit()
+            CS2WT.main_view.projectAboutToSave.emit()
 
     @classmethod
     def on_project_about_to_close(cls):
-        CS2WT.dock_view.projectKindChanged.emit(0)
+        CS2WT.main_view.projectKindChanged.emit(0)
 
     @staticmethod
     def on_help():
@@ -51,25 +51,19 @@ class CS2WT(Plugin):
         CS2WT.settings_window.open()
 
     @staticmethod
-    def on_clear_docs():
-        CS2WT.clear_docs_window.open()
-
-    @staticmethod
     def init_ui():
         # plugin menu
         menu = UI.add_menu(QtWidgets.QMenu("CS2 Workshop Tools"))
         menu.addAction("Help").triggered.connect(CS2WT.on_help)
         menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
-        menu.addSeparator()
-        menu.addAction("Clear documents").triggered.connect(CS2WT.on_clear_docs)
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
         # dock widget
-        CS2WT.dock_view = DockView(QmlView.view_path("DockView.qml"), icon)
+        CS2WT.main_view = MainView(QmlView.view_path("DockView.qml"), icon)
         # settings window
         CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
-        # clear docs window
-        CS2WT.clear_docs_window = ClearDocsWindow(QmlView.view_path("ClearDocsView.qml"), icon)
+        # weapon finish init window
+        CS2WT.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon)
         
     @staticmethod
     def checkout():
@@ -83,10 +77,10 @@ class CS2WT(Plugin):
         shader_path = Path.asset("shader")
         for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
             sp_shader_file_path = Path.join(sp_shaders_path, f'cs2_{fs}.glsl')
+            Plugin.push_file(sp_shader_file_path)
             if not Path.exists(sp_shader_file_path):
                 with open(sp_shader_file_path, "w", encoding="utf-8") as f:
                     f.write(Shader.process(shader_source, {"FINISH_STYLE": i}))
-                    Plugin.push_file(sp_shader_file_path)
 
         def set_previews(shader_resources):
             for shader_resource in shader_resources:
@@ -98,7 +92,7 @@ class CS2WT(Plugin):
 
         # shader ui
         sp_shader_ui_path = Path.join(sp_shaders_ui_path, "cs2-ui.qml")
+        Plugin.push_file(sp_shader_ui_path)
         if not Path.exists(Path.join(sp_shaders_ui_path, "ui.qml")):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
-            Plugin.push_file(sp_shader_ui_path)
             

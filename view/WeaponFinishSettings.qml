@@ -14,7 +14,8 @@ ColumnLayout {
     spacing: 0
 
     property bool ready: false
-
+    property alias weaponFinish: weaponFinish
+    
     Component.onCompleted: {
         styleBox.currentKeyChanged.connect(() => {
             if (ready)
@@ -62,19 +63,6 @@ ColumnLayout {
         } catch (e) {
             Plugin.error(`Failed to load Weapon Finish: ${e}`);
         }
-    }
-
-    function dumpWeaponFinish() {
-        weaponFinish.dump();
-    }
-
-    // when user changes finish style, the corresponding shader instance has outdated parameter values
-    function syncWeaponFinishShader() {
-        weaponFinish.syncShader();
-    }
-
-    function syncWeaponFinishEcon() {
-        weaponFinish.syncEcon();
     }
 
     function importTexture(url) {
@@ -150,41 +138,25 @@ ColumnLayout {
         function connect() {
             for (const [param, component] of Object.entries(parameters)) 
                 if (isShaderParameter(param)) {
-                    if (["filePath", "url"].includes(component.prop))
-                        component.control[component.prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${component.control[component.prop]}"`)
+                    const control = component.control;
+                    const prop = component.prop;
+                    if (["filePath", "url"].includes(prop))
+                        control[prop + "Changed"].connect(() => 
+                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${control[prop]}"`)
                         );
-                    else if (["range", "arrayColor", "transform"].includes(component.prop))
-                        component.control[component.prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${component.control[component.prop]}]`)
+                    else if (["range", "arrayColor", "transform"].includes(prop))
+                        control[prop + "Changed"].connect(() => 
+                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${control[prop]}]`)
                         );
                     else
-                        component.control[component.prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${component.control[component.prop]}`)
+                        control[prop + "Changed"].connect(() => 
+                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${control[prop]}`)
                         );
                 }
         }
 
-        // dump weapon finish parameters
         function dump() {
             Plugin.dumpWeaponFinish(JSON.stringify(getParams()));
-        }
-
-        // sync weapon finish econ parameters
-        function syncEcon() {
-            Plugin.syncWeaponFinish(JSON.stringify(getParams()));
-        }
-
-        function updateEconItemPath(path) {
-            const values = loadWeaponFinishProject();
-            values["econitem"] = path;
-            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
-        }
-
-        function updateTexturesFolderPath(path) {
-            const values = loadWeaponFinishProject();
-            values["texturesFolder"] = path;
-            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
         }
 
         function syncShader() {
@@ -198,6 +170,23 @@ ColumnLayout {
                     else
                         Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${value}`);
                 }
+        }
+
+        function syncEcon() {
+            dump();
+            Plugin.syncWeaponFinish();
+        }
+
+        function updateEconItemPath(path) {
+            const values = loadWeaponFinishProject();
+            values["econitem"] = path;
+            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
+        }
+
+        function updateTexturesFolderPath(path) {
+            const values = loadWeaponFinishProject();
+            values["texturesFolder"] = path;
+            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
         }
 
         function resetParameter(parameter) {
@@ -291,7 +280,7 @@ ColumnLayout {
 
                     property string filePath: ""
 
-                    onFilePathChanged: weaponFinish.updateEconItemPath(filePath)
+                    onFilePathChanged: Plugin.updateEconItemPath(filePath)
 
                     Label {
                         clip: true
@@ -354,7 +343,7 @@ ColumnLayout {
 
                     property string filePath: ""
 
-                    onFilePathChanged: weaponFinish.updateTexturesFolderPath(filePath)
+                    onFilePathChanged: Plugin.updateTexturesFolderPath(filePath)
 
                     Label {
                         clip: true
@@ -514,8 +503,6 @@ ColumnLayout {
             width: root.width - 20
             spacing: 10
             enabled: enableLivePreview.checked
-
-            SPSeparator { Layout.fillWidth: true }
 
             SPGroup {
                 id: common

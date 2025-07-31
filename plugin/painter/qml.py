@@ -2,7 +2,7 @@ import json
 import substance_painter as sp
 
 from abc import abstractmethod
-from time import gmtime, strftime
+from time import localtime, strftime
 
 from .log import Log
 from .path import Path
@@ -59,7 +59,7 @@ class QmlView(QtCore.QObject):
     
     @QtCore.Slot(result=str)
     def time(self) -> str:
-        return strftime("%H:%M:%S", gmtime())
+        return strftime("%H:%M:%S", localtime())
     
     @QtCore.Slot(str, result=str)
     def asset(self, path: str) -> str:

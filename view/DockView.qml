@@ -25,15 +25,15 @@ Rectangle {
         }
 
         function onProjectAboutToSave() {
-            weaponFinishSettings.syncWeaponFinishEcon();
+            weaponFinishSettings.weaponFinish.syncEcon();
         }
 
         function onStyleReady() {
-            weaponFinishSettings.syncWeaponFinishShader();
+            weaponFinishSettings.weaponFinish.syncShader();
         }
 
         function onPluginAboutToClose() {
-            weaponFinishSettings.dumpWeaponFinish();
+            weaponFinishSettings.weaponFinish.dump();
         }
     }
 
