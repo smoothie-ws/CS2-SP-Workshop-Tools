@@ -1,17 +1,6 @@
 {
     "version": "0.0.1a",
-    "files": [
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/custom-ui/cs2-ui.qml",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_so.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_hy.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_sp.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_an.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_am.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_aa.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_cu.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_aq.glsl",
-        "C:/Users/kibot/Documents/Adobe/Adobe Substance 3D Painter/assets/shaders/cs2_gs.glsl"
-    ],
+    "files": [],
     "settings": {
         "cs2_path": "",
         "weapon_list": {
@@ -97,9 +86,7 @@
             ],
             "uUseCustomNormal": true,
             "uUseCustomMasks": true,
-            "uUseCustomAOTex": true,
-            "name": "",
-            "weapon": "aug"
+            "uUseCustomAOTex": true
         },
         "ignore_textures_are_missing": false
     }

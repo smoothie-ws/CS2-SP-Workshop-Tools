@@ -56,14 +56,14 @@ class CS2WT(Plugin):
 
     @staticmethod
     def init_ui():
-        icon = QtGui.QIcon(Path.asset("ui", "icons", "logo.png"))
-        
         # plugin menu
         menu = UI.add_menu(QtWidgets.QMenu("CS2 Workshop Tools"))
         menu.addAction("Help").triggered.connect(CS2WT.on_help)
         menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
         menu.addSeparator()
         menu.addAction("Clear documents").triggered.connect(CS2WT.on_clear_docs)
+        
+        icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
         # dock widget
         CS2WT.dock_view = DockView(QmlView.view_path("DockView.qml"), icon)
         # settings window
@@ -101,8 +101,4 @@ class CS2WT(Plugin):
         if not Path.exists(Path.join(sp_shaders_ui_path, "ui.qml")):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
             Plugin.push_file(sp_shader_ui_path)
-
-        missing_weapon_list = Decompiler.checkout_weapon_textures()
-        if len(missing_weapon_list) > 0 and not Plugin.settings.get("ignore_textures_are_missing"):
-            CS2WT.dock_view.texturesAreMissing.emit()
             

@@ -44,7 +44,7 @@ ColumnLayout {
     SPButton {
         id: groupButton
         checkable: true
-        checked: enabled ? checked : true
+        checked: true
         opacity: 1.0
         checker.visible: false
         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter

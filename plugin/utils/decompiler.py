@@ -3,59 +3,48 @@ import threading
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-from ..painter import Path, Plugin
+from ..painter import Path
 
 
-class Decompiler:
-    weapon_list = []
-    progress = 0.0
-    vrf_path = ""
-
+class Decompiler:    
     @staticmethod
-    def checkout_weapon_textures() -> list:
-        weapon_list = Plugin.settings.get("weapon_list", {}).copy()
-        models_path = Path.asset("textures", "models")
-        if Path.exists(models_path):
-            for weapon in Path.listdir(models_path):
-                flag = True
-                weapon_path = Path.join(models_path, weapon)
-                for tex in ["color", "cavity", "masks", "rough", "surface"]:
-                    if not Path.exists(Path.join(weapon_path, f'{weapon}_{tex}.png')):
-                        flag = False
-                        break
-                    
-                if flag and weapon_list.get(weapon) is not None:
-                    weapon_list.pop(weapon)
-        
-        return weapon_list
-            
+    def check_weapon_textures(weapon:str) -> bool:
+        weapon_path = Path.asset("textures", "models", weapon)
+        for tex in ["color", "cavity", "masks", "rough", "surface"]:
+            if not Path.exists(Path.join(weapon_path, f'{weapon}_{tex}.png')):
+                return False
+        return True
+    
     @staticmethod
-    def decompile(pak_path: str, out_path: str, state_callback, update_callback):
-        Decompiler.progress = 0.0
-        Decompiler.vrf_path = Path.asset("vrf")
-        weapon_list_len = len(Decompiler.weapon_list)
+    def decompile(pak_path: str, out_path: str, weapon_list: list, state_callback, update_callback):
+        weapon_list_len = len(weapon_list)
 
         models_path = Path.join(out_path, "models")
-        if not Path.exists(models_path):
-            Path.makedirs(models_path)
+        Path.remove(models_path) # clear
+        Path.makedirs(models_path)
 
+        progress = 0.0
+        
         def task():
             # extract
             temp_path = Path.join(out_path, "temp")
             temp_models_path = Path.join(temp_path, "weapons", "models")
             state_callback("Extracting textures from pak01_dir.vpk")
             Decompiler.run(f'-i "{pak_path}" --vpk_filepath "weapons/models" -e "vtex_c" -o "{temp_path}"')
-            with ThreadPoolExecutor(max_workers=6) as executor:
+            
+            with ThreadPoolExecutor() as executor:
                 futures = []
-                # decompile
+                
                 def ucb(w):
-                    Decompiler.progress += 1 / weapon_list_len
-                    update_callback(Decompiler.progress, w)
+                    nonlocal progress
+                    progress += 1 / weapon_list_len
+                    update_callback(progress, w)
 
+                # decompile
                 for w in Path.listdir(temp_models_path):
                     w_path = Path.join(temp_models_path, w)
                     mat_path = Path.join(w_path, "materials")
-                    if w in Decompiler.weapon_list or not Path.exists(mat_path):
+                    if not (w in weapon_list and Path.exists(mat_path)) or Decompiler.check_weapon_textures(w):
                         Path.remove(w_path)
                         continue
                     futures.append(executor.submit(Decompiler.process, w, w_path, mat_path, state_callback, ucb))
@@ -109,26 +98,25 @@ class Decompiler:
 
     @staticmethod
     def decompile_vtex(folder: str, name: str, tgt_name: str):
-        # decompile
         src = Path.join(folder, name)
         tgt = src.replace("vtex_c", "png")
         Decompiler.run(f'-i "{src}" -o "{tgt}"')
+        
         tgt_path = Path.join(folder, tgt_name)
         if Path.exists(tgt_path):
             Path.remove(tgt_path)
+            
         Path.rename(tgt, tgt_path)
-        # clear
         Path.remove(src)
 
     @staticmethod
     def run(cmd: str):
-        process = subprocess.Popen(
+        subprocess.run(
             f'Source2Viewer-CLI.exe {cmd}',
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=Decompiler.vrf_path,
+            cwd=Path.asset("vrf"),
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         )
-        stdout, stderr = process.communicate()
-        return process.returncode, stdout.decode('utf-8'), stderr.decode('utf-8')
+        

@@ -73,106 +73,113 @@ SPDialog {
             }
     }
 
-    SPLabeled {
-        text: "Mesh file"
-        visible: root.isNew
-        Layout.fillWidth: true
-
-        RowLayout {
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 10
+        
+        SPLabeled {
+            text: "Mesh file"
+            visible: root.isNew
             Layout.fillWidth: true
-            
-            Label {
-                text: root.meshFile
-                clip: true
-                color: AlgStyle.text.color.normal
-                opacity: 0.5
-                elide: Text.ElideLeft
-                horizontalAlignment: Text.AlignLeft
+
+            RowLayout {
                 Layout.fillWidth: true
-            }
-
-            SPButton {
-                text: "Select"
                 
-                onClicked: fileDialog.open()
+                Label {
+                    text: root.meshFile
+                    clip: true
+                    color: AlgStyle.text.color.normal
+                    opacity: 0.5
+                    elide: Text.ElideLeft
+                    horizontalAlignment: Text.AlignLeft
+                    Layout.fillWidth: true
+                }
 
-                SPFileDialog {
-                    id: fileDialog
-                    title: "Select file"
-                    nameFilters: [ "Mesh Files (*.fbx *.abc *.obj *.dae *.ply *.gltf *.glb *.usd *.usda *.usdc *.usdz)" ]
-                    onAccepted: root.meshFile = fileUrl.toString().substring(8);
+                SPButton {
+                    text: "Select"
+                    
+                    onClicked: fileDialog.open()
+
+                    SPFileDialog {
+                        id: fileDialog
+                        title: "Select file"
+                        nameFilters: [ "Mesh Files (*.fbx *.abc *.obj *.dae *.ply *.gltf *.glb *.usd *.usda *.usdc *.usdz)" ]
+                        onAccepted: root.meshFile = fileUrl.toString().substring(8);
+                    }
                 }
             }
         }
-    }
 
-    SPSeparator { 
-        visible: root.isNew
-        Layout.fillWidth: true 
-    }
+        SPSeparator { 
+            visible: root.isNew
+            Layout.fillWidth: true 
+        }
 
-    SPLabeled {
-        id: nameInput
-        text: "Name"
-        enabled: nameStatus > 0
-        scopeWidth: root.scopeWidth
-        Layout.fillWidth: true
-
-        property string name: null
-        property int nameStatus: Plugin.valWeaponFinishName(name)
-        property bool nameIsValid: nameStatus < 2;
-
-        Rectangle {
-            color: "transparent"
-            radius: 13.5
-            width: 100
-            height: 30
-            border.width: 2
-            border.color: nameInput.nameStatus > 0 ? (nameInput.nameIsValid ? "transparent" : "red") : "transparent"
+        SPLabeled {
+            id: nameInput
+            text: "Name"
+            enabled: nameStatus > 0
+            scopeWidth: root.scopeWidth
             Layout.fillWidth: true
-            
-            SPTextInput {
-                text: nameInput.name
-                anchors.fill: parent
-                anchors.margins: parent.border.width + 2
 
-                onTextEdited: nameInput.name = text
+            property string name: null
+            property int nameStatus: Plugin.valWeaponFinishName(name)
+            property bool nameIsValid: nameStatus < 2;
+
+            Rectangle {
+                color: "transparent"
+                radius: 13.5
+                width: 100
+                height: 30
+                border.width: 2
+                border.color: nameInput.nameStatus > 0 ? (nameInput.nameIsValid ? "transparent" : "red") : "transparent"
+                Layout.fillWidth: true
+                
+                SPTextInput {
+                    text: nameInput.name
+                    anchors.fill: parent
+                    anchors.margins: parent.border.width + 2
+
+                    onTextEdited: nameInput.name = text
+                }
             }
         }
-    }
 
-    SPLabeled {
-        text: "Weapon"
-        scopeWidth: root.scopeWidth
-        Layout.fillWidth: true
-
-        SPComboBox {
-            id: weaponBox
-            currentIndex: -1
+        SPLabeled {
+            text: "Weapon"
+            scopeWidth: root.scopeWidth
             Layout.fillWidth: true
-            map: JSON.parse(Plugin.getWeaponList())
-        }
-    }
-    
-    SPLabeled {
-        text: "Finish Style"
-        scopeWidth: root.scopeWidth
-        Layout.fillWidth: true
 
-        SPComboBox {
-            id: styleBox
-            Layout.fillWidth: true
-            map: {
-                "so": "Solid Color",
-                "hy": "Hydrographic",
-                "sp": "Spray Paint",
-                "an": "Anodized",
-                "am": "Anodized Multicolored",
-                "aa": "Anodized Airbrushed",
-                "cu": "Custom Paint Job",
-                "aq": "Patina",
-                "gs": "Gunsmith"
+            SPComboBox {
+                id: weaponBox
+                currentIndex: -1
+                Layout.fillWidth: true
+                map: JSON.parse(Plugin.getWeaponList())
             }
         }
+        
+        SPLabeled {
+            text: "Finish Style"
+            scopeWidth: root.scopeWidth
+            Layout.fillWidth: true
+
+            SPComboBox {
+                id: styleBox
+                Layout.fillWidth: true
+                map: {
+                    "so": "Solid Color",
+                    "hy": "Hydrographic",
+                    "sp": "Spray Paint",
+                    "an": "Anodized",
+                    "am": "Anodized Multicolored",
+                    "aa": "Anodized Airbrushed",
+                    "cu": "Custom Paint Job",
+                    "aq": "Patina",
+                    "gs": "Gunsmith"
+                }
+            }
+        }
+
+        Item { Layout.fillHeight: true }
     }
 }

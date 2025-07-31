@@ -42,8 +42,12 @@ class Path:
         shutil.copyfile(src, dst)
     
     @staticmethod
-    def replace(src: str, dst: str) -> None:
-        os.replace(src, dst)
+    def replace(src: str, dst: str) -> bool:
+        try:
+            os.replace(src, dst)
+            return True
+        except:
+            return False
     
     @staticmethod
     def isdir(path: str) -> bool:

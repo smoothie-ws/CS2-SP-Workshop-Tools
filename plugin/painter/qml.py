@@ -1,11 +1,13 @@
-from abc import abstractmethod
 import json
 import substance_painter as sp
+
+from abc import abstractmethod
+from time import gmtime, strftime
 
 from .log import Log
 from .path import Path
 from .plugin import Plugin
-from .ui import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui
+from .ui import UI, QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui
 
 
 class QmlView(QtCore.QObject):
@@ -55,9 +57,13 @@ class QmlView(QtCore.QObject):
             Log.error(f'Failed to evaluate js code: {str(e)}')
             Log.info(code)
     
+    @QtCore.Slot(result=str)
+    def time(self) -> str:
+        return strftime("%H:%M:%S", gmtime())
+    
     @QtCore.Slot(str, result=str)
     def asset(self, path: str) -> str:
-        return "file:" + Path.asset(path)
+        return f'file:{Path.asset(path)}'
     
     @QtCore.Slot(str)
     def info(self, msg: str):
@@ -86,24 +92,24 @@ class QmlView(QtCore.QObject):
     
 class QmlWindow(QmlView):
     def __init__(self, title: str, icon: QtGui.QIcon = None, name: str = "Plugin", path: str = None):
-        def on_closed(event: QtGui.QCloseEvent):
-            self.closed.emit()
-            event.accept()
-            
-        self.window = QtWidgets.QMainWindow(
+        self.window = UI.add_window(QtWidgets.QMainWindow(
             parent=sp.ui.get_main_window(),
             flags=QtCore.Qt.WindowType.Window | 
                 QtCore.Qt.WindowType.CustomizeWindowHint | 
                 QtCore.Qt.WindowType.WindowTitleHint | 
                 QtCore.Qt.WindowType.WindowCloseButtonHint
-        )
+        ))
+        super().__init__(name, path)
+        
+        def on_closed(event: QtGui.QCloseEvent):
+            self.closed.emit()
+            event.accept()
+            
+        self.window.closeEvent = on_closed
         self.window.setWindowIcon(icon)
         self.window.setWindowTitle(title)
         self.window.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
-        self.window.closeEvent = on_closed
         
-        super().__init__(name, path)
-    
     opened = QtCore.Signal()
     closed = QtCore.Signal()
     

@@ -2,7 +2,7 @@ import QtQuick 2.15
 import QtQuick.Window 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.15
-import Painter 1.0
+import QtGraphicalEffects 1.15
 import AlgWidgets.Style 2.0
 import "./SPWidgets"
 
@@ -18,35 +18,20 @@ Rectangle {
     Connections {
         target: Plugin
 
-        function onTexturesAreMissing() {
-            texturesAreMissingPopup.open();
-        }
-        function onCs2PathIsMissing() {
-            cs2PathIsMissingPopup.open();
-        }
-        function onDecompilationStarted() {
-            decompilingProgressPopup.open();
-        }
-        function onDecompilationStateChanged(state) {
-            decompilingProgressPopup.decompilationState = state;
-        }
-        function onDecompilationUpdated(progress, weapon) {
-            decompilingProgressPopup.update(progress, weapon);
-        }
-        function onDecompilationFinished() {
-            decompilingProgressPopup.close();
-        }
         function onProjectKindChanged(projectKind) {
             root.projectKind = projectKind;
             if (projectKind == 2)
                 weaponFinishSettings.loadWeaponFinish();
         }
+
         function onProjectAboutToSave() {
             weaponFinishSettings.syncWeaponFinishEcon();
         }
+
         function onStyleReady() {
             weaponFinishSettings.syncWeaponFinishShader();
         }
+
         function onPluginAboutToClose() {
             weaponFinishSettings.dumpWeaponFinish();
         }
@@ -62,16 +47,28 @@ Rectangle {
             id: header
             Layout.fillWidth: true
 
-            SPSeparator { Layout.fillWidth: true }
-
             SPButton {
                 text: "New Weapon Finish"
                 tooltip.text: "Create new project and set it up as a Weapon Finish"
                 icon.source: Plugin.asset("icons/add.png")
-                icon.width: 18
-                icon.height: 18
+                icon.width: 14
+                icon.height: 14
                 Layout.alignment: Qt.AlignCenter
+
                 onClicked: Plugin.initWeaponFinish(true)
+            }
+
+            SPSeparator { Layout.fillWidth: true }
+
+            SPButton {
+                text: "Settings"
+                tooltip.text: "Open Plugin settings"
+                icon.source: Plugin.asset("icons/settings.png")
+                icon.width: 14
+                icon.height: 14
+                Layout.alignment: Qt.AlignCenter
+
+                onClicked: Plugin.openSettings()
             }
         }
 
@@ -84,16 +81,21 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            ScrollView {
+            WeaponFinishSettings {
+                id: weaponFinishSettings
                 anchors.fill: parent
-                clip: true
-
-                WeaponFinishSettings {
-                    id: weaponFinishSettings
-                    x: 10
-                    y: 10
-                    width: main.width - 25
-                    enabled: root.projectKind == 2
+                anchors.margins: 10
+                enabled: root.projectKind == 2
+                layer.enabled: root.projectKind !== 2
+                layer.effect: GaussianBlur {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    anchors.rightMargin: 15
+                    transparentBorder: true
+                    source: weaponFinishSettings
+                    radius: 4
+                    samples: 8
+                    deviation: 2
                 }
             }
 
@@ -122,7 +124,7 @@ Rectangle {
                     text: "Set up as Weapon Finish"
                     visible: root.projectKind == 1
                     tooltip.text: "Set up opened project as Weapon Finish"
-                    icon.source: Plugin.asset("icons/setup.png")
+                    icon.source: Plugin.asset("icons/settings.png")
                     icon.width: 18
                     icon.height: 18
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignTop

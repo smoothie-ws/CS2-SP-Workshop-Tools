@@ -37,11 +37,10 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: 20
         
-        ColumnLayout {
+        Item {
             id: content
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 10
         }
 
         RowLayout {

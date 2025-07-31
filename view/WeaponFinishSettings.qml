@@ -11,6 +11,7 @@ import "./SPWidgets/math.js" as MathUtils
 
 ColumnLayout {
     id: root
+    spacing: 0
 
     property bool ready: false
 
@@ -244,9 +245,10 @@ ColumnLayout {
 
     Rectangle {
         id: general
-        color: Qt.rgba(1, 1, 1, 0.05)
+        z: 1
+        color: "#333333"
         border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.1)
+        border.color: "#3b3b3b"
         radius: 10
         Layout.fillWidth: true
         height: generalLayout.implicitHeight + generalLayout.anchors.margins * 2
@@ -455,320 +457,329 @@ ColumnLayout {
 
                 Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
             }
+
+            SPGroup {
+                id: baseTextures
+                Layout.fillWidth: true
+                toggled: false
+                text: "Base Textures"
+
+                Repeater {
+                    model: [
+                        { param: "uGrungeTex",        text: "Grunge"            },
+                        { param: "uScratchesTex",     text: "Wear"              },
+                        { param: "uBaseColor",        text: "Base Color"        },
+                        { param: "uBaseRough",        text: "Roughness"         },
+                        { param: "uBaseMasks",        text: "Masks"             },
+                        { param: "uBaseSurface",      text: "Surface"           },
+                        { param: "uBaseCavity",       text: "Cavity"            }
+                    ]
+                    delegate: SPParameter {
+                        property alias url: resourcePicker.url
+                        property alias scopeWidth: resourceLabel.scopeWidth
+
+                        SPLabeled {
+                            id: resourceLabel
+                            text: modelData.text
+
+                            SPResourcePicker {
+                                id: resourcePicker
+                                Layout.fillWidth: true
+                                filters: AlgResourcePicker.TEXTURE
+                            }
+                        }
+
+                        onResetRequested: weaponFinish.resetParameter(modelData.param)
+                    }
+
+                    onItemAdded: (i, control) => {
+                        weaponFinish.parameters[model[i].param].control = control;
+                        baseTextures.scopeWidth = Math.max(baseTextures.scopeWidth, control.scopeWidth);
+                        control.scopeWidth = Qt.binding(() => baseTextures.scopeWidth);
+                    }
+                }
+            }
         }
     }
 
-    SPGroup {
-        id: baseTextures
+    ScrollView {
+        clip: true
         Layout.fillWidth: true
-        toggled: false
-        text: "Base Textures"
+        Layout.fillHeight: true
+        leftPadding: 10
+        topPadding: 10
+        bottomPadding: 10
 
-        Repeater {
-            model: [
-                { param: "uGrungeTex",        text: "Grunge"            },
-                { param: "uScratchesTex",     text: "Wear"              },
-                { param: "uBaseColor",        text: "Base Color"        },
-                { param: "uBaseRough",        text: "Roughness"         },
-                { param: "uBaseMasks",        text: "Masks"             },
-                { param: "uBaseSurface",      text: "Surface"           },
-                { param: "uBaseCavity",       text: "Cavity"            }
-            ]
-            delegate: SPParameter {
-                property alias url: resourcePicker.url
-                property alias scopeWidth: resourceLabel.scopeWidth
+        ColumnLayout {
+            width: root.width - 20
+            spacing: 10
+            enabled: enableLivePreview.checked
+
+            SPSeparator { Layout.fillWidth: true }
+
+            SPGroup {
+                id: common
+                Layout.fillWidth: true
+                text: "Common"
+
+                property int seed: 0
+
+                onSeedChanged: {
+                    texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
+                    texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
+                    texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
+                }
 
                 SPLabeled {
-                    id: resourceLabel
-                    text: modelData.text
+                    text: "Seed"
+                    enabled: enableLivePreview.checked
+                    Layout.fillWidth: true
 
-                    SPResourcePicker {
-                        id: resourcePicker
-                        Layout.fillWidth: true
-                        filters: AlgResourcePicker.TEXTURE
+                    SPSeparator { Layout.fillWidth: true }
+
+                    SPTextInput {
+                        Layout.preferredWidth: 45
+                        text: common.seed
+                        validator: RegExpValidator { regExp: /^-?[0-9]*/ }
+                        onEditingFinished: common.seed = MathUtils.clamp(parseInt(text), 0, 9999);
+                    }
+
+                    SPButton {
+                        id: randomButton
+                        text: "Random"
+                        tooltip.text: "Generate random seed number"
+
+                        onPressed: common.seed = Math.floor(Math.random() * 1000)
                     }
                 }
 
-                onResetRequested: weaponFinish.resetParameter(modelData.param)
+                SPParameter {
+                    SPSlider {
+                        id: wearAmount
+                        text: `Wear Amount (${
+                            value < 0.07 ? "Factory New" : (
+                            value < 0.15 ? "Minimal Wear" : (
+                            value < 0.37 ? "Field Tested" : (
+                            value < 0.44 ? "Well Worn" : 
+                            "Battle Scarred")))
+                        })`
+                        from: wearRange.minValue.toFixed(2)
+                        to: wearRange.maxValue.toFixed(2)
+                        onValueChanged: wearRange.value = value
+                    }
+                    onResetRequested: weaponFinish.resetParameter("uWearAmt")
+                }
+
+                SPParameter {
+                    SPSlider {
+                        id: texScale
+                        text: "Texture Scale"
+                        from: -10
+                        to: 10
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: weaponFinish.resetParameter("texScale")
+                }
+
+                SPParameter {
+                    SPButton {
+                        id: ignoreWeaponSizeScale
+                        text: "Ignore Weapon Size Scale"
+                        Layout.fillWidth: true
+                        checkable: true
+                        tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
+                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                    }
+                    onResetRequested: weaponFinish.resetParameter("uIgnoreWeaponSizeScale")
+                }
             }
 
-            onItemAdded: (i, control) => {
-                weaponFinish.parameters[model[i].param].control = control;
-                baseTextures.scopeWidth = Math.max(baseTextures.scopeWidth, control.scopeWidth);
-                control.scopeWidth = Qt.binding(() => baseTextures.scopeWidth);
-            }
-        }
-    }
-
-    SPSeparator { Layout.fillWidth: true }
-
-    ColumnLayout {
-        Layout.fillWidth: true
-        spacing: 10
-        enabled: enableLivePreview.checked
-
-        SPGroup {
-            id: common
-            Layout.fillWidth: true
-            text: "Common"
-
-            property int seed: 0
-
-            onSeedChanged: {
-                texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
-                texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
-                texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
-            }
-
-            SPLabeled {
-                text: "Seed"
-                enabled: enableLivePreview.checked
+            SPGroup {
                 Layout.fillWidth: true
+                text: "Texture Placement"
+
+                SPParameter {
+                    SPRangeSlider {
+                        id: texRotation
+                        text: "Texture Rotation"
+                        from: -360
+                        to: 360
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: weaponFinish.resetParameter("texRotationRange")
+                }
+
+                SPParameter {
+                    SPRangeSlider {
+                        id: texOffsetX
+                        text: "Texture Offset X"
+                        from: -1
+                        to: 1
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: weaponFinish.resetParameter("texOffsetXRange")
+                }
+
+                SPParameter {
+                    SPRangeSlider {
+                        id: texOffsetY
+                        text: "Texture Offset Y"
+                        from: -1
+                        to: 1
+                        onValueChanged: texTransform.sync()
+                    }
+                    onResetRequested: weaponFinish.resetParameter("texOffsetYRange")
+                }
+            }
+
+            SPGroup {
+                id: colorGroup
+                Layout.fillWidth: true
+                text: "Color"
+                visible: styleBox.currentIndex != 6
+
+                Repeater {
+                    model: [
+                        [
+                            { text: "Base Metal", tooltip: "The metal before patina, revealed through scratches" }, 
+                            { text: "Base Coat", tooltip: "Color that covers all paintable areas of the weapon" }
+                        ], 
+                        [
+                            { text: "Patina Tint", tooltip: "Tint of the newly applied patina" }, 
+                            { text: "Red Channel", tooltip: "Color to store in the Red Channel of the texture" }
+                        ], 
+                        [
+                            { text: "Patina Wear", tooltip: "Tint of the aged patina" }, 
+                            { text: "Green Channel", tooltip: "Color to store in the Green Channel of the texture" }
+                        ], 
+                        [
+                            { text: "Grime", tooltip: "Color of the grime, oil accretion, or oxide that accumulates in cavities" }, 
+                            { text: "Blue Channel", tooltip: "Color to store in the Blue Channel of the texture" }
+                        ]
+                    ]
+                    delegate: SPParameter {
+                        Layout.fillWidth: true
+
+                        property alias scopeWidth: colorPickerWidget.scopeWidth
+                        property alias arrayColor: colorPicker.arrayColor
+
+                        SPLabeled {
+                            id: colorPickerWidget
+                            Layout.fillWidth: true
+                            text: styleBox.currentIndex > 6 ? modelData[0].text : modelData[1].text
+                            SPColorButton { 
+                                id: colorPicker
+                                Layout.fillWidth: true
+                                tooltip.text: styleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
+                            }
+                        }
+                        onResetRequested: weaponFinish.resetParameter(`uCol${index}`)
+                    }
+
+                    onItemAdded: (i, control) => {
+                        colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, control.scopeWidth);
+                        control.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
+                        weaponFinish.parameters[`uCol${i}`].control = control;
+                    }
+                }
+            }
+
+            SPGroup {
+                Layout.fillWidth: true
+                text: "Effects"
+
+                SPParameter {
+                    SPRangeSlider {
+                        id: wearRange
+                        text: "Wear Range"
+                        minValue: 0.0
+                        maxValue: 1.0
+                        onValueChanged: wearAmount.value = value
+                    }
+                    onResetRequested: {
+                        weaponFinish.resetParameter("wearRange"); 
+                        weaponFinish.resetParameter("uWearAmt");
+                    }
+                }
 
                 SPSeparator { Layout.fillWidth: true }
 
-                SPTextInput {
-                    Layout.preferredWidth: 45
-                    text: common.seed
-                    validator: RegExpValidator { regExp: /^-?[0-9]*/ }
-                    onEditingFinished: common.seed = MathUtils.clamp(parseInt(text), 0, 9999);
-                }
-
-                SPButton {
-                    id: randomButton
-                    text: "Random"
-                    tooltip.text: "Generate random seed number"
-
-                    onPressed: common.seed = Math.floor(Math.random() * 1000)
-                }
-            }
-
-            SPParameter {
-                SPSlider {
-                    id: wearAmount
-                    text: `Wear Amount (${
-                        value < 0.07 ? "Factory New" : (
-                        value < 0.15 ? "Minimal Wear" : (
-                        value < 0.37 ? "Field Tested" : (
-                        value < 0.44 ? "Well Worn" : 
-                        "Battle Scarred")))
-                    })`
-                    from: wearRange.minValue.toFixed(2)
-                    to: wearRange.maxValue.toFixed(2)
-                    onValueChanged: wearRange.value = value
-                }
-                onResetRequested: weaponFinish.resetParameter("uWearAmt")
-            }
-
-            SPParameter {
-                SPSlider {
-                    id: texScale
-                    text: "Texture Scale"
-                    from: -10
-                    to: 10
-                    onValueChanged: texTransform.sync()
-                }
-                onResetRequested: weaponFinish.resetParameter("texScale")
-            }
-
-            SPParameter {
-                SPButton {
-                    id: ignoreWeaponSizeScale
-                    text: "Ignore Weapon Size Scale"
-                    Layout.fillWidth: true
-                    checkable: true
-                    tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
-                    contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
-                }
-                onResetRequested: weaponFinish.resetParameter("uIgnoreWeaponSizeScale")
-            }
-        }
-
-        SPGroup {
-            Layout.fillWidth: true
-            text: "Texture Placement"
-
-            SPParameter {
-                SPRangeSlider {
-                    id: texRotation
-                    text: "Texture Rotation"
-                    from: -360
-                    to: 360
-                    onValueChanged: texTransform.sync()
-                }
-                onResetRequested: weaponFinish.resetParameter("texRotationRange")
-            }
-
-            SPParameter {
-                SPRangeSlider {
-                    id: texOffsetX
-                    text: "Texture Offset X"
-                    from: -1
-                    to: 1
-                    onValueChanged: texTransform.sync()
-                }
-                onResetRequested: weaponFinish.resetParameter("texOffsetXRange")
-            }
-
-            SPParameter {
-                SPRangeSlider {
-                    id: texOffsetY
-                    text: "Texture Offset Y"
-                    from: -1
-                    to: 1
-                    onValueChanged: texTransform.sync()
-                }
-                onResetRequested: weaponFinish.resetParameter("texOffsetYRange")
-            }
-        }
-
-        SPGroup {
-            id: colorGroup
-            Layout.fillWidth: true
-            text: "Color"
-            visible: styleBox.currentIndex != 6
-
-            Repeater {
-                model: [
-                    [
-                        { text: "Base Metal", tooltip: "The metal before patina, revealed through scratches" }, 
-                        { text: "Base Coat", tooltip: "Color that covers all paintable areas of the weapon" }
-                    ], 
-                    [
-                        { text: "Patina Tint", tooltip: "Tint of the newly applied patina" }, 
-                        { text: "Red Channel", tooltip: "Color to store in the Red Channel of the texture" }
-                    ], 
-                    [
-                        { text: "Patina Wear", tooltip: "Tint of the aged patina" }, 
-                        { text: "Green Channel", tooltip: "Color to store in the Green Channel of the texture" }
-                    ], 
-                    [
-                        { text: "Grime", tooltip: "Color of the grime, oil accretion, or oxide that accumulates in cavities" }, 
-                        { text: "Blue Channel", tooltip: "Color to store in the Blue Channel of the texture" }
-                    ]
-                ]
-                delegate: SPParameter {
-                    Layout.fillWidth: true
-
-                    property alias scopeWidth: colorPickerWidget.scopeWidth
-                    property alias arrayColor: colorPicker.arrayColor
-
-                    SPLabeled {
-                        id: colorPickerWidget
-                        Layout.fillWidth: true
-                        text: styleBox.currentIndex > 6 ? modelData[0].text : modelData[1].text
-                        SPColorButton { 
-                            id: colorPicker
-                            Layout.fillWidth: true
-                            tooltip.text: styleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
-                        }
-                    }
-                    onResetRequested: weaponFinish.resetParameter(`uCol${index}`)
-                }
-
-                onItemAdded: (i, control) => {
-                    colorGroup.scopeWidth = Math.max(colorGroup.scopeWidth, control.scopeWidth);
-                    control.scopeWidth = Qt.binding(() => colorGroup.scopeWidth);
-                    weaponFinish.parameters[`uCol${i}`].control = control;
-                }
-            }
-        }
-
-        SPGroup {
-            Layout.fillWidth: true
-            text: "Effects"
-
-            SPParameter {
-                SPRangeSlider {
-                    id: wearRange
-                    text: "Wear Range"
-                    minValue: 0.0
-                    maxValue: 1.0
-                    onValueChanged: wearAmount.value = value
-                }
-                onResetRequested: {
-                    weaponFinish.resetParameter("wearRange"); 
-                    weaponFinish.resetParameter("uWearAmt");
-                }
-            }
-
-            SPSeparator { Layout.fillWidth: true }
-
-            SPParameter {
-                SPButton {
-                    id: usePearlescentMask
-                    text: "Custom Pearlescent Mask"
-                    Layout.fillWidth: true
-                    checkable: true
-                    contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
-                }
-                onResetRequested: weaponFinish.resetParameter("uUsePearlMask")
-            }
-
-            SPParameter {
-                SPSlider {
-                    id: pearlescentScale
-                    text: "Pearlescent Scale"
-                    from: -6
-                    to: 6
-                }
-                onResetRequested: weaponFinish.resetParameter("uPearlScale")
-            }
-
-            SPSeparator { Layout.fillWidth: true }
-
-            SPParameter {
-                SPButton {
-                    id: useRoughnessTexture
-                    text: "Custom Roughness Texture"
-                    Layout.fillWidth: true
-                    checkable: true
-                    contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
-                }
-                onResetRequested: weaponFinish.resetParameter("uUseCustomRough")
-            }
-                
-            SPParameter {
-                visible: !useRoughnessTexture.checked
-                SPSlider {
-                    id: paintRoughness
-                    text: "Paint Roughness"
-                    from: 0
-                    to: 1
-                }
-                onResetRequested: weaponFinish.resetParameter("uPaintRoughness")
-            }
-        }
-
-        SPGroup {
-            id: advancedGroup
-            text: "Advanced"
-            toggled: false
-            Layout.fillWidth: true
-
-            Repeater {
-                model: [
-                    { param: "uUseCustomNormal",    text: "Custom Normal Map"        },
-                    { param: "uUseCustomMasks",     text: "Custom Material Mask"     },
-                    { param: "uUseCustomAOTex",     text: "Custom Ambient Occlusion" }
-                ]
-                delegate: SPParameter {
-                    property alias control: advancedControl
-
+                SPParameter {
                     SPButton {
-                        id: advancedControl
-                        checkable: true
-                        text: modelData.text
-                        tooltip.text: `Whether to use ${text.toLowerCase()} or the weapon default one`
+                        id: usePearlescentMask
+                        text: "Custom Pearlescent Mask"
                         Layout.fillWidth: true
+                        checkable: true
                         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                     }
-
-                    onResetRequested: weaponFinish.resetParameter(modelData.param)
+                    onResetRequested: weaponFinish.resetParameter("uUsePearlMask")
                 }
 
-                onItemAdded: (i, control) => {
-                    weaponFinish.parameters[model[i].param].control = control.control;
+                SPParameter {
+                    SPSlider {
+                        id: pearlescentScale
+                        text: "Pearlescent Scale"
+                        from: -6
+                        to: 6
+                    }
+                    onResetRequested: weaponFinish.resetParameter("uPearlScale")
+                }
+
+                SPSeparator { Layout.fillWidth: true }
+
+                SPParameter {
+                    SPButton {
+                        id: useRoughnessTexture
+                        text: "Custom Roughness Texture"
+                        Layout.fillWidth: true
+                        checkable: true
+                        contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                    }
+                    onResetRequested: weaponFinish.resetParameter("uUseCustomRough")
+                }
+                    
+                SPParameter {
+                    visible: !useRoughnessTexture.checked
+                    SPSlider {
+                        id: paintRoughness
+                        text: "Paint Roughness"
+                        from: 0
+                        to: 1
+                    }
+                    onResetRequested: weaponFinish.resetParameter("uPaintRoughness")
+                }
+            }
+
+            SPGroup {
+                id: advancedGroup
+                text: "Advanced"
+                toggled: false
+                Layout.fillWidth: true
+
+                Repeater {
+                    model: [
+                        { param: "uUseCustomNormal",    text: "Custom Normal Map"        },
+                        { param: "uUseCustomMasks",     text: "Custom Material Mask"     },
+                        { param: "uUseCustomAOTex",     text: "Custom Ambient Occlusion" }
+                    ]
+                    delegate: SPParameter {
+                        property alias control: advancedControl
+
+                        SPButton {
+                            id: advancedControl
+                            checkable: true
+                            text: modelData.text
+                            tooltip.text: `Whether to use ${text.toLowerCase()} or the weapon default one`
+                            Layout.fillWidth: true
+                            contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
+                        }
+
+                        onResetRequested: weaponFinish.resetParameter(modelData.param)
+                    }
+
+                    onItemAdded: (i, control) => {
+                        weaponFinish.parameters[model[i].param].control = control.control;
+                    }
                 }
             }
         }
