@@ -15,15 +15,23 @@ Item {
     property alias filters: resourcePicker.filters
     property alias hovered: mouseArea.containsMouse
 
+    function isImageFile(path) {
+        const ext = path.slice((path.lastIndexOf(".") || -1) + 1).toLowerCase();
+        return ['jpg', 'jpeg', 'png', 'tga', 'bmp'].includes(ext);
+    }
+
     onUrlChanged: {
         if (url !== "") {
             const info = JSON.parse(Plugin.js(`alg.resources.getResourceInfo("${url}")`));
-            resourceName = info.name;
-            preview.source = `file:///${info.filePath}`;
-        } else {
-            resourceName = "";
-            preview.source = "";
+            if (info !== null && isImageFile(info.filePath) && Plugin.pathExists(info.filePath)) {
+                resourceName = info.name;
+                preview.source = `file:///${info.filePath}`;
+            } else 
+                url = "";
+            return;
         }
+        resourceName = "";
+        preview.source = "";
     }
 
     Rectangle {

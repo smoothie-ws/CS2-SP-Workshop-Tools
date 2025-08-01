@@ -59,7 +59,7 @@ class CS2WT(Plugin):
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
         # dock widget
-        CS2WT.main_view = MainView(QmlView.view_path("DockView.qml"), icon)
+        CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon)
         # settings window
         CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
         # weapon finish init window
@@ -77,7 +77,6 @@ class CS2WT(Plugin):
         shader_path = Path.asset("shader")
         for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
             sp_shader_file_path = Path.join(sp_shaders_path, f'cs2_{fs}.glsl')
-            Plugin.push_file(sp_shader_file_path)
             if not Path.exists(sp_shader_file_path):
                 with open(sp_shader_file_path, "w", encoding="utf-8") as f:
                     f.write(Shader.process(shader_source, {"FINISH_STYLE": i}))
@@ -88,11 +87,10 @@ class CS2WT(Plugin):
                 path = Path.asset("ui", "icons", f'{name}.png')
                 if Path.exists(path):
                     shader_resource.set_custom_preview(path)
-        Resource.search(set_previews, "your_assets", "shader", "cs2")
+        Resource.search_resource(set_previews, "your_assets", "shader", "cs2")
 
         # shader ui
         sp_shader_ui_path = Path.join(sp_shaders_ui_path, "cs2-ui.qml")
-        Plugin.push_file(sp_shader_ui_path)
         if not Path.exists(Path.join(sp_shaders_ui_path, "ui.qml")):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
             

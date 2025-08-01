@@ -25,10 +25,11 @@ class Decompiler:
 
         progress = 0.0
         
+        # extract
+        temp_path = Path.join(out_path, "temp")
+        temp_models_path = Path.join(temp_path, "weapons", "models")
+            
         def task():
-            # extract
-            temp_path = Path.join(out_path, "temp")
-            temp_models_path = Path.join(temp_path, "weapons", "models")
             state_callback("Extracting textures from pak01_dir.vpk")
             Decompiler.run(f'-i "{pak_path}" --vpk_filepath "weapons/models" -e "vtex_c" -o "{temp_path}"')
             

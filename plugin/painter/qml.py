@@ -52,10 +52,10 @@ class QmlView(QtCore.QObject):
     @QtCore.Slot(str, result=str)
     def js(self, code: str):
         try:
-            return json.dumps(sp.js.evaluate(code))
-        except Exception as e:
-            Log.error(f'Failed to evaluate js code: {str(e)}')
-            Log.info(code)
+            res = sp.js.evaluate(code)
+        except:
+            res = None
+        return json.dumps(res)
     
     @QtCore.Slot(result=str)
     def time(self) -> str:
@@ -65,6 +65,10 @@ class QmlView(QtCore.QObject):
     def asset(self, path: str) -> str:
         return f'file:{Path.asset(path)}'
     
+    @QtCore.Slot(str, result=bool)
+    def pathExists(self, path: str) -> bool:
+        return Path.exists(path)
+        
     @QtCore.Slot(str)
     def info(self, msg: str):
         Log.info(msg)

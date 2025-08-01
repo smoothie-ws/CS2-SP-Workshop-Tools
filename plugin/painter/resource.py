@@ -2,8 +2,22 @@ import substance_painter as sp
 
 
 class Resource:
+    Usage = sp.resource.Usage
+    
     @staticmethod
-    def search(callback, shelf: str="", usage: str="", name: str="", retries: int = 1):
+    def import_session_resource(path: str, usage: Usage, name: str = None, group: str = None):
+        return sp.resource.import_session_resource(path, usage, name, group)
+    
+    @staticmethod
+    def import_project_resource(path: str, usage: Usage, name: str = None, group: str = None):
+        return sp.resource.import_project_resource(path, usage, name, group)
+    
+    @staticmethod
+    def refresh():
+        sp.resource.Shelves.refresh_all()
+    
+    @staticmethod
+    def search_resource(callback, shelf: str = "", usage: str = "", name: str = "", retries: int = 1):
         delayed = False
 
         def search_shelf():
@@ -12,7 +26,7 @@ class Resource:
                 callback(resources)
             elif retries > 0:
                 Resource.refresh()
-                Resource.search(callback, shelf, usage, name, retries - 1)
+                Resource.search_resource(callback, shelf, usage, name, retries - 1)
             else:
                 callback([])
 
@@ -29,8 +43,4 @@ class Resource:
             sp.event.DISPATCHER.connect_strong(sp.event.ShelfCrawlingEnded, cb)
         else:
             search_shelf()
-
-    @staticmethod
-    def refresh():
-        sp.resource.Shelves.refresh_all()
         

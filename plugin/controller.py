@@ -13,7 +13,7 @@ class MainView(QmlView):
         def cb(container: QtWidgets.QWidget):
             container.setWindowIcon(icon)
             container.setWindowTitle("CS2 Workshop Tools")
-            UI.add_dock(container).setWindowIcon(icon)
+            UI.add_dock(container)
 
         self.load(path, cb)
         
@@ -25,23 +25,6 @@ class MainView(QmlView):
     pluginAboutToClose = QtCore.Signal()
 
     # slots
-    @QtCore.Slot(str)
-    def changeStyle(self, finish_style: str):
-        def change(res: bool, msg: str):
-            if res:
-                Log.warning(msg) 
-                self.styleReady.emit()
-            else:
-                Log.error(msg)
-
-        # update shader instance
-        WeaponFinish.change_finish_style_shader(finish_style, change)
-
-    @QtCore.Slot()
-    def openSettings(self):
-        from . import CS2WT
-        CS2WT.on_settings()
-        
     @QtCore.Slot(str)
     def showInExplorer(self, path:str):
         Path.show_in_explorer(path)
@@ -63,8 +46,22 @@ class MainView(QmlView):
     def dumpWeaponFinish(self, weapon_finish: str):
         WeaponFinish.dump(json.loads(weapon_finish))
         
+    @QtCore.Slot(str, result=str)
+    def updateWeapon(self, weapon: str):
+        return json.dumps(WeaponFinish.update_weapon(weapon))
+
     @QtCore.Slot(str)
-    def updateEconItemPath(self, path: str):
+    def updateStyle(self, style: str):
+        def change(res: bool, msg: str):
+            if res:
+                Log.warning(msg) 
+                self.styleReady.emit()
+            else:
+                Log.error(msg)
+        WeaponFinish.update_style(style, change)
+
+    @QtCore.Slot(str)
+    def updateEconPath(self, path: str):
         WeaponFinish.set("econitem", path)
         
     @QtCore.Slot(str)
@@ -72,12 +69,12 @@ class MainView(QmlView):
         WeaponFinish.set("texturesFolder", path)
         
     @QtCore.Slot()
-    def syncWeaponFinish(self):
-        WeaponFinish.export_econ()
+    def importWeaponFinishEcon(self):
+        WeaponFinish.import_econ()
 
     @QtCore.Slot()
-    def importWeaponFinishEconItem(self):
-        WeaponFinish.import_econ()
+    def exportWeaponFinishEcon(self):
+        WeaponFinish.export_econ()
 
     @QtCore.Slot()
     def exportWeaponFinishTextures(self):

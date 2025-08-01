@@ -2,7 +2,6 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.7
 import QtQuick.Window 2.15
-import Qt.labs.platform 1.1
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
@@ -13,66 +12,16 @@ ColumnLayout {
     id: root
     spacing: 0
 
-    property bool ready: false
     property alias weaponFinish: weaponFinish
     
     Component.onCompleted: {
-        styleBox.currentKeyChanged.connect(() => {
-            if (ready)
-                Plugin.changeStyle(styleBox.currentKey)
-        });
-        weaponBox.currentKeyChanged.connect(() => {
-            if (ready) {
-                const w = weaponBox.currentKey;
-                const path = `${Plugin.getPluginPath()}/assets/textures/models/${w}`;
-                try {
-                    weaponFinish.parameters["uBaseColor"].control.url = importTexture(`${path}/${w}_color.png`);
-                    weaponFinish.parameters["uBaseRough"].control.url = importTexture(`${path}/${w}_rough.png`);
-                    weaponFinish.parameters["uBaseSurface"].control.url = importTexture(`${path}/${w}_surface.png`);
-                    weaponFinish.parameters["uBaseMasks"].control.url = importTexture(`${path}/${w}_masks.png`);
-                    weaponFinish.parameters["uBaseCavity"].control.url = importTexture(`${path}/${w}_cavity.png`);
-                } catch(err) { 
-                    Plugin.error(err.toString());
-                }
-            }
-        });
+        weaponFinish.connect();
     }
 
-    function loadWeaponFinish() {
-        try {
-            ready = false;
-            
-            const values = weaponFinish.loadParams();
-            weaponFinish.connect();
-
-            // load base textures
-            const w = weaponBox.currentKey;
-            const texPath = Plugin.asset("textures");
-            for (const [param, file] of Object.entries({
-                    "uGrungeTex": "grunge.tga", 
-                    "uScratchesTex": "scratches.png", 
-                    "uBaseColor": `models/${w}/${w}_color.png`, 
-                    "uBaseRough": `models/${w}/${w}_rough.png`, 
-                    "uBaseSurface": `models/${w}/${w}_surface.png`, 
-                    "uBaseMasks": `models/${w}/${w}_masks.png`, 
-                    "uBaseCavity": `models/${w}/${w}_cavity.png`
-                }))
-                if (values[param] === undefined || values[param] === "")
-                    weaponFinish.parameters[param].control.url = importTexture(`${texPath.substring(5)}/${file}`);
-            ready = true;
-        } catch (e) {
-            Plugin.error(`Failed to load Weapon Finish: ${e}`);
-        }
-    }
-
-    function importTexture(url) {
-        return JSON.parse(Plugin.js(`alg.resources.importSessionResource("${url}", "texture")`));
-    }
-
-    QtObject {
+    WeaponFinish {
         id: weaponFinish
 
-        readonly property var parameters: {
+        parameters: {
             "econitem":               { control: econitem,               prop: "filePath"     },
             "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
             "style":                  { control: styleBox,               prop: "currentKey"   },
@@ -107,95 +56,6 @@ ColumnLayout {
             "uUseCustomNormal":       { control: null,                   prop: "checked"      },
             "uUseCustomMasks":        { control: null,                   prop: "checked"      },
             "uUseCustomAOTex":        { control: null,                   prop: "checked"      }
-        }
-
-        function isShaderParameter(param) {
-            if (JSON.parse(Plugin.js("alg.project.isOpen()")))
-                return Object.keys(JSON.parse(Plugin.js(`alg.shaders.parameters(0)`))).includes(param);
-            else
-                return param.startsWith("u");
-        }
-
-        // load weapon finish parameters
-        function loadParams() {
-            const values = loadWeaponFinishProject();
-            for (const [param, value] of Object.entries(values)) 
-                if (param in parameters) {
-                    const component = parameters[param];
-                    component.control[component.prop] = value;
-                }
-            return values;
-        }
-
-        function getParams() {
-            const w = {};
-            for (const [param, component] of Object.entries(parameters))
-                w[param] = component.control[component.prop];
-            return w;
-        }
-
-        // connect widgets to shader
-        function connect() {
-            for (const [param, component] of Object.entries(parameters)) 
-                if (isShaderParameter(param)) {
-                    const control = component.control;
-                    const prop = component.prop;
-                    if (["filePath", "url"].includes(prop))
-                        control[prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${control[prop]}"`)
-                        );
-                    else if (["range", "arrayColor", "transform"].includes(prop))
-                        control[prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${control[prop]}]`)
-                        );
-                    else
-                        control[prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${control[prop]}`)
-                        );
-                }
-        }
-
-        function dump() {
-            Plugin.dumpWeaponFinish(JSON.stringify(getParams()));
-        }
-
-        function syncShader() {
-            for (const [param, component] of Object.entries(parameters)) 
-                if (isShaderParameter(param)) {
-                    const value = component.control[component.prop];
-                    if (["filePath", "url"].includes(component.prop))
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${value}"`);
-                    else if (["range", "arrayColor", "transform"].includes(component.prop))
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${value}]`);
-                    else
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${value}`);
-                }
-        }
-
-        function syncEcon() {
-            dump();
-            Plugin.syncWeaponFinish();
-        }
-
-        function updateEconItemPath(path) {
-            const values = loadWeaponFinishProject();
-            values["econitem"] = path;
-            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
-        }
-
-        function updateTexturesFolderPath(path) {
-            const values = loadWeaponFinishProject();
-            values["texturesFolder"] = path;
-            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
-        }
-
-        function resetParameter(parameter) {
-            const component = parameters[parameter];
-            component.control[component.prop] = loadWeaponFinishProject()[parameter];
-        }
-
-        function loadWeaponFinishProject() {
-            return JSON.parse(Plugin.getWeaponFinish());
         }
     }
 
@@ -270,7 +130,7 @@ ColumnLayout {
                     background.color: "black"
                     background.opacity: hovered ? 0.75 : 0.25
 
-                    onClicked: Plugin.importWeaponFinishEconItem()
+                    onClicked: Plugin.importWeaponFinishEcon()
                 }
 
                 SPLabeled {
@@ -280,7 +140,7 @@ ColumnLayout {
 
                     property string filePath: ""
 
-                    onFilePathChanged: Plugin.updateEconItemPath(filePath)
+                    onFilePathChanged: Plugin.updateEconPath(filePath)
 
                     Label {
                         clip: true
@@ -390,11 +250,17 @@ ColumnLayout {
                 SPButton {
                     id: enableLivePreview
                     text: "Live Preview"
+                    enabled: baseTextures.ready
                     checkable: true
                     Layout.fillWidth: true
                     contentAlignment: Qt.AlignCenter
                     background.color: checked ? Qt.rgba(0.75, 0.75, 1.0) : Qt.rgba(0.5, 0.5, 0.5)
                     background.opacity: hovered ? 0.25 : 0.15
+
+                    onCheckedChanged: {
+                        if (!baseTextures.ready)
+                            checked = false;
+                    }
                 }
 
                 SPButton {
@@ -417,6 +283,8 @@ ColumnLayout {
                     id: weaponBox
                     Layout.fillWidth: true
                     map: JSON.parse(Plugin.getWeaponList())
+
+                    onCurrentKeyChanged: weaponFinish.updateWeapon(currentKey)
                 }
 
                 Component.onCompleted: scopeWidth = Math.max(scopeWidth, style.scopeWidth)
@@ -442,6 +310,7 @@ ColumnLayout {
                         "aq": "Patina",
                         "gs": "Gunsmith"
                     }
+                    onCurrentKeyChanged: Plugin.updateStyle(currentKey)
                 }
 
                 Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
@@ -453,7 +322,22 @@ ColumnLayout {
                 toggled: false
                 text: "Base Textures"
 
+                readonly property bool ready: {
+                    for (let i = 0; i < textureRepeater.count; ++i) {
+                        const item = textureRepeater.itemAt(i);
+                        if (!item || item.url === "")
+                            return false;
+                    }
+                    return true;
+                }
+
+                onReadyChanged: {
+                    if (!ready)
+                        enableLivePreview.checked = false;
+                }
+
                 Repeater {
+                    id: textureRepeater
                     model: [
                         { param: "uGrungeTex",        text: "Grunge"            },
                         { param: "uScratchesTex",     text: "Wear"              },
@@ -463,9 +347,12 @@ ColumnLayout {
                         { param: "uBaseSurface",      text: "Surface"           },
                         { param: "uBaseCavity",       text: "Cavity"            }
                     ]
+
                     delegate: SPParameter {
                         property alias url: resourcePicker.url
                         property alias scopeWidth: resourceLabel.scopeWidth
+
+                        onResetRequested: weaponFinish.resetParameter(modelData.param)
 
                         SPLabeled {
                             id: resourceLabel
@@ -477,8 +364,6 @@ ColumnLayout {
                                 filters: AlgResourcePicker.TEXTURE
                             }
                         }
-
-                        onResetRequested: weaponFinish.resetParameter(modelData.param)
                     }
 
                     onItemAdded: (i, control) => {

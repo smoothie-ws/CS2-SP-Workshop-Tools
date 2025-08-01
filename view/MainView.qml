@@ -21,7 +21,7 @@ Rectangle {
         function onProjectKindChanged(projectKind) {
             root.projectKind = projectKind;
             if (projectKind == 2)
-                weaponFinishSettings.loadWeaponFinish();
+                weaponFinishSettings.weaponFinish.loadParams();
         }
 
         function onProjectAboutToSave() {
@@ -59,17 +59,6 @@ Rectangle {
             }
 
             SPSeparator { Layout.fillWidth: true }
-
-            SPButton {
-                text: "Settings"
-                tooltip.text: "Open Plugin settings"
-                icon.source: Plugin.asset("icons/settings.png")
-                icon.width: 14
-                icon.height: 14
-                Layout.alignment: Qt.AlignCenter
-
-                onClicked: Plugin.openSettings()
-            }
         }
 
         // main
@@ -90,7 +79,6 @@ Rectangle {
                 layer.effect: GaussianBlur {
                     anchors.fill: parent
                     anchors.margins: 10
-                    anchors.rightMargin: 15
                     transparentBorder: true
                     source: weaponFinishSettings
                     radius: 4
