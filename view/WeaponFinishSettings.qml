@@ -12,12 +12,24 @@ ColumnLayout {
     id: root
     spacing: 0
 
+    // 0 - closed
+    // 1 - regular project
+    // 2 - weapon finish
+    property int projectKind: 0
     property alias weaponFinish: weaponFinish
     
     Component.onCompleted: {
+        weaponFinish.connect();
+        styleBox.currentKeyChanged.connect(() => {
+            if (projectKind == 2) 
+                Plugin.updateStyle(styleBox.currentKey);
+        });
+        weaponBox.currentKeyChanged.connect(() => {
+            if (projectKind == 2) 
+                weaponFinish.updateWeapon(weaponBox.currentKey);
+        });
         weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.tga").slice(5));
         weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/scratches.png").slice(5));
-        weaponFinish.connect();
     }
 
     WeaponFinish {
@@ -156,9 +168,6 @@ ColumnLayout {
 
                     SPButton {
                         text: "Select"
-                        label.color: Qt.rgba(0.0, 0.0, 0.0, 0.75)
-                        background.color: "white"
-                        background.opacity: hovered ? 0.5 : 0.25
 
                         onClicked: econFileDialog.open()
 
@@ -219,9 +228,6 @@ ColumnLayout {
 
                     SPButton {
                         text: "Select"
-                        label.color: Qt.rgba(0.0, 0.0, 0.0, 0.75)
-                        background.color: "white"
-                        background.opacity: hovered ? 0.5 : 0.25
                         
                         onClicked: texturesFolderDialog.open()
 
@@ -252,6 +258,7 @@ ColumnLayout {
                 SPButton {
                     id: enableLivePreview
                     text: "Live Preview"
+                    tooltip.text: `${checked ? "Disable" : "Enable"} live previewing of the Weapon Finish (G)`
                     enabled: baseTextures.ready
                     checkable: true
                     Layout.fillWidth: true
@@ -263,16 +270,27 @@ ColumnLayout {
                         if (!baseTextures.ready)
                             checked = false;
                     }
+
+                    Shortcut {
+                        sequence: "G"
+                        onActivated: enableLivePreview.checked = !enableLivePreview.checked
+                    }
                 }
 
                 SPButton {
                     id: enablePBRValidation
                     text: "PBR Validation"
+                    tooltip.text: `${checked ? "Disable" : "Enable"} PBR validation of the Weapon Finish (V)`
                     checkable: true
                     Layout.fillWidth: true
                     contentAlignment: Qt.AlignCenter
                     background.color: checked ? Qt.rgba(0.5, 0.5, 0.85) : Qt.rgba(0.5, 0.5, 0.5)
                     background.opacity: hovered ? 0.25 : 0.15
+
+                    Shortcut {
+                        sequence: "V"
+                        onActivated: enablePBRValidation.checked = !enablePBRValidation.checked
+                    }
                 }
             }
 
@@ -285,8 +303,6 @@ ColumnLayout {
                     id: weaponBox
                     Layout.fillWidth: true
                     map: JSON.parse(Plugin.getWeaponList())
-
-                    onCurrentKeyChanged: weaponFinish.updateWeapon(currentKey)
                 }
 
                 Component.onCompleted: scopeWidth = Math.max(scopeWidth, style.scopeWidth)
@@ -312,7 +328,6 @@ ColumnLayout {
                         "aq": "Patina",
                         "gs": "Gunsmith"
                     }
-                    onCurrentKeyChanged: Plugin.updateStyle(currentKey)
                 }
 
                 Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
@@ -390,6 +405,7 @@ ColumnLayout {
         leftPadding: 10
         topPadding: 10
         bottomPadding: 10
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
             width: root.width - 20

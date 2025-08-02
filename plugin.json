@@ -86,7 +86,6 @@
             "uUseCustomNormal": true,
             "uUseCustomMasks": true,
             "uUseCustomAOTex": true
-        },
-        "ignore_textures_are_missing": false
+        }
     }
 }

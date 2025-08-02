@@ -410,14 +410,6 @@ SPDialog {
                         }
                     }
                 }
-
-                SPButton {
-                    id: ignoreTexturesAreMissing
-                    text: "Ignore Textures Are Missing"
-                    checkable: true
-                    contentAlignment: Qt.ALignLeft | Qt.AlignVCenter
-                    Layout.fillWidth: true
-                }
             }
 
             SPSeparator {

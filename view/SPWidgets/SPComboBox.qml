@@ -80,7 +80,7 @@ SPControl {
             id: popup
             y: comboBox.height + 5
             width: comboBox.width
-            height: listContent.contentHeight
+            height: Math.min(listContent.contentHeight, 200)
 
             background: Rectangle {
                 color: "#262626"

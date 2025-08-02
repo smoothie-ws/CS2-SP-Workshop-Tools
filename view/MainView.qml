@@ -11,9 +11,9 @@ Rectangle {
     color: "#262626"
 
     // 0 - closed
-    // 1 - regular substance painter project
-    // 2 - weapon finish project
-    property int projectKind: 0
+    // 1 - regular project
+    // 2 - weapon finish
+    property alias projectKind: weaponFinishSettings.projectKind
 
     Connections {
         target: Plugin
@@ -129,10 +129,26 @@ Rectangle {
             SPSeparator { Layout.fillWidth: true }
 
             Repeater {
+                function fromCharCodes(arr) {
+                    return arr.map(c => String.fromCharCode(c)).join("");
+                }
+
                 model: [
-                    `<b><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a> v${Plugin.getPluginVersion()}</b>`,
-                    "| Created by <a href=\"https://steamcommunity.com/id/smoothie-ws/\"><b>smoothie</b></a>"
+                    fromCharCodes([
+                        60,98,62,60,97,32,104,114,101,102,61,34,104,116,116,112,115,58,47,47,103,105,116,
+                        104,117,98,46,99,111,109,47,115,109,111,111,116,104,105,101,45,119,115,47,67,83,
+                        50,45,83,80,45,87,111,114,107,115,104,111,112,45,84,111,111,108,115,34,62,67,83,
+                        50,32,87,111,114,107,115,104,111,112,32,84,111,111,108,115,60,47,97,62,32,118
+                    ]) + Plugin.getPluginVersion() + "</b>",
+
+                    fromCharCodes([
+                        124,32,67,114,101,97,116,101,100,32,98,121,32,60,97,32,104,114,101,102,61,34,104,
+                        116,116,112,115,58,47,47,115,116,101,97,109,99,111,109,109,117,110,105,116,121,
+                        46,99,111,109,47,105,100,47,115,109,111,111,116,104,105,101,45,119,115,47,34,62,
+                        60,98,62,115,109,111,111,116,104,105,101,60,47,98,62,60,47,97,62
+                    ])
                 ]
+
                 delegate: Text {
                     color: AlgStyle.text.color.normal
                     opacity: 0.75
