@@ -2,7 +2,7 @@ import json
 
 from .utils import Decompiler
 from .weapon_finish import WeaponFinish
-from .painter import UI, Log, Path, Plugin, ProjectSettings
+from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
 
 
@@ -25,6 +25,10 @@ class MainView(QmlView):
     pluginAboutToClose = QtCore.Signal()
 
     # slots
+    @QtCore.Slot(str, result=str)
+    def importTexture(self, path:str) -> str:
+        return Resource.import_session_resource(path, Resource.Usage.TEXTURE).identifier().url()
+        
     @QtCore.Slot(str)
     def showInExplorer(self, path:str):
         Path.show_in_explorer(path)
@@ -84,7 +88,7 @@ class MainView(QmlView):
 class WeaponFinishInitWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("Create Weapon Finish", icon, "Plugin", path)
-        self.window.setMinimumSize(400, 260)
+        self.view.setMinimumSize(QtCore.QSize(400, 260))
         self.is_new = False
     
     opened = QtCore.Signal(bool)
@@ -146,7 +150,7 @@ class WeaponFinishInitWindow(QmlDialog):
 class SettingsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Settings", icon, "Plugin", path)
-        self.window.setMinimumSize(735, 425)
+        self.view.setMinimumSize(QtCore.QSize(735, 425))
         
     def on_confirmed(self, data: str) -> None:
         for key, value in json.loads(data).items():

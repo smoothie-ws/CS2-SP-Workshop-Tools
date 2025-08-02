@@ -96,7 +96,7 @@ class QmlView(QtCore.QObject):
     
 class QmlWindow(QmlView):
     def __init__(self, title: str, icon: QtGui.QIcon = None, name: str = "Plugin", path: str = None):
-        self.window = UI.add_window(QtWidgets.QMainWindow(
+        self.window = UI.add_widget(QtWidgets.QMainWindow(
             parent=sp.ui.get_main_window(),
             flags=QtCore.Qt.WindowType.Window | 
                 QtCore.Qt.WindowType.CustomizeWindowHint | 

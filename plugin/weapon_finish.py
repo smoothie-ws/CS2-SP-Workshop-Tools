@@ -124,14 +124,15 @@ class WeaponFinish:
 				)
 				if not Path.exists(econitem):
 					weapon_finish["econitem"] = econitem
-					WeaponFinish.dump(weapon_finish)
-					WeaponFinish.export_econ()
 				else:
 					Log.warning(f'Failed to create .econitem file: path "{econitem}" already exists')
 
 			else:
 				Log.warning("CS2 path not found. Please set it in the plugin settings menu")
 
+			WeaponFinish.dump(weapon_finish)
+			WeaponFinish.export_econ()
+   
 			# update shader instance
 			WeaponFinish.update_style(finish_style, 
 				lambda res, msg: callback(res,

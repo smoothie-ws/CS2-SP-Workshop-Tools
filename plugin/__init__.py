@@ -49,7 +49,7 @@ class CS2WT(Plugin):
     @staticmethod
     def on_settings():
         CS2WT.settings_window.open()
-
+            
     @staticmethod
     def init_ui():
         # plugin menu
@@ -58,11 +58,8 @@ class CS2WT(Plugin):
         menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
-        # dock widget
         CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon)
-        # settings window
         CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
-        # weapon finish init window
         CS2WT.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon)
         
     @staticmethod
@@ -93,4 +90,4 @@ class CS2WT(Plugin):
         sp_shader_ui_path = Path.join(sp_shaders_ui_path, "cs2-ui.qml")
         if not Path.exists(Path.join(sp_shaders_ui_path, "ui.qml")):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
-            
+        

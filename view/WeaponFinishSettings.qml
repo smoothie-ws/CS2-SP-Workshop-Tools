@@ -15,6 +15,8 @@ ColumnLayout {
     property alias weaponFinish: weaponFinish
     
     Component.onCompleted: {
+        weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.tga").slice(5));
+        weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/scratches.png").slice(5));
         weaponFinish.connect();
     }
 
@@ -243,6 +245,14 @@ ColumnLayout {
             }
 
             SPSeparator { Layout.fillWidth: true }
+
+            Text {
+                text: "Missing Base Weapon Textures!"
+                color: "red"
+                visible: !baseTextures.ready
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignHCenter
+            }
 
             RowLayout {
                 Layout.fillWidth: true
