@@ -132,7 +132,7 @@ SPDialog {
                 width: 100
                 height: 30
                 border.width: 2
-                border.color: nameInput.nameStatus > 0 ? (nameInput.nameIsValid ? "transparent" : "red") : "transparent"
+                border.color: nameInput.nameStatus > 0 ? (nameInput.nameIsValid ? "transparent" : Qt.rgba(0.85, 0.15, 0.15)) : "transparent"
                 Layout.fillWidth: true
                 
                 SPTextInput {

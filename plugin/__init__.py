@@ -1,4 +1,5 @@
 import webbrowser
+import substance_painter as sp
 
 from .utils import Shader
 from .weapon_finish import WeaponFinish
@@ -12,55 +13,24 @@ class CS2WT(Plugin):
     settings_window: SettingsWindow = None
     wf_init_window: WeaponFinishInitWindow = None
 
-    @classmethod
-    def start(cls, path):
-        super().start(path, "CS2 Workshop Tools")
-        
-    @classmethod
-    def on_start(cls):
-        CS2WT.init_ui()
-        CS2WT.checkout()
-    
-    @classmethod
-    def on_close(cls):
-        if WeaponFinish.is_open():
-            CS2WT.main_view.pluginAboutToClose.emit()
-    
-    @classmethod
-    def on_project_opened(cls):
-        if WeaponFinish.is_open():
-            CS2WT.main_view.projectKindChanged.emit(2)
-        else:
-            CS2WT.main_view.projectKindChanged.emit(1)
-
-    @classmethod
-    def on_project_about_to_save(cls):
-        if WeaponFinish.is_open():
-            CS2WT.main_view.projectAboutToSave.emit()
-
-    @classmethod
-    def on_project_about_to_close(cls):
-        CS2WT.main_view.projectKindChanged.emit(0)
-
     @staticmethod
-    def on_help():
-        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#table-of-contents")
-
-    @staticmethod
-    def on_settings():
-        CS2WT.settings_window.open()
-            
-    @staticmethod
-    def init_ui():
+    def init_ui(callback):
         # plugin menu
         menu = UI.add_menu(QtWidgets.QMenu("CS2 Workshop Tools"))
         menu.addAction("Help").triggered.connect(CS2WT.on_help)
         menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
-        CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon)
-        CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
-        CS2WT.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon)
+        i = 3
+        def cb():
+            nonlocal i
+            i -= 1
+            if i == 0:
+                callback()
+                
+        CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon, cb)
+        CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon, cb)
+        CS2WT.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon, cb)
         
     @staticmethod
     def checkout():
@@ -91,3 +61,49 @@ class CS2WT(Plugin):
         if not Path.exists(Path.join(sp_shaders_ui_path, "ui.qml")):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
         
+    @classmethod
+    def start(cls, path):
+        super().start(path, "CS2 Workshop Tools")
+        
+    @classmethod
+    def on_start(cls):
+        def cb():
+            if sp.project.is_open():
+                cls.on_project_opened()
+            
+        CS2WT.checkout()
+        CS2WT.init_ui(cb)
+    
+    @classmethod
+    def on_close(cls):
+        if WeaponFinish.is_open():
+            CS2WT.main_view.pluginAboutToClose.emit()
+    
+    @classmethod
+    def on_project_opened(cls):
+        if WeaponFinish.is_open():
+            CS2WT.main_view.projectKindChanged.emit(2)
+        else:
+            CS2WT.main_view.projectKindChanged.emit(1)
+
+    @classmethod
+    def on_project_created(cls):
+        cls.on_project_opened()
+
+    @classmethod
+    def on_project_about_to_save(cls):
+        if WeaponFinish.is_open():
+            CS2WT.main_view.projectAboutToSave.emit()
+
+    @classmethod
+    def on_project_about_to_close(cls):
+        CS2WT.main_view.projectKindChanged.emit(0)
+
+    @staticmethod
+    def on_help():
+        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#table-of-contents")
+
+    @staticmethod
+    def on_settings():
+        CS2WT.settings_window.open()
+            

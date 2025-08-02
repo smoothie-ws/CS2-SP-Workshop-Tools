@@ -32,7 +32,7 @@ class Plugin:
             
             connections = {
                 sp.event.ProjectOpened: lambda _: cls.on_project_opened(),
-                sp.event.ProjectCreated: lambda _: cls.on_project_opened(),
+                sp.event.ProjectCreated: lambda _: cls.on_project_created(),
                 sp.event.ProjectAboutToClose: lambda _: cls.on_project_about_to_close(),
                 sp.event.ProjectAboutToSave: lambda _: cls.on_project_about_to_save(),
                 sp.event.ProjectSaved: lambda _: cls.on_project_saved(),
@@ -86,13 +86,13 @@ class Plugin:
         pass
     
     @classmethod
-    def on_project_about_to_close(cls):
-        pass
-    
-    @classmethod
     def on_project_created(cls):
         pass
 
+    @classmethod
+    def on_project_about_to_close(cls):
+        pass
+    
     @classmethod
     def on_project_about_to_save(cls):
         pass

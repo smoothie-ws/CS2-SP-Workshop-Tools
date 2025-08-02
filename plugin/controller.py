@@ -7,13 +7,15 @@ from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
 
 
 class MainView(QmlView):
-    def __init__(self, path: str, icon: QtGui.QIcon):
+    def __init__(self, path: str, icon: QtGui.QIcon, callback):
         super().__init__("Plugin")
         
         def cb(container: QtWidgets.QWidget):
             container.setWindowIcon(icon)
             container.setWindowTitle("CS2 Workshop Tools")
             UI.add_dock(container)
+            if callback is not None:
+                callback()
 
         self.load(path, cb)
         
@@ -86,10 +88,11 @@ class MainView(QmlView):
 
 
 class WeaponFinishInitWindow(QmlDialog):
-    def __init__(self, path: str, icon: QtGui.QIcon):
-        super().__init__("Create Weapon Finish", icon, "Plugin", path)
+    def __init__(self, path: str, icon: QtGui.QIcon, callback):
+        super().__init__("Create Weapon Finish", icon, "Plugin")
         self.view.setMinimumSize(QtCore.QSize(400, 260))
         self.is_new = False
+        self.load(path, lambda _: callback())
     
     opened = QtCore.Signal(bool)
     
@@ -148,9 +151,10 @@ class WeaponFinishInitWindow(QmlDialog):
     
     
 class SettingsWindow(QmlDialog):
-    def __init__(self, path: str, icon: QtGui.QIcon):
-        super().__init__("CS2 Workshop Tools Settings", icon, "Plugin", path)
+    def __init__(self, path: str, icon: QtGui.QIcon, callback):
+        super().__init__("CS2 Workshop Tools Settings", icon, "Plugin")
         self.view.setMinimumSize(QtCore.QSize(735, 425))
+        self.load(path, lambda _: callback())
         
     def on_confirmed(self, data: str) -> None:
         for key, value in json.loads(data).items():

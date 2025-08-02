@@ -7,7 +7,7 @@ from time import localtime, strftime
 from .log import Log
 from .path import Path
 from .plugin import Plugin
-from .ui import UI, QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui
+from .ui import UI, QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui, QtQml
 
 
 class QmlView(QtCore.QObject):
@@ -27,12 +27,13 @@ class QmlView(QtCore.QObject):
             self.load(path)
     
     def load(self, path: str, callback = None):
-        def start(status: QtQuickWidgets.QQuickWidget.Status):
-            if status == QtQuickWidgets.QQuickWidget.Status.Ready:
+        def start(status: QtQml.QQmlComponent.Status):
+            if status == QtQml.QQmlComponent.Status.Ready:
+                self.view.setContent(QtCore.QUrl.fromLocalFile(path), self.component, self.component.create())
                 if callback is not None:
                     callback(self.view)
-            else:
-                Log.error(str([e.toString() for e in self.view.errors()]))
+            elif status == QtQml.QQmlComponent.Status.Error:
+                Log.error(f'{status}: {[e.toString() for e in self.component.errors()]}')
             
         def on_warnings(warnings):
             for w in warnings:
@@ -42,9 +43,10 @@ class QmlView(QtCore.QObject):
             engine = self.view.engine()
             engine.warnings.connect(on_warnings)
             engine.rootContext().setContextProperty(self.name, self)
-            # load view
-            self.view.statusChanged.connect(start)
-            self.view.setSource(QtCore.QUrl.fromLocalFile(path))
+            
+            self.component = QtQml.QQmlComponent(engine)
+            self.component.statusChanged.connect(start)
+            self.component.loadUrl(QtCore.QUrl.fromLocalFile(path), QtQml.QQmlComponent.CompilationMode.Asynchronous)
         else:
             Log.error(f'File {path} does not exist')
 

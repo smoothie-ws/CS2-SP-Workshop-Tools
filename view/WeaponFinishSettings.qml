@@ -246,14 +246,6 @@ ColumnLayout {
 
             SPSeparator { Layout.fillWidth: true }
 
-            Text {
-                text: "Missing Base Weapon Textures!"
-                color: "red"
-                visible: !baseTextures.ready
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-            }
-
             RowLayout {
                 Layout.fillWidth: true
 
@@ -264,7 +256,7 @@ ColumnLayout {
                     checkable: true
                     Layout.fillWidth: true
                     contentAlignment: Qt.AlignCenter
-                    background.color: checked ? Qt.rgba(0.75, 0.75, 1.0) : Qt.rgba(0.5, 0.5, 0.5)
+                    background.color: checked ? Qt.rgba(0.5, 0.5, 0.85) : Qt.rgba(0.5, 0.5, 0.5)
                     background.opacity: hovered ? 0.25 : 0.15
 
                     onCheckedChanged: {
@@ -279,7 +271,7 @@ ColumnLayout {
                     checkable: true
                     Layout.fillWidth: true
                     contentAlignment: Qt.AlignCenter
-                    background.color: checked ? Qt.rgba(0.75, 0.75, 1.0) : Qt.rgba(0.5, 0.5, 0.5)
+                    background.color: checked ? Qt.rgba(0.5, 0.5, 0.85) : Qt.rgba(0.5, 0.5, 0.5)
                     background.opacity: hovered ? 0.25 : 0.15
                 }
             }
@@ -331,6 +323,14 @@ ColumnLayout {
                 Layout.fillWidth: true
                 toggled: false
                 text: "Base Textures"
+                header: Text {
+                    text: "Missing textures!"
+                    color: Qt.rgba(0.85, 0.15, 0.15)
+                    visible: !baseTextures.ready
+                    rightPadding: 5
+                    horizontalAlignment: Text.AlignRight
+                    verticalAlignment: Text.AlignVCenter
+                }
 
                 readonly property bool ready: {
                     for (let i = 0; i < textureRepeater.count; ++i) {
@@ -341,10 +341,7 @@ ColumnLayout {
                     return true;
                 }
 
-                onReadyChanged: {
-                    if (!ready)
-                        enableLivePreview.checked = false;
-                }
+                onReadyChanged: enableLivePreview.checked = ready
 
                 Repeater {
                     id: textureRepeater
