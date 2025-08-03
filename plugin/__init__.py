@@ -52,8 +52,8 @@ class CS2WT(Plugin):
         menu = UI.add_menu(QtWidgets.QMenu("CS2 Workshop Tools"))
         menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
         menu.addSeparator()
-        menu.addAction("Help").triggered.connect(CS2WT.on_help)
-        menu.addAction("Report a bug").triggered.connect(CS2WT.on_report_a_bug)
+        menu.addAction("Help...").triggered.connect(CS2WT.on_help)
+        menu.addAction("Report a bug...").triggered.connect(CS2WT.on_report_a_bug)
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
         CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon)

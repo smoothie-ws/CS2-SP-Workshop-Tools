@@ -281,6 +281,7 @@ ColumnLayout {
                     id: enablePBRValidation
                     text: "PBR Validation"
                     tooltip.text: `${checked ? "Disable" : "Enable"} PBR validation of the Weapon Finish (V)`
+                    enabled: enableLivePreview.checked
                     checkable: true
                     Layout.fillWidth: true
                     contentAlignment: Qt.AlignCenter

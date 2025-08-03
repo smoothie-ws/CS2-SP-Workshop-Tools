@@ -67,6 +67,7 @@ Rectangle {
             color: "#2b2b2b"
             radius: 10
             clip: true
+            Layout.minimumWidth: 350
             Layout.fillWidth: true
             Layout.fillHeight: true
 

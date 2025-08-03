@@ -84,6 +84,7 @@ ColumnLayout {
         AlgLabel {
             id: label
             color: "#d0d0d0"
+            elide: Text.ElideRight
             Layout.fillWidth: true
         }
 
