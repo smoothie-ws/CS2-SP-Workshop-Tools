@@ -2,6 +2,7 @@ import math
 import substance_painter as sp
 
 from .painter import Log, Path, Plugin, Resource, ProjectSettings
+from .utils import Decompiler
 
 
 class WeaponFinish:
@@ -123,16 +124,17 @@ class WeaponFinish:
 				)
 				if not Path.exists(econitem):
 					weapon_finish["econitem"] = econitem
-					WeaponFinish.dump(weapon_finish)
-					WeaponFinish.export_econ()
 				else:
 					Log.warning(f'Failed to create .econitem file: path "{econitem}" already exists')
 
 			else:
 				Log.warning("CS2 path not found. Please set it in the plugin settings menu")
 
+			WeaponFinish.dump(weapon_finish)
+			WeaponFinish.export_econ()
+   
 			# update shader instance
-			WeaponFinish.change_finish_style_shader(finish_style, 
+			WeaponFinish.update_style(finish_style, 
 				lambda res, msg: callback(res,
 					f'The project was successfully set up as Weapon Finish ({finish_style.upper()})' 
      				if res else 
@@ -147,19 +149,32 @@ class WeaponFinish:
 			proceed(None)
 
 	@staticmethod
-	def change_finish_style_shader(finish_style: str, callback):
-		def update_shader(resources):
-			if len(resources) > 0:
-				url = resources[0].identifier().url()
-				sp.js.evaluate(f"""
-					if (alg.shaders.instances()[0].url != "{url}")
-						alg.shaders.updateShaderInstance(0, "{url}")
-				""")
-				callback(True, f'Finish Style was set to `{finish_style.upper()}`')
-			else:
-				callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
-			
-		Resource.search(update_shader, "your_assets", "shader", f'cs2_{finish_style.lower()}')
+	def update_style(finish_style: str, callback):
+		if WeaponFinish.is_open():
+			def update_shader(resources):
+				if len(resources) > 0:
+					url = resources[0].identifier().url()
+					sp.js.evaluate(f"""
+						if (alg.shaders.instances()[0].url != "{url}")
+							alg.shaders.updateShaderInstance(0, "{url}")
+					""")
+					callback(True, f'Finish Style was set to `{finish_style.upper()}`')
+				else:
+					callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
+				
+			Resource.search_resource(update_shader, "your_assets", "shader", f'cs2_{finish_style.lower()}')
+
+	@staticmethod
+	def update_weapon(weapon: str):
+		resources = {}
+		if WeaponFinish.is_open():
+			WeaponFinish.set("weapon", weapon)
+			path = Path.asset("textures", "models", weapon)
+			for param in ["uBaseColor", "uBaseRough", "uBaseSurface", "uBaseMasks", "uBaseCavity"]:
+				tex_path = Path.join(path, f'{weapon}_{param[5:].lower()}.png')
+				if Path.exists(tex_path):
+					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE).identifier().url()
+		return resources
 
 	@staticmethod
 	def import_econ():

@@ -18,8 +18,8 @@ class CS2WT(Plugin):
         
     @classmethod
     def on_start(cls):
-        CS2WT.init_ui()
         CS2WT.checkout()
+        CS2WT.init_ui()
     
     @classmethod
     def on_close(cls):
@@ -34,6 +34,10 @@ class CS2WT(Plugin):
             CS2WT.main_view.projectKindChanged.emit(1)
 
     @classmethod
+    def on_project_created(cls):
+        cls.on_project_opened()
+
+    @classmethod
     def on_project_about_to_save(cls):
         if WeaponFinish.is_open():
             CS2WT.main_view.projectAboutToSave.emit()
@@ -43,26 +47,17 @@ class CS2WT(Plugin):
         CS2WT.main_view.projectKindChanged.emit(0)
 
     @staticmethod
-    def on_help():
-        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#table-of-contents")
-
-    @staticmethod
-    def on_settings():
-        CS2WT.settings_window.open()
-
-    @staticmethod
     def init_ui():
         # plugin menu
         menu = UI.add_menu(QtWidgets.QMenu("CS2 Workshop Tools"))
-        menu.addAction("Help").triggered.connect(CS2WT.on_help)
         menu.addAction("Settings").triggered.connect(CS2WT.on_settings)
+        menu.addSeparator()
+        menu.addAction("Help...").triggered.connect(CS2WT.on_help)
+        menu.addAction("Report a bug...").triggered.connect(CS2WT.on_report_a_bug)
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
-        # dock widget
-        CS2WT.main_view = MainView(QmlView.view_path("DockView.qml"), icon)
-        # settings window
+        CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon)
         CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
-        # weapon finish init window
         CS2WT.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon)
         
     @staticmethod
@@ -77,7 +72,6 @@ class CS2WT(Plugin):
         shader_path = Path.asset("shader")
         for i, fs in enumerate(WeaponFinish.FINISH_STYLES):
             sp_shader_file_path = Path.join(sp_shaders_path, f'cs2_{fs}.glsl')
-            Plugin.push_file(sp_shader_file_path)
             if not Path.exists(sp_shader_file_path):
                 with open(sp_shader_file_path, "w", encoding="utf-8") as f:
                     f.write(Shader.process(shader_source, {"FINISH_STYLE": i}))
@@ -88,11 +82,21 @@ class CS2WT(Plugin):
                 path = Path.asset("ui", "icons", f'{name}.png')
                 if Path.exists(path):
                     shader_resource.set_custom_preview(path)
-        Resource.search(set_previews, "your_assets", "shader", "cs2")
+        Resource.search_resource(set_previews, "your_assets", "shader", "cs2")
 
         # shader ui
         sp_shader_ui_path = Path.join(sp_shaders_ui_path, "cs2-ui.qml")
-        Plugin.push_file(sp_shader_ui_path)
         if not Path.exists(Path.join(sp_shaders_ui_path, "ui.qml")):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
+        
+    @staticmethod
+    def on_settings():
+        CS2WT.settings_window.open()
             
+    @staticmethod
+    def on_help():
+        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#table-of-contents")
+
+    @staticmethod
+    def on_report_a_bug():
+        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/issues")

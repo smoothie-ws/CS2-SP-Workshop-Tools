@@ -31,8 +31,8 @@ class QmlView(QtCore.QObject):
             if status == QtQuickWidgets.QQuickWidget.Status.Ready:
                 if callback is not None:
                     callback(self.view)
-            else:
-                Log.error(str([e.toString() for e in self.view.errors()]))
+            elif status == QtQuickWidgets.QQuickWidget.Status.Error:
+                Log.error(f'{status}: {[e.toString() for e in self.view.errors()]}')
             
         def on_warnings(warnings):
             for w in warnings:
@@ -42,7 +42,6 @@ class QmlView(QtCore.QObject):
             engine = self.view.engine()
             engine.warnings.connect(on_warnings)
             engine.rootContext().setContextProperty(self.name, self)
-            # load view
             self.view.statusChanged.connect(start)
             self.view.setSource(QtCore.QUrl.fromLocalFile(path))
         else:
@@ -52,10 +51,10 @@ class QmlView(QtCore.QObject):
     @QtCore.Slot(str, result=str)
     def js(self, code: str):
         try:
-            return json.dumps(sp.js.evaluate(code))
-        except Exception as e:
-            Log.error(f'Failed to evaluate js code: {str(e)}')
-            Log.info(code)
+            res = sp.js.evaluate(code)
+        except:
+            res = None
+        return json.dumps(res)
     
     @QtCore.Slot(result=str)
     def time(self) -> str:
@@ -65,6 +64,10 @@ class QmlView(QtCore.QObject):
     def asset(self, path: str) -> str:
         return f'file:{Path.asset(path)}'
     
+    @QtCore.Slot(str, result=bool)
+    def pathExists(self, path: str) -> bool:
+        return Path.exists(path)
+        
     @QtCore.Slot(str)
     def info(self, msg: str):
         Log.info(msg)
@@ -92,7 +95,7 @@ class QmlView(QtCore.QObject):
     
 class QmlWindow(QmlView):
     def __init__(self, title: str, icon: QtGui.QIcon = None, name: str = "Plugin", path: str = None):
-        self.window = UI.add_window(QtWidgets.QMainWindow(
+        self.window = UI.add_widget(QtWidgets.QMainWindow(
             parent=sp.ui.get_main_window(),
             flags=QtCore.Qt.WindowType.Window | 
                 QtCore.Qt.WindowType.CustomizeWindowHint | 

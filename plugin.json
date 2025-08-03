@@ -1,6 +1,5 @@
 {
     "version": "1.0.0a",
-    "files": [],
     "settings": {
         "cs2_path": "",
         "weapon_list": {
@@ -87,7 +86,6 @@
             "uUseCustomNormal": true,
             "uUseCustomMasks": true,
             "uUseCustomAOTex": true
-        },
-        "ignore_textures_are_missing": false
+        }
     }
 }

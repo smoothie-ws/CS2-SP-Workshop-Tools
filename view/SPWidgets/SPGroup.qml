@@ -10,15 +10,16 @@ ColumnLayout {
     spacing: 7
 
     default property alias children: content.children
-    property alias activeScopeBorder: scopeLine.visible
+    property alias header: header.sourceComponent
+    property alias background: loader.sourceComponent
     property alias toggled: groupButton.checked
     property alias text: groupButton.text
     property alias tooltip: groupButton.tooltip
     property alias expandable: groupButton.enabled
+    property alias activeScopeBorder: scopeLine.visible
     property real padding: 5
 
     property var labels: []
-    property alias background: loader.sourceComponent
     property real scopeWidth: 0.0
 
     Loader {
@@ -45,7 +46,6 @@ ColumnLayout {
         id: groupButton
         checkable: true
         checked: true
-        opacity: 1.0
         checker.visible: false
         contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
         Layout.fillWidth: true
@@ -55,6 +55,11 @@ ColumnLayout {
         icon.source: enabled ? (checked ? AlgStyle.icons.groupwidget.expanded : AlgStyle.icons.groupwidget.collapsed) : ""
         icon.width: 16
         icon.height: 16
+
+        Loader {
+            id: header
+            anchors.fill: parent
+        }
     }
 
     RowLayout {

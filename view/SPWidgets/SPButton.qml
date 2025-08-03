@@ -34,62 +34,53 @@ SPControl {
 
     onCheckableChanged: checker.visible = checkable
     
-    Item {
+    Rectangle {
+        id: background
         anchors.fill: parent
+        color: root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
+        radius: 15
+
+        Behavior on color {
+            ColorAnimation { duration: 250 }
+        }
+    }
+
+    RowLayout {
+        id: content
+        spacing: 5
+        anchors.margins: 5
+        anchors.left: parseInt(root.contentAlignment & Qt.AlignLeft) != 0 ? parent.left : undefined
+        anchors.horizontalCenter: parseInt(root.contentAlignment & Qt.AlignHCenter) != 0 ? parent.horizontalCenter : undefined
+        anchors.right: parseInt(root.contentAlignment & Qt.AlignRight) != 0 ? parent.right : undefined
+        anchors.top: parseInt(root.contentAlignment & Qt.AlignTop) != 0 ? parent.top : undefined
+        anchors.verticalCenter: parseInt(root.contentAlignment & Qt.AlignVCenter) != 0 ? parent.verticalCenter : undefined
+        anchors.bottom: parseInt(root.contentAlignment & Qt.AlignBottom) != 0 ? parent.bottom : undefined
 
         Rectangle {
-            id: background
-            anchors.fill: parent
-            color: root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
-            radius: 15
-
-            Behavior on color {
-                ColorAnimation { duration: 250 }
-            }
+            id: checker
+            visible: false
+            height: 15
+            width: 15
+            radius: width
+            color: root.checked ? "#cfcfcf" : (root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.35))
+            border.width: root.hovered ? 3 : 4
+            border.color: Qt.rgba(0, 0, 0, 0.35)
         }
 
-        Item {
-            id: content
-            anchors.fill: parent
-            anchors.margins: 5
+        Image {
+            id: icon
+            visible: source !== ""
+            opacity: root.hovered ? 1.0 : 0.5
+            sourceSize.width: width
+            sourceSize.height: height
+        }
 
-            RowLayout {
-                anchors.left: parseInt(root.contentAlignment & Qt.AlignLeft) != 0 ? parent.left : undefined
-                anchors.horizontalCenter: parseInt(root.contentAlignment & Qt.AlignHCenter) != 0 ? parent.horizontalCenter : undefined
-                anchors.right: parseInt(root.contentAlignment & Qt.AlignRight) != 0 ? parent.right : undefined
-                anchors.top: parseInt(root.contentAlignment & Qt.AlignTop) != 0 ? parent.top : undefined
-                anchors.verticalCenter: parseInt(root.contentAlignment & Qt.AlignVCenter) != 0 ? parent.verticalCenter : undefined
-                anchors.bottom: parseInt(root.contentAlignment & Qt.AlignBottom) != 0 ? parent.bottom : undefined
-                spacing: 5
-
-                Rectangle {
-                    id: checker
-                    visible: false
-                    height: 15
-                    width: 15
-                    radius: width
-                    color: root.checked ? "#cfcfcf" : (root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.35))
-                    border.width: root.hovered ? 3 : 4
-                    border.color: Qt.rgba(0, 0, 0, 0.35)
-                }
-
-                Image {
-                    id: icon
-                    visible: source !== ""
-                    opacity: root.hovered ? 1.0 : 0.5
-                    sourceSize.width: width
-                    sourceSize.height: height
-                }
-
-                Label {
-                    id: label
-                    visible: text !== ""
-                    Layout.fillWidth: true
-                    color: "#cfcfcf"
-                    verticalAlignment: Text.AlignVCenter
-                    padding: 2
-                }
-            }
+        Label {
+            id: label
+            visible: text !== ""
+            color: "#cfcfcf"
+            verticalAlignment: Text.AlignVCenter
+            padding: 2
         }
     }
 }

@@ -186,7 +186,7 @@ SPDialog {
                             radius: 13.5
                             height: 30
                             border.width: 2
-                            border.color: internal.cs2PathIsValid ? "transparent" : "red"
+                            border.color: internal.cs2PathIsValid ? "transparent" : Qt.rgba(0.85, 0.15, 0.15)
                             Layout.fillWidth: true
                             
                             SPTextInput {
@@ -409,14 +409,6 @@ SPDialog {
                             }
                         }
                     }
-                }
-
-                SPButton {
-                    id: ignoreTexturesAreMissing
-                    text: "Ignore Textures Are Missing"
-                    checkable: true
-                    contentAlignment: Qt.ALignLeft | Qt.AlignVCenter
-                    Layout.fillWidth: true
                 }
             }
 

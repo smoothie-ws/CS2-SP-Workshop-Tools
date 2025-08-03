@@ -2,7 +2,7 @@ import json
 
 from .utils import Decompiler
 from .weapon_finish import WeaponFinish
-from .painter import UI, Log, Path, Plugin, ProjectSettings
+from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
 
 
@@ -13,7 +13,7 @@ class MainView(QmlView):
         def cb(container: QtWidgets.QWidget):
             container.setWindowIcon(icon)
             container.setWindowTitle("CS2 Workshop Tools")
-            UI.add_dock(container).setWindowIcon(icon)
+            UI.add_dock(container)
 
         self.load(path, cb)
         
@@ -25,22 +25,9 @@ class MainView(QmlView):
     pluginAboutToClose = QtCore.Signal()
 
     # slots
-    @QtCore.Slot(str)
-    def changeStyle(self, finish_style: str):
-        def change(res: bool, msg: str):
-            if res:
-                Log.warning(msg) 
-                self.styleReady.emit()
-            else:
-                Log.error(msg)
-
-        # update shader instance
-        WeaponFinish.change_finish_style_shader(finish_style, change)
-
-    @QtCore.Slot()
-    def openSettings(self):
-        from . import CS2WT
-        CS2WT.on_settings()
+    @QtCore.Slot(str, result=str)
+    def importTexture(self, path:str) -> str:
+        return Resource.import_session_resource(path, Resource.Usage.TEXTURE).identifier().url()
         
     @QtCore.Slot(str)
     def showInExplorer(self, path:str):
@@ -63,8 +50,22 @@ class MainView(QmlView):
     def dumpWeaponFinish(self, weapon_finish: str):
         WeaponFinish.dump(json.loads(weapon_finish))
         
+    @QtCore.Slot(str, result=str)
+    def updateWeapon(self, weapon: str):
+        return json.dumps(WeaponFinish.update_weapon(weapon))
+
     @QtCore.Slot(str)
-    def updateEconItemPath(self, path: str):
+    def updateStyle(self, style: str):
+        def change(res: bool, msg: str):
+            if res:
+                Log.warning(msg) 
+                self.styleReady.emit()
+            else:
+                Log.error(msg)
+        WeaponFinish.update_style(style, change)
+
+    @QtCore.Slot(str)
+    def updateEconPath(self, path: str):
         WeaponFinish.set("econitem", path)
         
     @QtCore.Slot(str)
@@ -72,12 +73,12 @@ class MainView(QmlView):
         WeaponFinish.set("texturesFolder", path)
         
     @QtCore.Slot()
-    def syncWeaponFinish(self):
-        WeaponFinish.export_econ()
+    def importWeaponFinishEcon(self):
+        WeaponFinish.import_econ()
 
     @QtCore.Slot()
-    def importWeaponFinishEconItem(self):
-        WeaponFinish.import_econ()
+    def exportWeaponFinishEcon(self):
+        WeaponFinish.export_econ()
 
     @QtCore.Slot()
     def exportWeaponFinishTextures(self):
@@ -87,7 +88,7 @@ class MainView(QmlView):
 class WeaponFinishInitWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("Create Weapon Finish", icon, "Plugin", path)
-        self.window.setMinimumSize(400, 260)
+        self.view.setMinimumSize(QtCore.QSize(400, 260))
         self.is_new = False
     
     opened = QtCore.Signal(bool)
@@ -149,7 +150,7 @@ class WeaponFinishInitWindow(QmlDialog):
 class SettingsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Settings", icon, "Plugin", path)
-        self.window.setMinimumSize(735, 425)
+        self.view.setMinimumSize(QtCore.QSize(735, 425))
         
     def on_confirmed(self, data: str) -> None:
         for key, value in json.loads(data).items():

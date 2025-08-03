@@ -8,21 +8,13 @@ from .resource import Resource
 
 
 class Plugin:
-    files: list[str] = []
     settings: dict = {}
     version: str = "0.0.1a"
     
     @staticmethod
-    def push_file(path: str):
-        if not path in Plugin.files:
-            Plugin.files.append(path)
-            Plugin.save()
-
-    @staticmethod
     def save():
         Path.write(Path.settings, json.dumps({
             "version": Plugin.version,
-            "files": Plugin.files,
             "settings": Plugin.settings
         }, indent=4, ensure_ascii=False))
     
@@ -35,7 +27,6 @@ class Plugin:
         
         try:
             data = json.loads(Path.read(Path.settings, {}))
-            Plugin.files = data.get("files", [])
             Plugin.settings = data.get("settings", {})
             Plugin.version = data.get("version", "0.0.1a")
             
@@ -77,8 +68,6 @@ class Plugin:
         UI.clear()
         Plugin.save()
         cls.on_close()
-        while len(Plugin.files) > 0:
-            Path.remove(Plugin.files.pop(0))
         Resource.refresh()
         Log.warning("Plugin closed")
     
@@ -97,13 +86,13 @@ class Plugin:
         pass
     
     @classmethod
-    def on_project_about_to_close(cls):
-        pass
-    
-    @classmethod
     def on_project_created(cls):
         pass
 
+    @classmethod
+    def on_project_about_to_close(cls):
+        pass
+    
     @classmethod
     def on_project_about_to_save(cls):
         pass

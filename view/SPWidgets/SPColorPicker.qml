@@ -76,17 +76,17 @@ Window {
                     id: cursor
                     width: 20
                     height: 20
-                    x: root.color.hsvSaturation * colorGradient.width - width / 2
-                    y: (1.0 - root.color.hsvValue) * colorGradient.height - height / 2
+                    x: root.color.hsvSaturation * colorGradient.width - width * 0.5
+                    y: (1.0 - root.color.hsvValue) * colorGradient.height - height * 0.5
                     onPaint: {
                         var ctx = getContext("2d");
                         ctx.strokeStyle = "#000";
                         ctx.lineWidth = 2;
                         ctx.beginPath();
-                        ctx.moveTo(width / 2, 0);
-                        ctx.lineTo(width / 2, height);
-                        ctx.moveTo(0, height / 2);
-                        ctx.lineTo(width, height / 2);
+                        ctx.moveTo(width * 0.5, 0);
+                        ctx.lineTo(width * 0.5, height);
+                        ctx.moveTo(0, height * 0.5);
+                        ctx.lineTo(width, height * 0.5);
                         ctx.stroke();
                     }
                 }
@@ -114,7 +114,7 @@ Window {
 
                 Item {
                     x: 0 - width
-                    y: clamp(root.color.hsvHue * hueSlider.height, 0, hueSlider.height) - height / 2
+                    y: clamp(root.color.hsvHue * hueSlider.height, 0, hueSlider.height) - height * 0.5
                     width: 5
                     height: 10
                     Canvas {
@@ -123,7 +123,7 @@ Window {
                             var ctx = getContext("2d");
                             ctx.beginPath();
                             ctx.moveTo(0, 0);
-                            ctx.lineTo(width, height / 2);
+                            ctx.lineTo(width, height * 0.5);
                             ctx.lineTo(0, height);
                             ctx.closePath();
                             ctx.fillStyle = "#fff";

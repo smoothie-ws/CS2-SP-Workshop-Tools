@@ -2,7 +2,6 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.7
 import QtQuick.Window 2.15
-import Qt.labs.platform 1.1
 import Painter 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
@@ -13,66 +12,30 @@ ColumnLayout {
     id: root
     spacing: 0
 
-    property bool ready: false
+    // 0 - closed
+    // 1 - regular project
+    // 2 - weapon finish
+    property int projectKind: 0
     property alias weaponFinish: weaponFinish
     
     Component.onCompleted: {
+        weaponFinish.connect();
         styleBox.currentKeyChanged.connect(() => {
-            if (ready)
-                Plugin.changeStyle(styleBox.currentKey)
+            if (projectKind == 2) 
+                Plugin.updateStyle(styleBox.currentKey);
         });
         weaponBox.currentKeyChanged.connect(() => {
-            if (ready) {
-                const w = weaponBox.currentKey;
-                const path = `${Plugin.getPluginPath()}/assets/textures/models/${w}`;
-                try {
-                    weaponFinish.parameters["uBaseColor"].control.url = importTexture(`${path}/${w}_color.png`);
-                    weaponFinish.parameters["uBaseRough"].control.url = importTexture(`${path}/${w}_rough.png`);
-                    weaponFinish.parameters["uBaseSurface"].control.url = importTexture(`${path}/${w}_surface.png`);
-                    weaponFinish.parameters["uBaseMasks"].control.url = importTexture(`${path}/${w}_masks.png`);
-                    weaponFinish.parameters["uBaseCavity"].control.url = importTexture(`${path}/${w}_cavity.png`);
-                } catch(err) { 
-                    Plugin.error(err.toString());
-                }
-            }
+            if (projectKind == 2) 
+                weaponFinish.updateWeapon(weaponBox.currentKey);
         });
+        weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.tga").slice(5));
+        weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/scratches.png").slice(5));
     }
 
-    function loadWeaponFinish() {
-        try {
-            ready = false;
-            
-            const values = weaponFinish.loadParams();
-            weaponFinish.connect();
-
-            // load base textures
-            const w = weaponBox.currentKey;
-            const texPath = Plugin.asset("textures");
-            for (const [param, file] of Object.entries({
-                    "uGrungeTex": "grunge.tga", 
-                    "uScratchesTex": "scratches.png", 
-                    "uBaseColor": `models/${w}/${w}_color.png`, 
-                    "uBaseRough": `models/${w}/${w}_rough.png`, 
-                    "uBaseSurface": `models/${w}/${w}_surface.png`, 
-                    "uBaseMasks": `models/${w}/${w}_masks.png`, 
-                    "uBaseCavity": `models/${w}/${w}_cavity.png`
-                }))
-                if (values[param] === undefined || values[param] === "")
-                    weaponFinish.parameters[param].control.url = importTexture(`${texPath.substring(5)}/${file}`);
-            ready = true;
-        } catch (e) {
-            Plugin.error(`Failed to load Weapon Finish: ${e}`);
-        }
-    }
-
-    function importTexture(url) {
-        return JSON.parse(Plugin.js(`alg.resources.importSessionResource("${url}", "texture")`));
-    }
-
-    QtObject {
+    WeaponFinish {
         id: weaponFinish
 
-        readonly property var parameters: {
+        parameters: {
             "econitem":               { control: econitem,               prop: "filePath"     },
             "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
             "style":                  { control: styleBox,               prop: "currentKey"   },
@@ -107,95 +70,6 @@ ColumnLayout {
             "uUseCustomNormal":       { control: null,                   prop: "checked"      },
             "uUseCustomMasks":        { control: null,                   prop: "checked"      },
             "uUseCustomAOTex":        { control: null,                   prop: "checked"      }
-        }
-
-        function isShaderParameter(param) {
-            if (JSON.parse(Plugin.js("alg.project.isOpen()")))
-                return Object.keys(JSON.parse(Plugin.js(`alg.shaders.parameters(0)`))).includes(param);
-            else
-                return param.startsWith("u");
-        }
-
-        // load weapon finish parameters
-        function loadParams() {
-            const values = loadWeaponFinishProject();
-            for (const [param, value] of Object.entries(values)) 
-                if (param in parameters) {
-                    const component = parameters[param];
-                    component.control[component.prop] = value;
-                }
-            return values;
-        }
-
-        function getParams() {
-            const w = {};
-            for (const [param, component] of Object.entries(parameters))
-                w[param] = component.control[component.prop];
-            return w;
-        }
-
-        // connect widgets to shader
-        function connect() {
-            for (const [param, component] of Object.entries(parameters)) 
-                if (isShaderParameter(param)) {
-                    const control = component.control;
-                    const prop = component.prop;
-                    if (["filePath", "url"].includes(prop))
-                        control[prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${control[prop]}"`)
-                        );
-                    else if (["range", "arrayColor", "transform"].includes(prop))
-                        control[prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${control[prop]}]`)
-                        );
-                    else
-                        control[prop + "Changed"].connect(() => 
-                            Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${control[prop]}`)
-                        );
-                }
-        }
-
-        function dump() {
-            Plugin.dumpWeaponFinish(JSON.stringify(getParams()));
-        }
-
-        function syncShader() {
-            for (const [param, component] of Object.entries(parameters)) 
-                if (isShaderParameter(param)) {
-                    const value = component.control[component.prop];
-                    if (["filePath", "url"].includes(component.prop))
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${value}"`);
-                    else if (["range", "arrayColor", "transform"].includes(component.prop))
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${value}]`);
-                    else
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${value}`);
-                }
-        }
-
-        function syncEcon() {
-            dump();
-            Plugin.syncWeaponFinish();
-        }
-
-        function updateEconItemPath(path) {
-            const values = loadWeaponFinishProject();
-            values["econitem"] = path;
-            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
-        }
-
-        function updateTexturesFolderPath(path) {
-            const values = loadWeaponFinishProject();
-            values["texturesFolder"] = path;
-            Plugin.js(`alg.project.settings.setValue("weapon_finish", ${JSON.stringify(values)})`);
-        }
-
-        function resetParameter(parameter) {
-            const component = parameters[parameter];
-            component.control[component.prop] = loadWeaponFinishProject()[parameter];
-        }
-
-        function loadWeaponFinishProject() {
-            return JSON.parse(Plugin.getWeaponFinish());
         }
     }
 
@@ -258,10 +132,16 @@ ColumnLayout {
             }
 
             RowLayout {
+                id: econitem
                 Layout.fillWidth: true
-                    
+                
+                property string filePath: ""
+
+                onFilePathChanged: Plugin.updateEconPath(filePath)
+
                 SPButton {
-                    text: "Import"
+                    text: "Import Econitem"
+                    implicitWidth: 125
                     enabled: econitem.filePath != ""
                     icon.source: Plugin.asset("icons/import.png")
                     icon.width: 15
@@ -270,60 +150,53 @@ ColumnLayout {
                     background.color: "black"
                     background.opacity: hovered ? 0.75 : 0.25
 
-                    onClicked: Plugin.importWeaponFinishEconItem()
+                    onClicked: Plugin.importWeaponFinishEcon()
                 }
 
-                SPLabeled {
-                    id: econitem
+                Label {
+                    clip: true
+                    opacity: 0.5
+                    elide: Text.ElideLeft
+                    horizontalAlignment: Text.AlignLeft
+                    text: econitem.filePath
+                    color: AlgStyle.text.color.normal
                     Layout.fillWidth: true
-                    text: "Econitem File"
+                }
 
-                    property string filePath: ""
+                SPButton {
+                    text: "Select"
 
-                    onFilePathChanged: Plugin.updateEconItemPath(filePath)
+                    onClicked: econFileDialog.open()
 
-                    Label {
-                        clip: true
-                        opacity: 0.5
-                        elide: Text.ElideLeft
-                        horizontalAlignment: Text.AlignLeft
-                        text: econitem.filePath
-                        color: AlgStyle.text.color.normal
-                        Layout.fillWidth: true
+                    SPFileDialog {
+                        id: econFileDialog
+                        title: "Select file"
+                        folder: econitem.filePath.substring(econitem.filePath.lastIndexOf("/"))
+                        nameFilters: [ "CS2 Econ Item (*.econitem)" ]
+                        onAccepted: econitem.filePath = fileUrl.toString().substring(8);
                     }
+                }
 
-                    SPButton {
-                        text: "Select"
-                        label.color: Qt.rgba(0.0, 0.0, 0.0, 0.75)
-                        background.color: "white"
-                        background.opacity: hovered ? 0.5 : 0.25
+                SPButton {
+                    text: "Show"
+                    enabled: econitem.filePath != ""
+                    tooltip.text: "Reveal in File Explorer"
 
-                        onClicked: econFileDialog.open()
-
-                        SPFileDialog {
-                            id: econFileDialog
-                            title: "Select file"
-                            folder: econitem.filePath.substring(econitem.filePath.lastIndexOf("/"))
-                            nameFilters: [ "CS2 Econ Item (*.econitem)" ]
-                            onAccepted: econitem.filePath = fileUrl.toString().substring(8);
-                        }
-                    }
-
-                    SPButton {
-                        text: "Show"
-                        enabled: econitem.filePath != ""
-                        tooltip.text: "Reveal in File Explorer"
-
-                        onClicked: Plugin.showInExplorer(econitem.filePath)
-                    }
+                    onClicked: Plugin.showInExplorer(econitem.filePath)
                 }
             }
 
             RowLayout {
+                id: texturesFolder
                 Layout.fillWidth: true
                         
+                property string filePath: ""
+
+                onFilePathChanged: Plugin.updateTexturesFolderPath(filePath)
+
                 SPButton {
-                    text: "Export"
+                    text: "Export Textures"
+                    implicitWidth: 125
                     enabled: texturesFolder.filePath !== ""
                     icon.source: Plugin.asset("icons/export.png")
                     icon.width: 15
@@ -336,49 +209,36 @@ ColumnLayout {
                     onClicked: Plugin.exportWeaponFinishTextures()
                 }
                 
-                SPLabeled { 
-                    id: texturesFolder
+                Label {
+                    clip: true
+                    opacity: 0.5
+                    elide: Text.ElideLeft
+                    horizontalAlignment: Text.AlignLeft
+                    text: texturesFolder.filePath
+                    color: AlgStyle.text.color.normal
                     Layout.fillWidth: true
-                    text: "Textures Folder"
+                }
 
-                    property string filePath: ""
+                SPButton {
+                    text: "Select"
+                    
+                    onClicked: texturesFolderDialog.open()
 
-                    onFilePathChanged: Plugin.updateTexturesFolderPath(filePath)
-
-                    Label {
-                        clip: true
-                        opacity: 0.5
-                        elide: Text.ElideLeft
-                        horizontalAlignment: Text.AlignLeft
-                        text: texturesFolder.filePath
-                        color: AlgStyle.text.color.normal
-                        Layout.fillWidth: true
+                    SPFileDialog {
+                        id: texturesFolderDialog
+                        title: "Select folder"
+                        selectFolder: true
+                        folder: texturesFolder.filePath
+                        onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
                     }
+                }
 
-                    SPButton {
-                        text: "Select"
-                        label.color: Qt.rgba(0.0, 0.0, 0.0, 0.75)
-                        background.color: "white"
-                        background.opacity: hovered ? 0.5 : 0.25
-                        
-                        onClicked: texturesFolderDialog.open()
+                SPButton {
+                    text: "Show"
+                    enabled: texturesFolder.filePath != ""
+                    tooltip.text: "Reveal in File Explorer"
 
-                        SPFileDialog {
-                            id: texturesFolderDialog
-                            title: "Select folder"
-                            selectFolder: true
-                            folder: texturesFolder.filePath
-                            onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
-                        }
-                    }
-
-                    SPButton {
-                        text: "Show"
-                        enabled: texturesFolder.filePath != ""
-                        tooltip.text: "Reveal in File Explorer"
-
-                        onClicked: Plugin.showInExplorer(texturesFolder.filePath)
-                    }
+                    onClicked: Plugin.showInExplorer(texturesFolder.filePath)
                 }
             }
 
@@ -390,21 +250,40 @@ ColumnLayout {
                 SPButton {
                     id: enableLivePreview
                     text: "Live Preview"
+                    tooltip.text: `${checked ? "Disable" : "Enable"} live previewing of the Weapon Finish (G)`
+                    enabled: baseTextures.ready
                     checkable: true
                     Layout.fillWidth: true
                     contentAlignment: Qt.AlignCenter
-                    background.color: checked ? Qt.rgba(0.75, 0.75, 1.0) : Qt.rgba(0.5, 0.5, 0.5)
+                    background.color: checked ? Qt.rgba(0.5, 0.5, 0.85) : Qt.rgba(0.5, 0.5, 0.5)
                     background.opacity: hovered ? 0.25 : 0.15
+
+                    onCheckedChanged: {
+                        if (!baseTextures.ready)
+                            checked = false;
+                    }
+
+                    Shortcut {
+                        sequence: "G"
+                        onActivated: enableLivePreview.checked = !enableLivePreview.checked
+                    }
                 }
 
                 SPButton {
                     id: enablePBRValidation
                     text: "PBR Validation"
+                    tooltip.text: `${checked ? "Disable" : "Enable"} PBR validation of the Weapon Finish (V)`
+                    enabled: enableLivePreview.checked
                     checkable: true
                     Layout.fillWidth: true
                     contentAlignment: Qt.AlignCenter
-                    background.color: checked ? Qt.rgba(0.75, 0.75, 1.0) : Qt.rgba(0.5, 0.5, 0.5)
+                    background.color: checked ? Qt.rgba(0.5, 0.5, 0.85) : Qt.rgba(0.5, 0.5, 0.5)
                     background.opacity: hovered ? 0.25 : 0.15
+
+                    Shortcut {
+                        sequence: "V"
+                        onActivated: enablePBRValidation.checked = !enablePBRValidation.checked
+                    }
                 }
             }
 
@@ -452,8 +331,28 @@ ColumnLayout {
                 Layout.fillWidth: true
                 toggled: false
                 text: "Base Textures"
+                header: Text {
+                    text: "Missing textures!"
+                    color: Qt.rgba(0.85, 0.15, 0.15)
+                    visible: !baseTextures.ready
+                    rightPadding: 5
+                    horizontalAlignment: Text.AlignRight
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                readonly property bool ready: {
+                    for (let i = 0; i < textureRepeater.count; ++i) {
+                        const item = textureRepeater.itemAt(i);
+                        if (!item || item.url === "")
+                            return false;
+                    }
+                    return true;
+                }
+
+                onReadyChanged: enableLivePreview.checked = ready
 
                 Repeater {
+                    id: textureRepeater
                     model: [
                         { param: "uGrungeTex",        text: "Grunge"            },
                         { param: "uScratchesTex",     text: "Wear"              },
@@ -463,9 +362,12 @@ ColumnLayout {
                         { param: "uBaseSurface",      text: "Surface"           },
                         { param: "uBaseCavity",       text: "Cavity"            }
                     ]
+
                     delegate: SPParameter {
                         property alias url: resourcePicker.url
                         property alias scopeWidth: resourceLabel.scopeWidth
+
+                        onResetRequested: weaponFinish.resetParameter(modelData.param)
 
                         SPLabeled {
                             id: resourceLabel
@@ -477,8 +379,6 @@ ColumnLayout {
                                 filters: AlgResourcePicker.TEXTURE
                             }
                         }
-
-                        onResetRequested: weaponFinish.resetParameter(modelData.param)
                     }
 
                     onItemAdded: (i, control) => {
@@ -498,6 +398,7 @@ ColumnLayout {
         leftPadding: 10
         topPadding: 10
         bottomPadding: 10
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
             width: root.width - 20

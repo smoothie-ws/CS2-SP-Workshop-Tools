@@ -2,14 +2,15 @@ import QtQuick 2.15
 import QtQuick.Controls 2.0
 import AlgWidgets.Style 2.0
 
-ComboBox {
+SPControl {
     id: root
     implicitHeight: 25
-    textRole: "text"
-    valueRole: "value"
+    cursorShape: Qt.PointingHandCursor
 
     property var map: {}
     property var currentKey: null
+    property alias comboBox: comboBox
+    property alias currentIndex: comboBox.currentIndex
 
     Component.onCompleted: {
         if (currentKey != null)
@@ -29,104 +30,105 @@ ComboBox {
             update(() => currentIndex = Object.keys(map).indexOf(currentKey))
         );
 
-        syncModel();
-        mapChanged.connect(syncModel);
+        comboBox.syncModel();
+        mapChanged.connect(comboBox.syncModel);
     }
 
-    function syncModel() {
-        if (!map || typeof map !== "object")
-            return;
-        const m = [];
-        for (const [value, text] of Object.entries(map))
-            m.push({value: value, text: text});
-        model = m;
-    }
-
-    background: Rectangle {
+    ComboBox {
+        id: comboBox
+        textRole: "text"
+        valueRole: "value"
         anchors.fill: parent
-        color: root.hovered ? "#333333" : "#2d2d2d"
-        border.color: root.checked ? "#378ef0" : "#4e4e4e"
-        border.width: 1
-        radius: Math.min(height, width) / 2
-    }
 
-    contentItem: Label {
-        id: contentLabel
-        text: root.displayText
-        wrapMode: Text.WordWrap
-        horizontalAlignment: Text.AlignLeft
-        verticalAlignment: Text.AlignVCenter
-        leftPadding: 10
-        elide: Text.ElideRight
-        color: "#cfcfcf"
-    }
-
-    indicator: Image {
-        visible: root.menu !== null
-        source: AlgStyle.icons.combobox.dropArrow
-        y: root.topPadding + (root.availableHeight - height) / 2
-        anchors.right: parent.right
-        anchors.rightMargin: 10
-    }
-    
-    popup: Popup {
-        id: popupMenu
-        width: root.width
-        height: listContent.contentHeight
-
-        background: Rectangle {
-            color: "#333333"
-            border.color: "#4e4e4e"
-            border.width: 1
-            radius: Math.min(root.height, root.width) / 2
+        function syncModel() {
+            if (!root.map || typeof root.map !== "object")
+                return;
+            const m = [];
+            for (const [value, text] of Object.entries(root.map))
+                m.push({value: value, text: text});
+            model = m;
         }
 
-        ListView {
-            id: listContent
-            model: root.model
+        background: Rectangle {
             anchors.fill: parent
-            spacing: 5
-            clip: true
+            color: root.hovered ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(0, 0, 0, 0.25)
+            radius: Math.min(height, width) * 0.5
+            
+            Behavior on color {
+                ColorAnimation { duration: 250 }
+            }
+        }
 
-            ScrollBar.vertical: SPScrollBar {
-                visible: parent.height < parent.contentHeight
+        contentItem: Label {
+            text: comboBox.displayText
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignLeft
+            verticalAlignment: Text.AlignVCenter
+            leftPadding: 10
+            color: "#cfcfcf"
+        }
+
+        indicator: Image {
+            visible: comboBox.menu !== null
+            source: comboBox.down ? AlgStyle.icons.groupwidget.expanded : AlgStyle.icons.groupwidget.collapsed
+            y: comboBox.topPadding + (comboBox.availableHeight - height) * 0.5
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+        }
+        
+        popup: Popup {
+            id: popup
+            y: comboBox.height + 5
+            width: comboBox.width
+            height: Math.min(listContent.contentHeight, 200)
+
+            background: Rectangle {
+                color: "#262626"
+                radius: Math.min(comboBox.height, comboBox.width) * 0.5
             }
 
-            delegate: Rectangle {
-                id: listItem
-                width: listContent.width
-                height: 20
-                color: listItemMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
-                radius: 15
+            ListView {
+                id: listContent
+                model: comboBox.model
+                anchors.fill: parent
+                spacing: 5
+                clip: true
 
-                Rectangle {
-                    width: 5
-                    height: width
-                    radius: width
-                    x: 5
-                    y: parent.height / 2 - height / 2
-                    color: root.currentIndex == index ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(1, 1, 1, 0.5)
+                ScrollBar.vertical: SPScrollBar {
+                    visible: parent.height < parent.contentHeight
                 }
 
-                Label {
-                    id: itemLabel
-                    x: 15
-                    y: parent.height / 2 - height / 2
-                    text: root.textRole === '' ? modelData : (Array.isArray(root.model) ? modelData[root.textRole] : model[root.textRole])
-                    font.pixelSize: 11
-                    color: root.currentIndex == index ? "#fff" : "#cfcfcf"
-                }
+                delegate: Rectangle {
+                    id: listItem
+                    width: listContent.width - 15
+                    height: 25
+                    color: listItemMouseArea.containsMouse ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
+                    radius: Math.min(comboBox.height, comboBox.width) * 0.5
 
-                MouseArea {
-                    id: listItemMouseArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
+                    Behavior on color {
+                        ColorAnimation { duration: 250 }
+                    }
 
-                    onClicked: {
-                        root.activated(index)
-                        root.currentIndex = index
-                        popupMenu.close()
+                    Label {
+                        id: itemLabel
+                        x: 10
+                        y: (parent.height - height) * 0.5
+                        text: comboBox.textRole === '' ? modelData : (Array.isArray(comboBox.model) ? modelData[comboBox.textRole] : model[comboBox.textRole])
+                        font.pixelSize: 11
+                        color: comboBox.currentIndex === index ? "#fff" : "#cfcfcf"
+                    }
+
+                    MouseArea {
+                        id: listItemMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: {
+                            comboBox.activated(index)
+                            comboBox.currentIndex = index
+                            popup.close()
+                        }
                     }
                 }
             }
