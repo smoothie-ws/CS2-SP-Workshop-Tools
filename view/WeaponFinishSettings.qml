@@ -132,10 +132,16 @@ ColumnLayout {
             }
 
             RowLayout {
+                id: econitem
                 Layout.fillWidth: true
-                    
+                
+                property string filePath: ""
+
+                onFilePathChanged: Plugin.updateEconPath(filePath)
+
                 SPButton {
-                    text: "Import"
+                    text: "Import Econitem"
+                    implicitWidth: 125
                     enabled: econitem.filePath != ""
                     icon.source: Plugin.asset("icons/import.png")
                     icon.width: 15
@@ -147,54 +153,50 @@ ColumnLayout {
                     onClicked: Plugin.importWeaponFinishEcon()
                 }
 
-                SPLabeled {
-                    id: econitem
+                Label {
+                    clip: true
+                    opacity: 0.5
+                    elide: Text.ElideLeft
+                    horizontalAlignment: Text.AlignLeft
+                    text: econitem.filePath
+                    color: AlgStyle.text.color.normal
                     Layout.fillWidth: true
-                    text: "Econitem File"
+                }
 
-                    property string filePath: ""
+                SPButton {
+                    text: "Select"
 
-                    onFilePathChanged: Plugin.updateEconPath(filePath)
+                    onClicked: econFileDialog.open()
 
-                    Label {
-                        clip: true
-                        opacity: 0.5
-                        elide: Text.ElideLeft
-                        horizontalAlignment: Text.AlignLeft
-                        text: econitem.filePath
-                        color: AlgStyle.text.color.normal
-                        Layout.fillWidth: true
+                    SPFileDialog {
+                        id: econFileDialog
+                        title: "Select file"
+                        folder: econitem.filePath.substring(econitem.filePath.lastIndexOf("/"))
+                        nameFilters: [ "CS2 Econ Item (*.econitem)" ]
+                        onAccepted: econitem.filePath = fileUrl.toString().substring(8);
                     }
+                }
 
-                    SPButton {
-                        text: "Select"
+                SPButton {
+                    text: "Show"
+                    enabled: econitem.filePath != ""
+                    tooltip.text: "Reveal in File Explorer"
 
-                        onClicked: econFileDialog.open()
-
-                        SPFileDialog {
-                            id: econFileDialog
-                            title: "Select file"
-                            folder: econitem.filePath.substring(econitem.filePath.lastIndexOf("/"))
-                            nameFilters: [ "CS2 Econ Item (*.econitem)" ]
-                            onAccepted: econitem.filePath = fileUrl.toString().substring(8);
-                        }
-                    }
-
-                    SPButton {
-                        text: "Show"
-                        enabled: econitem.filePath != ""
-                        tooltip.text: "Reveal in File Explorer"
-
-                        onClicked: Plugin.showInExplorer(econitem.filePath)
-                    }
+                    onClicked: Plugin.showInExplorer(econitem.filePath)
                 }
             }
 
             RowLayout {
+                id: texturesFolder
                 Layout.fillWidth: true
                         
+                property string filePath: ""
+
+                onFilePathChanged: Plugin.updateTexturesFolderPath(filePath)
+
                 SPButton {
-                    text: "Export"
+                    text: "Export Textures"
+                    implicitWidth: 125
                     enabled: texturesFolder.filePath !== ""
                     icon.source: Plugin.asset("icons/export.png")
                     icon.width: 15
@@ -207,46 +209,36 @@ ColumnLayout {
                     onClicked: Plugin.exportWeaponFinishTextures()
                 }
                 
-                SPLabeled { 
-                    id: texturesFolder
+                Label {
+                    clip: true
+                    opacity: 0.5
+                    elide: Text.ElideLeft
+                    horizontalAlignment: Text.AlignLeft
+                    text: texturesFolder.filePath
+                    color: AlgStyle.text.color.normal
                     Layout.fillWidth: true
-                    text: "Textures Folder"
+                }
 
-                    property string filePath: ""
+                SPButton {
+                    text: "Select"
+                    
+                    onClicked: texturesFolderDialog.open()
 
-                    onFilePathChanged: Plugin.updateTexturesFolderPath(filePath)
-
-                    Label {
-                        clip: true
-                        opacity: 0.5
-                        elide: Text.ElideLeft
-                        horizontalAlignment: Text.AlignLeft
-                        text: texturesFolder.filePath
-                        color: AlgStyle.text.color.normal
-                        Layout.fillWidth: true
+                    SPFileDialog {
+                        id: texturesFolderDialog
+                        title: "Select folder"
+                        selectFolder: true
+                        folder: texturesFolder.filePath
+                        onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
                     }
+                }
 
-                    SPButton {
-                        text: "Select"
-                        
-                        onClicked: texturesFolderDialog.open()
+                SPButton {
+                    text: "Show"
+                    enabled: texturesFolder.filePath != ""
+                    tooltip.text: "Reveal in File Explorer"
 
-                        SPFileDialog {
-                            id: texturesFolderDialog
-                            title: "Select folder"
-                            selectFolder: true
-                            folder: texturesFolder.filePath
-                            onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
-                        }
-                    }
-
-                    SPButton {
-                        text: "Show"
-                        enabled: texturesFolder.filePath != ""
-                        tooltip.text: "Reveal in File Explorer"
-
-                        onClicked: Plugin.showInExplorer(texturesFolder.filePath)
-                    }
+                    onClicked: Plugin.showInExplorer(texturesFolder.filePath)
                 }
             }
 

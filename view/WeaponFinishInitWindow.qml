@@ -8,8 +8,8 @@ import "./SPWidgets"
 SPDialog {
     id: root
     color: AlgStyle.background.color.mainWindow
-    confirm.enabled: nameInput.nameIsValid && root.meshFile !== "" && weaponBox.currentIndex != -1
-    confirm.text: root.isNew ? "Create" : "Proceed"
+    confirm.enabled: nameInput.nameIsValid && weaponBox.currentIndex != -1 && (isNew ? meshFile !== "" : true)
+    confirm.text: isNew ? "Create" : "Proceed"
     message.text: switch (nameInput.nameStatus) {
         case 0:
             "Missing CS2 Path";

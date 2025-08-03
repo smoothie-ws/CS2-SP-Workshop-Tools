@@ -28,9 +28,9 @@ class Decompiler:
         # extract
         temp_path = Path.join(out_path, "temp")
         temp_models_path = Path.join(temp_path, "weapons", "models")
-            
+        state_callback("Extracting textures from pak01_dir.vpk")
+        
         def task():
-            state_callback("Extracting textures from pak01_dir.vpk")
             Decompiler.run(f'-i "{pak_path}" --vpk_filepath "weapons/models" -e "vtex_c" -o "{temp_path}"')
             
             with ThreadPoolExecutor() as executor:
@@ -52,7 +52,7 @@ class Decompiler:
 
                 for future in futures:
                     future.result()
-
+            
             for w in Path.listdir(temp_models_path):
                 w_path = Path.join(temp_models_path, w)
                 Path.replace(w_path, Path.join(models_path, w))
