@@ -1,6 +1,5 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.3
-import QtGraphicalEffects 1.0
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
 
@@ -29,16 +28,16 @@ ColumnLayout {
         sourceComponent: Rectangle {
             radius: 10
             clip: true
-            gradient: Gradient {
-                GradientStop { 
-                    position: 0.0
-                    color: Qt.rgba(1, 1, 1, 0.05) 
-                }
-                GradientStop { 
-                    position: 1.0
-                    color: root.toggled ? Qt.rgba(0, 0, 0, 0) : Qt.rgba(1, 1, 1, 0.05) 
-                }
-            }
+            // gradient: Gradient {
+            //     GradientStop { 
+            //         position: 0.0
+            //         color: Qt.rgba(1, 1, 1, 0.05) 
+            //     }
+            //     GradientStop { 
+            //         position: 1.0
+            //         color: root.toggled ? Qt.rgba(0, 0, 0, 0) : Qt.rgba(1, 1, 1, 0.05) 
+            //     }
+            // }
         }
     }
     

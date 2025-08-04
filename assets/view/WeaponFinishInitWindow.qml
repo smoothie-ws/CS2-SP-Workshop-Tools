@@ -98,7 +98,7 @@ SPDialog {
                 SPButton {
                     text: "Select"
                     
-                    onClicked: fileDialog.open()
+                    onClicked: fileDialog.show()
 
                     SPFileDialog {
                         id: fileDialog
@@ -122,9 +122,11 @@ SPDialog {
             scopeWidth: root.scopeWidth
             Layout.fillWidth: true
 
-            property string name: null
-            property int nameStatus: Plugin.valWeaponFinishName(name)
+            property string name: ""
+            property int nameStatus: 2
             property bool nameIsValid: nameStatus < 2;
+
+            onNameChanged: nameStatus = name === "" ? 2 : Plugin.valWeaponFinishName(name)
 
             Rectangle {
                 color: "transparent"

@@ -1,8 +1,7 @@
 import webbrowser
 
-from .utils import Shader
 from .weapon_finish import WeaponFinish
-from .painter import UI, Plugin, Path, QmlView, Resource
+from .painter import UI, Plugin, Macro, Path, QmlView, Resource
 from .painter.qml import QtWidgets, QtGui
 from .controller import MainView, SettingsWindow, WeaponFinishInitWindow
 
@@ -74,7 +73,7 @@ class CS2WT(Plugin):
             sp_shader_file_path = Path.join(sp_shaders_path, f'cs2_{fs}.glsl')
             if not Path.exists(sp_shader_file_path):
                 with open(sp_shader_file_path, "w", encoding="utf-8") as f:
-                    f.write(Shader.process(shader_source, {"FINISH_STYLE": i}))
+                    f.write(Macro.process(shader_source, {"FINISH_STYLE": i}))
 
         def set_previews(shader_resources):
             for shader_resource in shader_resources:

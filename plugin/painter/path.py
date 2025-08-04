@@ -38,6 +38,12 @@ class Path:
         os.makedirs(path)
 
     @staticmethod
+    def cleardir(path: str):
+        Path.remove(path)
+        Path.makedirs(path)
+        return path
+    
+    @staticmethod
     def copy(src: str, dst: str) -> None:
         shutil.copyfile(src, dst)
     

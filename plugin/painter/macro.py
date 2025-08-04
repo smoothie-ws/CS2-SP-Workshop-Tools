@@ -1,7 +1,7 @@
 import re
 
 
-class Shader:
+class Macro:
     @staticmethod
     def process(code: str, macros: dict={}):
         for macro in macros.keys():
@@ -33,7 +33,6 @@ class Shader:
         processed_lines = []
         for line in code.split("\n"):
             if not line.startswith("//:"):
-                line = line.split("//")[0]
                 for macro in macros.keys():
                     line = line.replace(macro, macros[macro])
                 

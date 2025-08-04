@@ -2,8 +2,6 @@ import math
 import substance_painter as sp
 
 from .painter import Log, Path, Plugin, Resource, ProjectSettings
-from .utils import Decompiler
-
 
 class WeaponFinish:
 	FINISH_STYLES = [

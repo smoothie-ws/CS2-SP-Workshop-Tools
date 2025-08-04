@@ -166,7 +166,7 @@ ColumnLayout {
                 SPButton {
                     text: "Select"
 
-                    onClicked: econFileDialog.open()
+                    onClicked: econFileDialog.show()
 
                     SPFileDialog {
                         id: econFileDialog
@@ -222,7 +222,7 @@ ColumnLayout {
                 SPButton {
                     text: "Select"
                     
-                    onClicked: texturesFolderDialog.open()
+                    onClicked: texturesFolderDialog.show()
 
                     SPFileDialog {
                         id: texturesFolderDialog
@@ -428,7 +428,7 @@ ColumnLayout {
                     SPTextInput {
                         Layout.preferredWidth: 45
                         text: common.seed
-                        validator: RegExpValidator { regExp: /^-?[0-9]*/ }
+                        validator: SPRegExprValidator { expr: /^-?[0-9]*/ }
                         onEditingFinished: common.seed = MathUtils.clamp(parseInt(text), 0, 9999);
                     }
 

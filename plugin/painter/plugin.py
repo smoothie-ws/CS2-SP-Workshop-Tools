@@ -1,9 +1,11 @@
 import json
 import substance_painter as sp
 
-from .ui import UI
+
+from .ui import UI, QtVersion
 from .log import Log
 from .path import Path
+from .macro import Macro
 from .resource import Resource
 
 
@@ -29,6 +31,7 @@ class Plugin:
             data = json.loads(Path.read(Path.settings, {}))
             Plugin.settings = data.get("settings", {})
             Plugin.version = data.get("version", "0.0.1a")
+            Plugin.preprocess()
             
             connections = {
                 sp.event.ProjectOpened: lambda _: cls.on_project_opened(),
@@ -71,6 +74,30 @@ class Plugin:
         Resource.refresh()
         Log.warning("Plugin closed")
     
+    @classmethod
+    def preprocess(cls):
+        asset_view_path = Path.asset("view")
+        
+        if Path.exists(asset_view_path):
+            view_path = Path.cleardir(Path.join(Path.plugin, "view"))
+            def process(path: str):
+                asset_path = Path.join(asset_view_path, path)
+                if Path.isdir(asset_path):
+                    Path.cleardir(Path.join(view_path, path))
+                    for p in Path.listdir(asset_path):
+                        process(Path.join(path, p))
+                else:
+                    view_asset_path = Path.join(view_path, path)
+                    if path.lower().endswith("qml"):
+                        sources = Path.read(asset_path)
+                        sources = Macro.process(sources, {"QT_VERSION": QtVersion})
+                        Path.write(view_asset_path, sources)
+                    else:
+                        Path.copy(asset_path, view_asset_path)
+                
+            for p in Path.listdir(asset_view_path):
+                process(p)
+                
     # to override
     
     @classmethod

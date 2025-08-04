@@ -1,7 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.3
 import QtQuick.Controls 2.15
-import QtGraphicalEffects 1.15
 import AlgWidgets.Style 2.0
 import "./SPWidgets"
 
@@ -204,7 +203,7 @@ SPDialog {
                             id: cs2PathPicker
                             text: "Select"
                             
-                            onClicked: fileDialog.open()
+                            onClicked: fileDialog.show()
 
                             SPFileDialog {
                                 id: fileDialog
@@ -252,7 +251,7 @@ SPDialog {
 
                         SPButton {
                             text: "Refresh"
-                            icon.source: "./SPWidgets/icons/cycle.png"
+                            icon.source: "./icons/cycle.png"
                             icon.width: 15
                             icon.height: 15
                             tooltip.text: "Refresh"
@@ -374,21 +373,21 @@ SPDialog {
                                                     }
                                                 }
 
-                                                SPIcon {
-                                                    Layout.fillWidth: true
-                                                    height: parent.height - 10
-                                                    icon.source: "./SPWidgets/icons/warning.png"
-                                                    icon.opacity: 0.0
-                                                    overlay.color: Qt.rgba(0.85, 0.15, 0.15)
-                                                    overlay.opacity: weapon.missingTextures ? 0.85 : 0.0
-                                                    tooltip.text: weapon.missingTextures ? "Missing base textures for this weapon!" : ""
+                                                Text {
+                                                    text: "!"
+                                                    visible: weapon.missingTextures
+                                                    font.bold: true
+                                                    font.pixelSize: 16
+                                                    color: Qt.rgba(0.85, 0.15, 0.15)
+                                                    horizontalAlignment: Text.AlignRight
+                                                    verticalAlignment: Text.AlignVCenter
                                                 }
                                                 
                                                 SPButton {
                                                     padding: 5
                                                     implicitWidth: 20
                                                     implicitHeight: implicitWidth
-                                                    icon.source: "./SPWidgets/icons/close.png"
+                                                    icon.source: "./icons/close.png"
                                                     icon.width: implicitWidth * 0.5
                                                     icon.height: implicitHeight * 0.5
                                                     tooltip.text: "Remove"

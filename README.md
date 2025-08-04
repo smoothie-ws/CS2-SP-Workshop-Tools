@@ -66,7 +66,7 @@ These shaders are used to preview Weapon Finish settings live inside Substance P
 
 1. **Make sure you have Substance 3D Painter installed on your PC.**<br />
 
-    > **Note:** Substance 3D Painter 8.3.0 and earlier versions are not supported.
+    > **Note:** Supported Substance 3D Painter versions are `8.3.0 - 11.0.2`.`
 
 2. **[Download the plugin](https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/releases)**
 

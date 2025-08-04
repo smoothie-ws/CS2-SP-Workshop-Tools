@@ -1,9 +1,10 @@
 import json
 
-from .utils import Decompiler
-from .weapon_finish import WeaponFinish
 from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
+
+from .decompiler import Decompiler
+from .weapon_finish import WeaponFinish
 
 
 class MainView(QmlView):

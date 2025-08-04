@@ -3,7 +3,7 @@ import threading
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-from ..painter import Path
+from .painter import Path
 
 
 class Decompiler:    

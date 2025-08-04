@@ -1,8 +1,10 @@
 from typing import TypeVar, Generic
 import substance_painter as sp
 
+QtVersion = 5 if sp.application.version_info() < (10, 1, 0) else 6
+
 # qt5 vs qt6 check
-if sp.application.version_info() < (10, 1, 0):
+if QtVersion < 6:
     from PySide2 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui, QtQml
 else:
     from PySide6 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui, QtQml

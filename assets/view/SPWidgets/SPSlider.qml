@@ -1,7 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.3
-import QtGraphicalEffects 1.0
 import AlgWidgets 2.0
 import "math.js" as MathUtils
 
@@ -33,7 +32,7 @@ ColumnLayout {
         SPTextInput {
             Layout.preferredWidth: 50
             text: root.value.toFixed(2)
-            validator: RegExpValidator { regExp: /^-?[0-9]*\.?[0-9]*$/ }
+            validator: SPRegExprValidator { expr: /^-?[0-9]*\.?[0-9]*$/ }
 
             onEditingFinished: root.value = MathUtils.clamp(parseFloat(text), from, to);
         }
@@ -79,23 +78,23 @@ ColumnLayout {
                 
                 readonly property color handlerColor: Qt.hsva(0.55 + 0.45 * root.visualPosition, 0.5, 1.0)
 
-                LinearGradient {
-                    width: root.visualPosition * parent.width
-                    height: parent.height
-                    start: Qt.point(0, 0)
-                    end: Qt.point(width, 0)
+                // LinearGradient {
+                //     width: root.visualPosition * parent.width
+                //     height: parent.height
+                //     start: Qt.point(0, 0)
+                //     end: Qt.point(width, 0)
 
-                    gradient: Gradient {
-                        GradientStop { 
-                            position: 0.0
-                            color: "#d0d0d0" 
-                        }
-                        GradientStop { 
-                            position: 1.0
-                            color: root.pressed ? line.handlerColor : "#d0d0d0"
-                        }
-                    }
-                }
+                //     gradient: Gradient {
+                //         GradientStop { 
+                //             position: 0.0
+                //             color: "#d0d0d0" 
+                //         }
+                //         GradientStop { 
+                //             position: 1.0
+                //             color: root.pressed ? line.handlerColor : "#d0d0d0"
+                //         }
+                //     }
+                // }
 
                 SPSliderHandler {
                     id: handler

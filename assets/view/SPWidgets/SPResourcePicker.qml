@@ -1,7 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
-import QtGraphicalEffects 1.15
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
 
@@ -65,26 +64,26 @@ Item {
                 }
             }
 
-            layer.enabled: true
-            layer.samples: 4
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: background.width
-                    height: background.height
-                    radius: background.radius - preview.anchors.margins
-                }
-            }
+            // layer.enabled: true
+            // layer.samples: 4
+            // layer.effect: OpacityMask {
+            //     maskSource: Rectangle {
+            //         width: background.width
+            //         height: background.height
+            //         radius: background.radius - preview.anchors.margins
+            //     }
+            // }
 
-            LinearGradient {
-                width: background.width
-                height: background.height
-                start: Qt.point(0, 0)
-                end: Qt.point(background.width, 0)
-                gradient: Gradient {
-                    GradientStop { position: 0.0 + preview.shadeOffset; color: background.color }
-                    GradientStop { position: 1.0 + preview.shadeOffset; color: "transparent" }
-                }
-            }
+            // LinearGradient {
+            //     width: background.width
+            //     height: background.height
+            //     start: Qt.point(0, 0)
+            //     end: Qt.point(background.width, 0)
+            //     gradient: Gradient {
+            //         GradientStop { position: 0.0 + preview.shadeOffset; color: background.color }
+            //         GradientStop { position: 1.0 + preview.shadeOffset; color: "transparent" }
+            //     }
+            // }
         }
 
         MouseArea {

@@ -45,7 +45,7 @@ SPControl {
         }
     }
 
-    RowLayout {
+    Row {
         id: content
         spacing: 5
         anchors.margins: 5
@@ -58,9 +58,10 @@ SPControl {
 
         Rectangle {
             id: checker
+            anchors.verticalCenter: parent.verticalCenter
             visible: false
-            height: 15
             width: 15
+            height: 15
             radius: width
             color: root.checked ? "#cfcfcf" : (root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.35))
             border.width: root.hovered ? 3 : 4
@@ -69,6 +70,8 @@ SPControl {
 
         Image {
             id: icon
+            anchors.verticalCenter: parent.verticalCenter
+            asynchronous: true
             visible: source !== ""
             opacity: root.hovered ? 1.0 : 0.5
             sourceSize.width: width
@@ -77,6 +80,7 @@ SPControl {
 
         Label {
             id: label
+            anchors.verticalCenter: parent.verticalCenter
             visible: text !== ""
             color: "#cfcfcf"
             verticalAlignment: Text.AlignVCenter
