@@ -25,7 +25,8 @@ Rectangle {
                 const p = component.control[component.prop];
                 const f = p.substring(Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\')) + 1);
                 finishName.text = f.substring(0, f.lastIndexOf(".")).toUpperCase();
-            }
+            } else
+                finishName.text = "No Weapon Finish opened";
         }
 
         function onProjectAboutToSave() {
@@ -53,36 +54,24 @@ Rectangle {
 
             Text {
                 id: finishName
-                visible: root.projectKind == 2
+                text: "No Weapon Finish opened"
                 Layout.maximumWidth: 150
                 elide: Text.ElideRight
                 color: AlgStyle.text.color.normal
                 font.bold: true
             }
 
+            SPSeparator { Layout.fillWidth: true }
+
             SPButton {
-                text: "Set up as Weapon Finish"
-                visible: root.projectKind == 1
-                tooltip.text: "Set up opened project as Weapon Finish"
-                icon.source: Plugin.asset("icons/settings.png")
+                text: root.projectKind == 1 ? "Set up as Weapon Finish" : "New Weapon Finish"
+                tooltip.text: root.projectKind == 1 ? "Set up opened project as Weapon Finish" : "Create new project and set it up as a Weapon Finish"
+                icon.source: root.projectKind == 1 ? Plugin.asset("icons/settings.png") : Plugin.asset("icons/add.png")
                 icon.width: 18
                 icon.height: 18
                 Layout.alignment: Qt.AlignCenter
 
-                onClicked: Plugin.initWeaponFinish(false)
-            }
-            
-            SPSeparator { Layout.fillWidth: true }
-
-            SPButton {
-                text: "New Weapon Finish"
-                tooltip.text: "Create new project and set it up as a Weapon Finish"
-                icon.source: Plugin.asset("icons/add.png")
-                icon.width: 14
-                icon.height: 14
-                Layout.alignment: Qt.AlignCenter
-
-                onClicked: Plugin.initWeaponFinish(true)
+                onClicked: Plugin.initWeaponFinish(root.projectKind != 1)
             }
         }
 

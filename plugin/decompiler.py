@@ -18,13 +18,9 @@ class Decompiler:
     
     @staticmethod
     def decompile(pak_path: str, out_path: str, weapon_list: list, state_callback, update_callback):
-        weapon_list_len = len(weapon_list)
-
-        models_path = Path.join(out_path, "models")
-        Path.remove(models_path) # clear
-        Path.makedirs(models_path)
-
         progress = 0.0
+        weapon_list_len = len(weapon_list)
+        models_path = Path.cleardir(Path.join(out_path, "models"))
         
         # extract
         temp_path = Path.join(out_path, "temp")
@@ -42,15 +38,6 @@ class Decompiler:
                     progress += 1 / weapon_list_len
                     update_callback(progress, w)
                     
-                for _ in range(50):
-                    if Path.exists(temp_models_path):
-                        break
-                    time.sleep(0.1)
-                else:
-                    Log.error(f'Error: {temp_models_path} not found')
-                    state_callback("Finished")
-                    return
-                
                 # decompile
                 for w in Path.listdir(temp_models_path):
                     w_path = Path.join(temp_models_path, w)
@@ -128,6 +115,7 @@ class Decompiler:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             cwd=Path.asset("vrf"),
-            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
+            text=True
         )
         

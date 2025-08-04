@@ -84,7 +84,7 @@ SPDialog {
             const m = [];
             for (const weapon of weaponList)
                 m.push(weapon.value);
-            Plugin.startDecompilation(m);
+            Plugin.startDecompilation(cs2Path, m);
         }
     }
     
@@ -96,7 +96,7 @@ SPDialog {
         for (const [param, component] of Object.entries(internal.weaponFinish))
             weapon_finish[param] = component.control[component.prop];
         return {
-            cs2_path: internal.cs2Path,
+            cs2_path: internal.cs2PathIsValid ? internal.cs2Path : "",
             weapon_list: weapon_list,
             weapon_finish: weapon_finish
         }

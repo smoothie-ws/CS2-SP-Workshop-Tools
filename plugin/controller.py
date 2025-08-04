@@ -172,8 +172,8 @@ class SettingsWindow(QmlDialog):
     def checkWeaponTextures(self, weapon:str) -> bool:
         return Decompiler.check_weapon_textures(weapon)
         
-    @QtCore.Slot(list)
-    def startDecompilation(self, weapon_list: list):
+    @QtCore.Slot(str, list)
+    def startDecompilation(self, cs2_path, weapon_list: list):
         def state_changed(state):
             if state != "Finished":
                 self.decompilationStateChanged.emit(state)
@@ -181,8 +181,9 @@ class SettingsWindow(QmlDialog):
                 self.decompilationFinished.emit()
         
         self.decompilationStarted.emit()
+        Plugin.settings["cs2_path"] = cs2_path
         Decompiler.decompile(
-            Path.join(Plugin.settings.get("cs2_path"), "game", "csgo", "pak01_dir.vpk"), 
+            Path.join(cs2_path, "game", "csgo", "pak01_dir.vpk"), 
             Path.asset("textures"),
             weapon_list,
             state_changed,
