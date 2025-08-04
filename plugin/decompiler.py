@@ -1,9 +1,10 @@
 import os
+import time
 import threading
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-from .painter import Path
+from .painter import Log, Path
 
 
 class Decompiler:    
@@ -29,9 +30,10 @@ class Decompiler:
         temp_path = Path.join(out_path, "temp")
         temp_models_path = Path.join(temp_path, "weapons", "models")
         state_callback("Extracting textures from pak01_dir.vpk")
-        Decompiler.run(f'-i "{pak_path}" --vpk_filepath "weapons/models" -e "vtex_c" -o "{temp_path}"')
         
         def task():
+            Decompiler.run(f'-i "{pak_path}" --vpk_filepath "weapons/models" -e "vtex_c" -o "{temp_path}"')
+            
             with ThreadPoolExecutor() as executor:
                 futures = []
                 
@@ -39,7 +41,16 @@ class Decompiler:
                     nonlocal progress
                     progress += 1 / weapon_list_len
                     update_callback(progress, w)
-
+                    
+                for _ in range(50):
+                    if Path.exists(temp_models_path):
+                        break
+                    time.sleep(0.1)
+                else:
+                    Log.error(f'Error: {temp_models_path} not found')
+                    state_callback("Finished")
+                    return
+                
                 # decompile
                 for w in Path.listdir(temp_models_path):
                     w_path = Path.join(temp_models_path, w)
