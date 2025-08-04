@@ -25,7 +25,7 @@ Rectangle {
         color: root.pressed ? "#d0d0d0" : "#3b3b3b"
     }
 
-    Label {
+    Text {
         id: label
         color: "#d0d0d0"
         opacity: root.hovered ? 1.0 : 0.0

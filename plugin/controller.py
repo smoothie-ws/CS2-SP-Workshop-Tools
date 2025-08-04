@@ -103,7 +103,7 @@ class WeaponFinishInitWindow(QmlDialog):
         d: dict = json.loads(data)
         mesh_file: str = d.get("mesh", "")
         # fetch default weapon finish settings
-        weapon_finish = Plugin.settings.get("weapon_finish", {})
+        weapon_finish: dict = Plugin.settings.get("weapon_finish", {}).copy()
         weapon_finish["name"] = d.get("name")
         weapon_finish["style"] = d.get("style")
         weapon_finish["weapon"] = d.get("weapon")

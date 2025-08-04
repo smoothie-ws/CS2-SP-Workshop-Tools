@@ -46,8 +46,9 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
 
-            Label {
+            Text {
                 id: messageLabel
+                color: AlgStyle.text.color.normal
                 opacity: 0.75
                 Layout.fillWidth: true
             }

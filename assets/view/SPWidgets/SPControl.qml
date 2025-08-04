@@ -10,11 +10,9 @@ MouseArea {
     property alias tooltip: tooltip
     property bool hovered: false
 
-    hoverEnabled: true
+    hoverEnabled: enabled
     onEntered: hovered = true
     onExited: hovered = false
-
-    onHoveredChanged: console.log(hovered);
 
     Item {
         id: content

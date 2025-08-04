@@ -8,6 +8,7 @@ SPDialog {
     id: root
     color: AlgStyle.background.color.mainWindow
     confirm.text: "Save"
+    message.text: `CS2 Workshop Tools v${Plugin.getPluginVersion()}`
 
     QtObject {
         id: internal
@@ -154,7 +155,7 @@ SPDialog {
     ColumnLayout {
         anchors.fill: parent
         spacing: 10
-
+        
         RowLayout {
             spacing: 15
             
@@ -169,7 +170,7 @@ SPDialog {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
 
-                    Label {
+                    Text {
                         text: "CS2 Path"
                         font.bold: true
                         height: 20
@@ -203,13 +204,12 @@ SPDialog {
                             id: cs2PathPicker
                             text: "Select"
                             
-                            onClicked: fileDialog.show()
+                            onClicked: fileDialog.show(internal.cs2Path)
 
                             SPFileDialog {
                                 id: fileDialog
                                 title: "Select folder"
                                 selectFolder: true
-                                folder: Qt.resolvedUrl(internal.cs2Path)
 
                                 onAccepted: {
                                     cs2PathInput.text = fileUrl.toString().substring(8);
@@ -229,7 +229,7 @@ SPDialog {
                         height: 20
                         Layout.fillWidth: true
 
-                        Label {
+                        Text {
                             text: "Weapons"
                             font.bold: true
                             height: 20
@@ -355,7 +355,7 @@ SPDialog {
                                                     text: "ID:"
                                                     label.opacity: 0.5
 
-                                                    Label {
+                                                    Text {
                                                         Layout.preferredWidth: 75
                                                         text: modelData.value
                                                         color: AlgStyle.text.color.normal
@@ -366,7 +366,7 @@ SPDialog {
                                                     text: "Name:"
                                                     label.opacity: 0.5
 
-                                                    Label {
+                                                    Text {
                                                         Layout.preferredWidth: 100
                                                         text: modelData.text
                                                         color: AlgStyle.text.color.normal
@@ -422,7 +422,7 @@ SPDialog {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
-                Label {
+                Text {
                     text: "Default Weapon Finish Settings"
                     font.bold: true
                     height: 20

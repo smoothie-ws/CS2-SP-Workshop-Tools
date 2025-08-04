@@ -9,39 +9,32 @@ FileDialog {
     id: root
     modality: Qt.ApplicationModal
     
-    enum Mode {
-        OpenFile = 0,
-        SaveFile = 1
-    }
-
-    property int mode: 0
-
     #if QT_VERSION >= 6
     property alias fileUrl: root.selectedFile
-    property alias folder: root.currentFolder
     property bool selectFolder: false
     
-    function show() {
-        if (selectFolder)
-            folderDialog.show();
-        else
+    function show(path) {
+        let folder = "C:";
+        if (path !== undefined && path !== null) {
+            path = path.replace("\\", "/");
+            folder = Qt.resolvedUrl(path.substring(0, path.lastIndexOf("/")));
+        }
+        if (selectFolder) {
+            folderDialog.currentFolder = folder;
+            folderDialog.open();
+        } else {
+            currentFolder = folder;
             open();
+        }
     }
 
     FolderDialog {
         id: folderDialog
-        currentFolder: root.folder
 
         onAccepted: {
             root.fileUrl = selectedFolder;
             root.accepted();
         }
-
-        function show() {
-            selectedFolder = root.fileUrl;
-            open();
-        }
     }
-    
     #endif
 }

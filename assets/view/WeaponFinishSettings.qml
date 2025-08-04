@@ -119,41 +119,35 @@ ColumnLayout {
         ColumnLayout {
             id: generalLayout
             spacing: 10
-            anchors.fill: parent
+            y: anchors.margins
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.margins: 10
             
-            Label {
-                font.bold: true
-                opacity: enabled ? 1.0 : 0.5
-                text: "Weapon Finish Settings"
-                color: AlgStyle.text.color.normal
-                Layout.fillWidth: true
-                Layout.preferredHeight: implicitHeight + 10
-            }
-
-            RowLayout {
+            SPLabeled {
                 id: econitem
+                text: "Econitem file"
                 Layout.fillWidth: true
                 
                 property string filePath: ""
 
                 onFilePathChanged: Plugin.updateEconPath(filePath)
 
+                Component.onCompleted: scopeWidth = Math.max(scopeWidth, texturesFolder.scopeWidth)
+
                 SPButton {
-                    text: "Import Econitem"
-                    implicitWidth: 125
+                    text: "Import"
                     enabled: econitem.filePath != ""
                     icon.source: Plugin.asset("icons/import.png")
                     icon.width: 15
                     icon.height: 15
                     tooltip.text: "Import values from the .econitem file"
-                    background.color: "black"
-                    background.opacity: hovered ? 0.75 : 0.25
+                    background.color: hovered ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(0, 0, 0, 0.25)
 
                     onClicked: Plugin.importWeaponFinishEcon()
                 }
 
-                Label {
+                Text {
                     clip: true
                     opacity: 0.5
                     elide: Text.ElideLeft
@@ -166,12 +160,11 @@ ColumnLayout {
                 SPButton {
                     text: "Select"
 
-                    onClicked: econFileDialog.show()
+                    onClicked: econFileDialog.show(econitem.filePath)
 
                     SPFileDialog {
                         id: econFileDialog
                         title: "Select file"
-                        folder: econitem.filePath.substring(econitem.filePath.lastIndexOf("/"))
                         nameFilters: [ "CS2 Econ Item (*.econitem)" ]
                         onAccepted: econitem.filePath = fileUrl.toString().substring(8);
                     }
@@ -186,30 +179,30 @@ ColumnLayout {
                 }
             }
 
-            RowLayout {
+            SPLabeled {
                 id: texturesFolder
+                text: "Textures Folder"
                 Layout.fillWidth: true
                         
                 property string filePath: ""
 
                 onFilePathChanged: Plugin.updateTexturesFolderPath(filePath)
 
+                Component.onCompleted: scopeWidth = Math.max(scopeWidth, econitem.scopeWidth)
+
                 SPButton {
-                    text: "Export Textures"
-                    implicitWidth: 125
+                    text: "Export"
                     enabled: texturesFolder.filePath !== ""
                     icon.source: Plugin.asset("icons/export.png")
                     icon.width: 15
                     icon.height: 15
                     tooltip.text: "Export Weapon Finish textures"
-                    label.color: AlgStyle.text.color.normal
-                    background.color: "black"
-                    background.opacity: hovered ? 0.75 : 0.25
+                    background.color: hovered ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(0, 0, 0, 0.25)
 
                     onClicked: Plugin.exportWeaponFinishTextures()
                 }
                 
-                Label {
+                Text {
                     clip: true
                     opacity: 0.5
                     elide: Text.ElideLeft
@@ -222,13 +215,12 @@ ColumnLayout {
                 SPButton {
                     text: "Select"
                     
-                    onClicked: texturesFolderDialog.show()
+                    onClicked: texturesFolderDialog.show(texturesFolder.filePath)
 
                     SPFileDialog {
                         id: texturesFolderDialog
                         title: "Select folder"
                         selectFolder: true
-                        folder: texturesFolder.filePath
                         onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
                     }
                 }

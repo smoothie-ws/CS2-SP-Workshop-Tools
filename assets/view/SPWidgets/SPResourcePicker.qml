@@ -83,11 +83,13 @@ Item {
 
             #endif
 
-            SPLinearGradient {
+            Rectangle {
                 anchors.fill: parent
-
-                GradientStop { position: 0.0 + preview.shadeOffset; color: background.color }
-                GradientStop { position: 1.0 + preview.shadeOffset; color: "transparent" }
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0.0 + preview.shadeOffset; color: background.color }
+                    GradientStop { position: 1.0 + preview.shadeOffset; color: "transparent" }
+                }
             }
         }
 
@@ -132,7 +134,7 @@ Item {
                 onClicked: root.url = "";
             }
 
-            Label {
+            Text {
                 id: label
                 antialiasing: true
                 Layout.fillWidth: true

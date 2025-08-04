@@ -59,7 +59,7 @@ SPControl {
             }
         }
 
-        contentItem: Label {
+        contentItem: Text {
             text: comboBox.displayText
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignLeft
@@ -109,7 +109,7 @@ SPControl {
                         ColorAnimation { duration: 250 }
                     }
 
-                    Label {
+                    Text {
                         id: itemLabel
                         x: 10
                         y: (parent.height - height) * 0.5

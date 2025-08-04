@@ -17,6 +17,12 @@ SPPopup {
     property string log: ""
     property string currentState: "Decompiling"
 
+    onOpened: {
+        progress = 0.0;
+        log = "";
+        currentState = "Decompiling";
+    }
+
     content: ColumnLayout {
         width: 400
         spacing: 15
@@ -24,13 +30,13 @@ SPPopup {
         RowLayout {
             Layout.fillWidth: true
 
-            Label {
+            Text {
                 text: `${root.currentState}...`
                 color: AlgStyle.text.color.normal
                 Layout.fillWidth: true
             }
 
-            Label {
+            Text {
                 color: AlgStyle.text.color.normal
                 text: `${parseInt(root.progress * 100)}%`
             }

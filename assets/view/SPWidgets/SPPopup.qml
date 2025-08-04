@@ -5,11 +5,11 @@ import AlgWidgets.Style 2.0
 
 Item {
     id: root
-    visible: opened
+    visible: isOpen
     width: popup.width
     height: popup.height
 
-    property alias opened: popup.opened
+    property alias isOpen: popup.opened
     property alias icon: popupIcon
     property alias title: popupTitle.text
     property alias ignoreButton: ignoreButton
@@ -23,6 +23,7 @@ Item {
 
     property alias content: contentLoader.sourceComponent
 
+    signal opened()
     signal accepted()
     signal cancelled()
     signal ignoreRequested()
@@ -48,6 +49,8 @@ Item {
         focus: true
         closePolicy: Popup.NoAutoClose
 
+        onOpened: root.opened()
+
         ColumnLayout {
             anchors.fill: parent
             spacing: 15
@@ -70,7 +73,7 @@ Item {
                     }
                 }
 
-                Label {
+                Text {
                     id: popupTitle
                     color: AlgStyle.text.color.normal
                     font.pixelSize: 13

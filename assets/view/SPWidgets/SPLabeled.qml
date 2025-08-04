@@ -10,15 +10,6 @@ RowLayout {
     property alias text: label.text
     property real scopeWidth: label.width
     
-    onVisibleChanged: scale = visible
-
-    Behavior on scale {
-        NumberAnimation { 
-            duration: 100
-            easing.type: Easing.OutQuart
-        }
-    }
-
     AlgLabel { 
         id: label
         Layout.alignment: Qt.AlignVCenter

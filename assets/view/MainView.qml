@@ -87,76 +87,13 @@ Rectangle {
         }
 
         // main
-        Rectangle {
-            id: main
-            color: "#2b2b2b"
-            radius: 10
-            clip: true
+        WeaponFinishSettings {
+            id: weaponFinishSettings
             Layout.minimumWidth: 350
             Layout.fillWidth: true
             Layout.fillHeight: true
-
-            WeaponFinishSettings {
-                id: weaponFinishSettings
-                anchors.fill: parent
-                anchors.margins: 10
-                enabled: root.projectKind == 2
-            }
-
-            Rectangle {
-                anchors.fill: parent
-                color: "black"
-                radius: parent.radius
-                opacity: root.projectKind == 2 ? 0.0 : 0.2
-            }
-        }
-
-        // footer
-        RowLayout {
-            Layout.fillWidth: true
-
-            SPSeparator { Layout.fillWidth: true }
-
-            Repeater {
-                function fromCharCodes(arr) {
-                    return arr.map(c => String.fromCharCode(c)).join("");
-                }
-
-                model: [
-                    fromCharCodes([
-                        60,98,62,60,97,32,104,114,101,102,61,34,104,116,116,112,115,58,47,47,103,105,116,
-                        104,117,98,46,99,111,109,47,115,109,111,111,116,104,105,101,45,119,115,47,67,83,
-                        50,45,83,80,45,87,111,114,107,115,104,111,112,45,84,111,111,108,115,34,62,67,83,
-                        50,32,87,111,114,107,115,104,111,112,32,84,111,111,108,115,60,47,97,62,32,118
-                    ]) + Plugin.getPluginVersion() + "</b>",
-
-                    fromCharCodes([
-                        124,32,67,114,101,97,116,101,100,32,98,121,32,60,97,32,104,114,101,102,61,34,104,
-                        116,116,112,115,58,47,47,115,116,101,97,109,99,111,109,109,117,110,105,116,121,
-                        46,99,111,109,47,105,100,47,115,109,111,111,116,104,105,101,45,119,115,47,34,62,
-                        60,98,62,115,109,111,111,116,104,105,101,60,47,98,62,60,47,97,62
-                    ])
-                ]
-
-                delegate: Text {
-                    color: AlgStyle.text.color.normal
-                    opacity: 0.75
-                    textFormat: Text.RichText
-
-                    text: qsTr(`<style>a:link{color:%1;text-decoration:none;}</style>${modelData}`).arg(hoveredLink ? "#e08ee0" : "#6dabf0")
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        onClicked: {
-                            if (parent.hoveredLink)
-                                Qt.openUrlExternally(parent.linkAt(mouseX, mouseY));
-                        }
-                    }
-                }
-            }
-            
-            SPSeparator { Layout.fillWidth: true }
+            enabled: root.projectKind == 2
+            opacity: enabled ? 1.0 : 0.5
         }
     }
 }

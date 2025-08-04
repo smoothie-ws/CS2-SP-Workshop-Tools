@@ -39,19 +39,22 @@ Window {
                 Layout.minimumHeight: 150
                 clip: true
 
-                SPLinearGradient {
+                Rectangle {
                     anchors.fill: parent
-                    
-                    GradientStop { position: 1.0; color: Qt.hsva(root.color.hsvHue, 1, 1) }
-                    GradientStop { position: 0.0; color: Qt.hsva(root.color.hsvHue, 0, 1) }
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 1.0; color: Qt.hsva(root.color.hsvHue, 1, 1) }
+                        GradientStop { position: 0.0; color: Qt.hsva(root.color.hsvHue, 0, 1) }
+                    }
                 }
 
-                SPLinearGradient {
+                Rectangle {
                     anchors.fill: parent
-                    orientation: Gradient.Vertical
-
-                    GradientStop { position: 0.0; color: Qt.hsva(0, 0, 1, 0) }
-                    GradientStop { position: 1.0; color: Qt.hsva(0, 0, 0, 1) }
+                    gradient: Gradient {
+                        orientation: Gradient.Vertical
+                        GradientStop { position: 0.0; color: Qt.hsva(0, 0, 1, 0) }
+                        GradientStop { position: 1.0; color: Qt.hsva(0, 0, 0, 1) }
+                    }
                 }
 
                 MouseArea {
@@ -92,17 +95,18 @@ Window {
                 Layout.minimumWidth: 10
                 rotation: 180
                 
-                SPLinearGradient {
+                Rectangle {
                     anchors.fill: parent
-                    orientation: Gradient.Vertical
-
-                    GradientStop { position: 6 / 6; color: "#ff0000" }
-                    GradientStop { position: 5 / 6; color: "#ffff00" }
-                    GradientStop { position: 4 / 6; color: "#00ff00" }
-                    GradientStop { position: 3 / 6; color: "#00ffff" }
-                    GradientStop { position: 2 / 6; color: "#0000ff" }
-                    GradientStop { position: 1 / 6; color: "#ff00ff" }
-                    GradientStop { position: 0 / 6; color: "#ff0000" }
+                    gradient: Gradient {
+                        orientation: Gradient.Vertical
+                        GradientStop { position: 6 / 6; color: "#ff0000" }
+                        GradientStop { position: 5 / 6; color: "#ffff00" }
+                        GradientStop { position: 4 / 6; color: "#00ff00" }
+                        GradientStop { position: 3 / 6; color: "#00ffff" }
+                        GradientStop { position: 2 / 6; color: "#0000ff" }
+                        GradientStop { position: 1 / 6; color: "#ff00ff" }
+                        GradientStop { position: 0 / 6; color: "#ff0000" }
+                    }
                 }
 
                 Item {

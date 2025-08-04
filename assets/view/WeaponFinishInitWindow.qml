@@ -85,7 +85,7 @@ SPDialog {
             RowLayout {
                 Layout.fillWidth: true
                 
-                Label {
+                Text {
                     text: root.meshFile
                     clip: true
                     color: AlgStyle.text.color.normal

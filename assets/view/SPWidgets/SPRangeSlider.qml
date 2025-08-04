@@ -210,29 +210,29 @@ ColumnLayout {
                 readonly property color handlerColor: Qt.hsva(0.55 + 0.45 * root.visualPosition, 0.5, 1.0)
                 readonly property color maxHandlerColor: Qt.hsva(0.55 + 0.45 * root.maxVisualPosition, 0.5, 1.0)
 
-                SPLinearGradient {
+                Rectangle {
                     x: root.minVisualPosition * parent.width
                     width: (root.maxVisualPosition - root.minVisualPosition) * parent.width
                     height: parent.height
-
-                    GradientStop { 
-                        position: 0.0
-                        color: root.pressed && mouseArea.closest == 0 ? line.minHandlerColor : "#d0d0d0" 
-                    }
-
-                    GradientStop { 
-                        position: {
-                            if (root.pickValue)
-                                MathUtils.norm(root.visualPosition, root.minVisualPosition, root.maxVisualPosition);
-                            else
-                                mouseArea.closest == 0 ? 0.0 : 1.0;
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { 
+                            position: 0.0
+                            color: root.pressed && mouseArea.closest == 0 ? line.minHandlerColor : "#d0d0d0" 
                         }
-                        color: root.pressed && mouseArea.closest == 1 ? line.handlerColor : "#d0d0d0" 
-                    }
-                    
-                    GradientStop { 
-                        position: 1.0
-                        color: root.pressed && mouseArea.closest == 2 ? line.maxHandlerColor : "#d0d0d0" 
+                        GradientStop { 
+                            position: {
+                                if (root.pickValue)
+                                    MathUtils.norm(root.visualPosition, root.minVisualPosition, root.maxVisualPosition);
+                                else
+                                    mouseArea.closest == 0 ? 1.0 : 0.0;
+                            }
+                            color: root.pressed && mouseArea.closest == 1 ? line.handlerColor : "#d0d0d0" 
+                        }
+                        GradientStop { 
+                            position: 1.0
+                            color: root.pressed && mouseArea.closest == 2 ? line.maxHandlerColor : "#d0d0d0" 
+                        }
                     }
                 }
 

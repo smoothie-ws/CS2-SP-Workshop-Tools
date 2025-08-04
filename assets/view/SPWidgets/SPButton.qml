@@ -4,8 +4,8 @@ import QtQuick.Controls 2.1
 
 SPControl {
     id: root
-    implicitHeight: Math.max(checker.height, icon.height, label.height) + padding * 2.0
-    implicitWidth: checker.width + icon.width + label.width + padding * 2.0
+    implicitHeight: content.height + padding * 2.0
+    implicitWidth: content.width + padding * 2.0
 
     property alias text: label.text
     property alias font: label.font
@@ -21,11 +21,11 @@ SPControl {
 
     cursorShape: Qt.PointingHandCursor
     onPressed: {
-        background.anchors.margins = -2.0;
+        background.anchors.margins = 0.5;
         if (checkable)
             checked = !checked;
     }
-    onReleased: background.anchors.margins = 0.0
+    onReleased: background.anchors.margins = -1.0
     tooltip.visible: root.hovered && tooltip.text != ""
 
     onCheckableChanged: checker.visible = checkable
@@ -33,6 +33,7 @@ SPControl {
     Rectangle {
         id: background
         anchors.fill: parent
+        anchors.margins: -1.0
         color: root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
         radius: 15
 
@@ -45,9 +46,8 @@ SPControl {
         }
     }
 
-    Row {
+    RowLayout {
         id: content
-        spacing: 5
         anchors.margins: 5
         anchors.left: parseInt(root.contentAlignment & Qt.AlignLeft) != 0 ? parent.left : undefined
         anchors.horizontalCenter: parseInt(root.contentAlignment & Qt.AlignHCenter) != 0 ? parent.horizontalCenter : undefined
@@ -58,7 +58,6 @@ SPControl {
 
         Rectangle {
             id: checker
-            anchors.verticalCenter: parent.verticalCenter
             visible: false
             width: 15
             height: 15
@@ -70,21 +69,24 @@ SPControl {
 
         Image {
             id: icon
-            anchors.verticalCenter: parent.verticalCenter
             asynchronous: true
-            visible: source !== ""
+            visible: status == Image.Ready
             opacity: root.hovered ? 1.0 : 0.5
             sourceSize.width: width
             sourceSize.height: height
+
+            Behavior on opacity {
+                NumberAnimation { duration: 250 }
+            }
         }
 
-        Label {
+        Text {
             id: label
-            anchors.verticalCenter: parent.verticalCenter
             visible: text !== ""
             color: "#cfcfcf"
             verticalAlignment: Text.AlignVCenter
-            padding: 2
+            horizontalAlignment: Text.AlignHCenter
+            Layout.minimumWidth: implicitWidth + 25
         }
     }
 }
