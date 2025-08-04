@@ -78,23 +78,13 @@ ColumnLayout {
                 
                 readonly property color handlerColor: Qt.hsva(0.55 + 0.45 * root.visualPosition, 0.5, 1.0)
 
-                // LinearGradient {
-                //     width: root.visualPosition * parent.width
-                //     height: parent.height
-                //     start: Qt.point(0, 0)
-                //     end: Qt.point(width, 0)
+                SPLinearGradient {
+                    width: root.visualPosition * parent.width
+                    height: parent.height
 
-                //     gradient: Gradient {
-                //         GradientStop { 
-                //             position: 0.0
-                //             color: "#d0d0d0" 
-                //         }
-                //         GradientStop { 
-                //             position: 1.0
-                //             color: root.pressed ? line.handlerColor : "#d0d0d0"
-                //         }
-                //     }
-                // }
+                    GradientStop { position: 0.0; color: "#d0d0d0" }
+                    GradientStop { position: 1.0; color: root.pressed ? line.handlerColor : "#d0d0d0" }
+                }
 
                 SPSliderHandler {
                     id: handler
