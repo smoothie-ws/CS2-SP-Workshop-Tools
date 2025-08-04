@@ -21,16 +21,12 @@ SPControl {
 
     cursorShape: Qt.PointingHandCursor
     onPressed: {
-        scale = 0.95;
+        background.anchors.margins = -2.0;
         if (checkable)
             checked = !checked;
     }
-    onReleased: scale = 1.0
+    onReleased: background.anchors.margins = 0.0
     tooltip.visible: root.hovered && tooltip.text != ""
-
-    Behavior on scale {
-        NumberAnimation { duration: 50 }
-    }
 
     onCheckableChanged: checker.visible = checkable
     
@@ -42,6 +38,10 @@ SPControl {
 
         Behavior on color {
             ColorAnimation { duration: 250 }
+        }
+
+        Behavior on anchors.margins {
+            NumberAnimation { duration: 50 }
         }
     }
 

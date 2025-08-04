@@ -7,15 +7,14 @@ Rectangle {
     width: 12
     height: 12
     radius: Math.min(width, height) * 0.5
-    scale: hovered ? 1.25 : 1
     border.color: "#3b3b3b"
-    border.width: 1.0
+    border.width: hovered ? -0.25 : 1
 
     property bool pressed: false
     property bool hovered: false
     property alias text: label.text
 
-    Behavior on scale {
+    Behavior on border.width {
         NumberAnimation { duration: 100 }
     }
 
