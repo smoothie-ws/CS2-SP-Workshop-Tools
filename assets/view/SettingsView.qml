@@ -8,8 +8,11 @@ SPDialog {
     id: root
     color: AlgStyle.background.color.mainWindow
     confirm.text: "Save"
-    message.text: `CS2 Workshop Tools v${Plugin.getPluginVersion()}`
-
+    message.font.pixelSize: 12
+    message.textFormat: Text.RichText
+    message.text: `<style>a:link{color:${message.hoveredLink ? "#e08ee0" : "#6dabf0"};text-decoration:none;}</style><b><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a><b> v${Plugin.getPluginVersion()}`
+    message.onLinkActivated: Qt.openUrlExternally(link)
+    
     QtObject {
         id: internal
         
