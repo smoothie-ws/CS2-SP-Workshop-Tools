@@ -99,13 +99,13 @@ Window {
                     anchors.fill: parent
                     gradient: Gradient {
                         orientation: Gradient.Vertical
-                        GradientStop { position: 6 / 6; color: "#ff0000" }
-                        GradientStop { position: 5 / 6; color: "#ffff00" }
-                        GradientStop { position: 4 / 6; color: "#00ff00" }
-                        GradientStop { position: 3 / 6; color: "#00ffff" }
-                        GradientStop { position: 2 / 6; color: "#0000ff" }
-                        GradientStop { position: 1 / 6; color: "#ff00ff" }
                         GradientStop { position: 0 / 6; color: "#ff0000" }
+                        GradientStop { position: 1 / 6; color: "#ffff00" }
+                        GradientStop { position: 2 / 6; color: "#00ff00" }
+                        GradientStop { position: 3 / 6; color: "#00ffff" }
+                        GradientStop { position: 4 / 6; color: "#0000ff" }
+                        GradientStop { position: 5 / 6; color: "#ff00ff" }
+                        GradientStop { position: 6 / 6; color: "#ff0000" }
                     }
                 }
 
