@@ -95,8 +95,8 @@ Rectangle {
                 implicitWidth: 25
                 implicitHeight: implicitWidth
                 icon.source: Plugin.asset("icons/eye.png")
-                icon.width: implicitWidth * 0.5
-                icon.height: implicitHeight * 0.5
+                icon.width: implicitWidth * 0.75
+                icon.height: implicitHeight * 0.75
                 tooltip.text: `${checked ? "Disable" : "Enable"} Livew Previewing of the Weapon Finish (V)`
                 background.color: checked ? "#095aba" : "transparent"
                 background.opacity: hovered ? 1.0 : 0.75
@@ -120,9 +120,9 @@ Rectangle {
                 contentAlignment: Qt.AlignCenter
                 implicitWidth: 25
                 implicitHeight: implicitWidth
-                icon.source: Plugin.asset("icons/settings.png")
-                icon.width: implicitWidth * 0.5
-                icon.height: implicitHeight * 0.5
+                icon.source: Plugin.asset("icons/validation.png")
+                icon.width: implicitWidth * 0.75
+                icon.height: implicitHeight * 0.75
                 tooltip.text: `${checked ? "Disable" : "Enable"} PBR validation of the Weapon Finish (V)`
                 background.color: checked ? "#095aba" : "transparent"
                 background.opacity: hovered ? 1.0 : 0.75
