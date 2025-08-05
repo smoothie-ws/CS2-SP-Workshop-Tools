@@ -194,8 +194,8 @@ class WeaponFinish:
 		def get_bool(param: str) -> str:
 			return "true" if weapon_finish.get(param) else "false"
 		
-		econitem = weapon_finish.get("econitem")
-		if econitem is not None:
+		econitem: str = weapon_finish.get("econitem", "")
+		if econitem != "":
 			textures_folder = weapon_finish.get("texturesFolder", "")
 			
 			if not Path.exists(textures_folder):

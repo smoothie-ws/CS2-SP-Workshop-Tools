@@ -5,7 +5,7 @@ import AlgWidgets.Style 2.0
 
 Rectangle {
     id: root
-    radius: 10
+    radius: 15
     implicitHeight: layout.implicitHeight
     gradient: Gradient {
         GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.05) }
@@ -13,16 +13,17 @@ Rectangle {
     }
     
     default property alias children: content.children
+    property alias spacing: content.spacing
     property alias header: header.sourceComponent
     property alias toggled: groupButton.checked
     property alias text: groupButton.text
     property alias tooltip: groupButton.tooltip
     property alias expandable: groupButton.enabled
+    property alias scopeWidth: scopeLine.width
     property alias activeScopeBorder: scopeLine.visible
-    property real padding: 5
+    property real padding: 10
 
     property var labels: []
-    property real scopeWidth: 0.0
 
     Behavior on implicitHeight {
         NumberAnimation { 
@@ -43,7 +44,7 @@ Rectangle {
             checker.visible: false
             contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
             Layout.fillWidth: true
-            Layout.margins: root.padding
+            Layout.margins: 5
             background.opacity: 0.0
             label.font.bold: true
             icon.source: enabled ? (checked ? AlgStyle.icons.groupwidget.expanded : AlgStyle.icons.groupwidget.collapsed) : ""
@@ -71,8 +72,7 @@ Rectangle {
 
             Item {
                 id: scopeLine
-                visible: true
-                width: 15
+                width: 10
                 Layout.fillHeight: true
                 Layout.preferredWidth: width
             }

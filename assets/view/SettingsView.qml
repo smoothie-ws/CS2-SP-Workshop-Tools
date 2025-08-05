@@ -261,7 +261,7 @@ SPDialog {
                     }
 
                     Rectangle {
-                        radius: 10
+                        radius: 15
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         color: Qt.rgba(0.0, 0.0, 0.0, 0.1)
@@ -432,7 +432,7 @@ SPDialog {
 
                 Rectangle {
                     id: weaponFinishBackground
-                    radius: 10
+                    radius: 15
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     color: Qt.rgba(0.0, 0.0, 0.0, 0.1)
@@ -491,7 +491,6 @@ SPDialog {
                                 checkable: true
                                 tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
                                 Layout.fillWidth: true
-                                contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                             }
 
                             SPLabeled {
@@ -574,7 +573,6 @@ SPDialog {
                                 text: "Custom Pearlescent Mask"
                                 Layout.fillWidth: true
                                 checkable: true
-                                contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                             }
 
                             SPSlider {
@@ -589,7 +587,6 @@ SPDialog {
                                 text: "Custom Roughness Texture"
                                 Layout.fillWidth: true
                                 checkable: true
-                                contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                             }
                                 
                             SPSlider {
@@ -619,7 +616,6 @@ SPDialog {
                                     text: modelData.text
                                     tooltip.text: `Whether to use ${modelData.text.toLowerCase()} or the weapon default one`
                                     Layout.fillWidth: true
-                                    contentAlignment: Qt.AlignLeft | Qt.AlignVCenter
                                 }
                                 onItemAdded: (i, item) => internal.weaponFinish[model[i].id].control = item
                             }

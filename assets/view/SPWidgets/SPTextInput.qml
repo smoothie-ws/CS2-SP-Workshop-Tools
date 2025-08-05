@@ -17,7 +17,7 @@ TextInput {
 
     property Component background: Rectangle {
         color: "black"
-        radius: 10
+        radius: 15
         opacity: root.focus ? 0.5 : (root.hovered ? 0.3 : 0.15)
 
         Behavior on opacity {
@@ -50,7 +50,7 @@ TextInput {
 
         background: Rectangle {
             color: Qt.rgba(0.12, 0.12, 0.12)
-            radius: 5
+            radius: 15
         }
     }
 

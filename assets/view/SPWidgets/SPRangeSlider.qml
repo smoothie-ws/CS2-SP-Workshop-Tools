@@ -96,6 +96,7 @@ ColumnLayout {
             icon.width: 20
             icon.height: 20
             tooltip.text: "Shrink range to current value"
+            background.opacity: hovered ? 1.0 : 0.0
 
             onClicked: {
                 internal.sync(() => {

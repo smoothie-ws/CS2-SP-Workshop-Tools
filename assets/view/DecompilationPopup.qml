@@ -44,7 +44,7 @@ SPPopup {
 
         Rectangle {
             height: 10
-            radius: 5
+            radius: 15
             Layout.fillWidth: true
             color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
 
@@ -58,7 +58,7 @@ SPPopup {
         
         Rectangle {
             height: 100
-            radius: 5
+            radius: 15
             Layout.fillWidth: true
             color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
 

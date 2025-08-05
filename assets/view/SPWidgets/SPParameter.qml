@@ -11,12 +11,14 @@ RowLayout {
     SPButton {
         id: resetButton
         padding: 5
+        contentAlignment: Qt.AlignCenter
         implicitWidth: 30
         implicitHeight: implicitWidth
         icon.source: "./icons/cycle.png"
-        icon.width: 15
-        icon.height: 15
+        icon.width: implicitWidth * 0.5
+        icon.height: implicitHeight * 0.5
         tooltip.text: "Reset value"
+        background.opacity: hovered ? 1.0 : 0.0
 
         transform: Rotation { 
             origin.x: resetButton.width * 0.5

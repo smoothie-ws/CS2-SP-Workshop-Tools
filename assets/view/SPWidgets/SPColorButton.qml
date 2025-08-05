@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.3
+import "math.js" as MathUtils
 
 SPButton {
     id: root
@@ -41,9 +42,12 @@ SPButton {
     })
 
     onClicked: {
+        const screenPadding = 50;
         var screenPosition = parent.mapToGlobal(mouseX, mouseY);
-        colorPicker.x = screenPosition.x;
-        colorPicker.y = screenPosition.y;
+        
+        colorPicker.x = MathUtils.clamp(screenPosition.x, screenPadding, Screen.width - colorPicker.width - screenPadding);
+        colorPicker.y = MathUtils.clamp(screenPosition.y, screenPadding, Screen.height - colorPicker.height - screenPadding);
+
         colorPicker.show();
     }
 

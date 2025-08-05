@@ -1,9 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
-#if QT_VERSION == 5
-import QtGraphicalEffects 1.15
-#endif
 import AlgWidgets 2.0
 import AlgWidgets.Style 2.0
 
@@ -40,7 +37,7 @@ Item {
         id: background
         anchors.fill: parent
         color: "#2d2d2d"
-        radius: 10
+        radius: 5
         border.color: root.hovered ? "#378ef0" : Qt.rgba(0.5, 0.5, 0.5, 0.5)
         border.width: 1
 
@@ -53,14 +50,12 @@ Item {
 
         Image {
             id: preview
+            clip: true
+            fillMode: Image.PreserveAspectCrop
             anchors.fill: parent
             anchors.margins: 3
-            fillMode: Image.PreserveAspectCrop
-
-            layer.enabled: true
-
+            
             property real shadeOffset: root.hovered ? 0.25 : 0.05
-            property real scaleFactor: root.hovered ? 1.1 : 1.0
 
             Behavior on shadeOffset {
                 NumberAnimation { 
@@ -68,20 +63,6 @@ Item {
                     easing.type: Easing.OutQuart
                 }
             }
-
-            #if QT_VERSION == 5
-            layer.enabled: true
-            layer.samples: 4
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: background.width
-                    height: background.height
-                    radius: background.radius - preview.anchors.margins
-                }
-            }
-            #else
-
-            #endif
 
             Rectangle {
                 anchors.fill: parent

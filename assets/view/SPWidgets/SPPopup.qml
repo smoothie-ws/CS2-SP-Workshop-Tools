@@ -145,7 +145,7 @@ Item {
         }
 
         background: Rectangle {
-            radius: 10
+            radius: 15
             color: AlgStyle.background.color.mainWindow
         }
     }

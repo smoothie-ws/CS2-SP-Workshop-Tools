@@ -4,8 +4,8 @@ import QtQuick.Controls 2.1
 
 SPControl {
     id: root
-    implicitHeight: content.height + padding * 2.0
-    implicitWidth: content.width + padding * 2.0
+    height: 25
+    implicitWidth: content.implicitWidth + padding * 2.0
 
     property alias text: label.text
     property alias font: label.font
@@ -15,7 +15,7 @@ SPControl {
     property alias background: background
     property alias padding: content.anchors.margins
 
-    property int contentAlignment: Qt.AlignCenter
+    property int contentAlignment: Qt.AlignLeft | Qt.AlignRight | Qt.AlignVCenter
     property bool checked: false
     property bool checkable: false
 
@@ -35,10 +35,15 @@ SPControl {
         anchors.fill: parent
         anchors.margins: -1.0
         color: root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
+        opacity: root.checkable ? 0.0 : 1.0
         radius: 15
 
         Behavior on color {
-            ColorAnimation { duration: 250 }
+            ColorAnimation { duration: 150 }
+        }
+
+        Behavior on opacity {
+            NumberAnimation { duration: 150 }
         }
 
         Behavior on anchors.margins {
@@ -48,7 +53,7 @@ SPControl {
 
     RowLayout {
         id: content
-        anchors.margins: 5
+        anchors.margins: root.checkable ? 0.0 : 5.0
         anchors.left: parseInt(root.contentAlignment & Qt.AlignLeft) != 0 ? parent.left : undefined
         anchors.horizontalCenter: parseInt(root.contentAlignment & Qt.AlignHCenter) != 0 ? parent.horizontalCenter : undefined
         anchors.right: parseInt(root.contentAlignment & Qt.AlignRight) != 0 ? parent.right : undefined
@@ -56,27 +61,18 @@ SPControl {
         anchors.verticalCenter: parseInt(root.contentAlignment & Qt.AlignVCenter) != 0 ? parent.verticalCenter : undefined
         anchors.bottom: parseInt(root.contentAlignment & Qt.AlignBottom) != 0 ? parent.bottom : undefined
 
-        Rectangle {
-            id: checker
-            visible: false
-            width: 15
-            height: 15
-            radius: width
-            color: root.checked ? "#cfcfcf" : (root.hovered ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(0, 0, 0, 0.35))
-            border.width: root.hovered ? 3 : 4
-            border.color: Qt.rgba(0, 0, 0, 0.35)
-        }
-
         Image {
             id: icon
             asynchronous: true
             visible: status == Image.Ready
             opacity: root.hovered ? 1.0 : 0.5
+            height: parent.height
+            width: height
             sourceSize.width: width
             sourceSize.height: height
 
             Behavior on opacity {
-                NumberAnimation { duration: 250 }
+                NumberAnimation { duration: 150 }
             }
         }
 
@@ -85,8 +81,42 @@ SPControl {
             visible: text !== ""
             color: "#cfcfcf"
             verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignHCenter
+            horizontalAlignment: checker.visible ? Text.AlignLeft : Text.AlignHCenter
+            Layout.fillWidth: true
             Layout.minimumWidth: implicitWidth + 25
+        }
+
+        Rectangle {
+            id: checker
+            visible: false
+            width: 30
+            height: 15
+            radius: height
+            color: Qt.hsva(0.0, 0.0, root.checked ? 0.3 : 0.15, root.hovered ? 0.5 : 1.0)
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 150
+                    easing.type: Easing.OutQuart
+                }
+            }
+
+            Rectangle {
+                x: root.checked ? parent.width - width - 2 : 2
+                width: height
+                radius: width
+                anchors.margins: 2.5
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                color: root.hovered ? "#cfcfcf" : "#b3b3b3"
+
+                Behavior on x {
+                    NumberAnimation {
+                        duration: 150
+                        easing.type: Easing.OutQuart
+                    }
+                }
+            }
         }
     }
 }
