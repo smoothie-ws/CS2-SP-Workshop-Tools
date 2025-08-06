@@ -1,3 +1,4 @@
+import json
 import math
 import substance_painter as sp
 
@@ -113,7 +114,7 @@ class WeaponFinish:
 					Path.makedirs(textures_folder)
 					weapon_finish["texturesFolder"] = textures_folder
 				else:
-					Log.warning(f'Failed to create folder for textures: path "{textures_folder}" already exists')
+					Log.warning(f'Be careful: path "{textures_folder}" for textures already exists!')
 
 				# create .econitem file
 				econitem = Path.join(cs2_path, 
@@ -177,12 +178,101 @@ class WeaponFinish:
 	@staticmethod
 	def import_econ():
 		weapon_finish: dict = WeaponFinish.current()
-		econitem_path = weapon_finish.get("econitem", "")
-		if Path.exists(econitem_path):
-			with open(econitem_path, "r", encoding="utf-8") as f:
-				econitem_content = f.read()
-		else:
-			Log.error(f'Failed to import parameters from .econitem: Path {econitem_path} does not exists')
+		tex_transform = weapon_finish.get("uTexTransform", [0.0, 0.0, 1.0, 0.0])
+  
+		def set_weapon(_: str, value):
+			parts = value.split("_")
+			if len(parts) == 2:
+				weapon_finish["weapon"] = parts[1]
+			else:
+				Log.warning("Failed to fetch weapon")
+   
+		def set_style(_: str, value):
+			parts = value.split("_")
+			if len(parts) == 2:
+				weapon_finish["style"] = {
+					"SolidColor": "so",
+					"HydroGraphic": "hy",
+					"SprayPaint": "sp",
+					"Anodized": "an",
+					"AnodizedMulticolor": "am",
+					"AnodizedAirbrushed": "aa",
+					"CustomPaintJob": "cu",
+					"Patina": "aq",
+					"Gunsmith": "gs"
+				}.get(parts[1])
+			else:
+				Log.warning("Failed to fetch style")
+   
+		def set_wear(_: str, value):
+			if len(value) == 3:
+				weapon_finish["wearRange"] = [value[0], value[2]]
+				weapon_finish["uWearAmt"] = value[1]
+			else:
+				Log.warning("Failed to fetch wear")
+   
+		def set_tex_offset(param: str, value):
+			if len(value) == 3:
+				weapon_finish[f'texOffset{param}Range'] = [value[0], value[2]]
+				tex_transform[0 if param == "X" else 1] = value[1]
+			else:
+				Log.warning(f'Failed to fetch texture {param} offset')
+		
+		def set_tex_scale(_: str, value):
+			tex_transform[2] = value
+		
+		def set_tex_rotation(_: str, value):
+			if len(value) == 3:
+				weapon_finish["texRotationRange"] = [value[0], value[2]]
+				# degrees to radians
+				tex_transform[3] = value[0] * math.pi / 180
+			else:
+				Log.warning("Failed to fetch texture rotation")
+		
+		def set_col(param: str, value):
+			if len(value) == 3:
+				weapon_finish[f'uCol{param}'] = [v / 255 for v in value]
+			else:
+				Log.warning(f'Failed to fetch color {param}')
+
+		params = {
+			"preview_weapon": ("", set_weapon),
+			"composite_material_class": ("", set_style),
+			"g_flWearAmount": ("", set_wear),
+			"g_vPatternTexCoordOffset.0": ("X", set_tex_offset),
+			"g_vPatternTexCoordOffset.1": ("Y", set_tex_offset),
+			"g_flPatternTexCoordScale": ("", set_tex_scale),
+			"g_flPatternTexCoordRotation": ("", set_tex_rotation),
+			"g_bIgnoreWeaponSizeScale": "uIgnoreWeaponSizeScale",
+			"g_bOverrideAmbientOcclusion": "uUseCustomAOTex",
+			"g_bOverrideDefaultMasks": "uUseCustomMasks",
+			"g_bUseNormalMap": "uUseCustomNormal",
+			"g_bUsePearlescenceMask": "uUsePearlMask",
+			"g_bUseRoughness": "uUseCustomRough",
+			"g_flPearlescentScale": "uPearlScale",
+			"g_tPaintRoughness": "uPaintRoughness",
+			"g_vColor0": (0, set_col),
+			"g_vColor1": (1, set_col),
+			"g_vColor2": (2, set_col),
+			"g_vColor3": (3, set_col),
+		}
+  
+		econitem_content = Path.read(weapon_finish.get("econitem", ""))
+		if (len(econitem_content) > 0):
+			for l in econitem_content.splitlines():
+				for p in params.keys():
+					if p in l:
+						param = params.pop(p)
+						value = json.loads(l.split("=")[1].strip())
+						if isinstance(param, tuple):
+							param[1](param[0], value)
+						else:
+							weapon_finish[param[0]] = value
+						break
+  
+			weapon_finish["uTexTransform"] = tex_transform
+			WeaponFinish.dump(weapon_finish)
+			Log.warning(f'Imported parameters from .econitem')
 
 	@staticmethod
 	def export_econ():
@@ -196,17 +286,6 @@ class WeaponFinish:
 		
 		econitem: str = weapon_finish.get("econitem", "")
 		if econitem != "":
-			textures_folder = weapon_finish.get("texturesFolder", "")
-			
-			if not Path.exists(textures_folder):
-				Log.error(f'Failed to sync .econitem file: path "{textures_folder}" for textures does not exist')
-				return
-			
-			# fetch textures folder
-			textures_folder = textures_folder.split("csgo")[-1]
-			if textures_folder[0] == "/":
-				textures_folder = textures_folder[1:]
-
 			# fetch weapon finish parameters
 			finish_name = Path.filename(econitem)
 			finish_style = {
@@ -237,6 +316,14 @@ class WeaponFinish:
 				list(map(uint8, weapon_finish.get(f'uCol{i}', [1.0, 1.0, 1.0])))
 				for i in range(4)
 			]
+
+			# fetch textures folder
+			textures_folder = weapon_finish.get("texturesFolder", "")
+			if not Path.exists(textures_folder):
+				Log.warning(f'Be careful: path "{textures_folder}" for textures does not exist!')
+			textures_folder = textures_folder.split("csgo")[-1]
+			if len(textures_folder) > 0 and textures_folder[0] == "/":
+				textures_folder = textures_folder[1:]
 
 			try:
 				with open(Path.asset("template.econitem"), "r", encoding="utf-8") as f:

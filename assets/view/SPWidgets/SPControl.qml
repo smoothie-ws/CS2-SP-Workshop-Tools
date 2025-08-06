@@ -14,6 +14,13 @@ MouseArea {
     onEntered: hovered = true
     onExited: hovered = false
 
+    Behavior on opacity {
+        NumberAnimation { 
+            duration: 150 
+            easing.type: Easing.OutCirc
+        }
+    }
+    
     Item {
         id: content
         anchors.fill: parent

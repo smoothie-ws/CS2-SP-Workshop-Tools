@@ -254,7 +254,11 @@ SPDialog {
 
                         SPButton {
                             text: "Refresh"
+                            #if QT_VERSION >= 6
                             icon.source: "./icons/cycle.png"
+                            #else
+                            icon.source: "./SPWidgets/icons/cycle.png"
+                            #endif
                             icon.width: 15
                             icon.height: 15
                             tooltip.text: "Refresh"
@@ -390,7 +394,11 @@ SPDialog {
                                                     padding: 5
                                                     implicitWidth: 20
                                                     implicitHeight: implicitWidth
+                                                    #if QT_VERSION >= 6
                                                     icon.source: "./icons/close.png"
+                                                    #else
+                                                    icon.source: "./SPWidgets/icons/close.png"
+                                                    #endif
                                                     icon.width: implicitWidth * 0.5
                                                     icon.height: implicitHeight * 0.5
                                                     tooltip.text: "Remove"

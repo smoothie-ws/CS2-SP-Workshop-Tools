@@ -50,7 +50,7 @@ SPDialog {
         function onOpened(isNew) {
             root.isNew = isNew;
             root.meshFile = "";
-            nameInput.name = "";
+            nameInput.name = "name";
             weaponBox.currentKey = "";
             styleBox.currentKey = Plugin.getDefaultStyle();
         }

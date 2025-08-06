@@ -2,7 +2,7 @@
 import QtQuick 2.15
 RegExpValidator { 
     id: root
-    property alias expr: root.regExpr
+    property alias expr: root.regExp
 }
 #else
 import QtQuick

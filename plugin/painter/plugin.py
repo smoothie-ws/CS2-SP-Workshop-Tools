@@ -1,7 +1,6 @@
 import json
 import substance_painter as sp
 
-
 from .ui import UI, QtVersion
 from .log import Log
 from .path import Path
@@ -49,10 +48,7 @@ class Plugin:
                 sp.event.BakingProcessAboutToStart: lambda _: cls.on_baking_process_about_to_start(),
                 sp.event.BakingProcessProgress: lambda _: cls.on_baking_process_progress(),
                 sp.event.BakingProcessEnded: lambda _: cls.on_baking_process_ended(),
-                sp.event.LayerStacksModelDataChanged: lambda _: cls.on_layer_stacks_model_data_changed(),
-                sp.event.EngineComputationsStatusChanged: lambda _: cls.on_engine_computations_status_changed(),
-                sp.event.TextureStateEvent: lambda _: cls.on_texture_state_event(),
-                sp.event.CameraPropertiesChanged: lambda _: cls.on_camera_properties_changed(),
+                sp.event.TextureStateEvent: lambda _: cls.on_texture_state_event()
             }
             for event, callback in connections.items():
                 sp.event.DISPATCHER.connect_strong(event, callback)
@@ -169,17 +165,5 @@ class Plugin:
         pass
 
     @classmethod
-    def on_layer_stacks_model_data_changed(cls):
-        pass
-
-    @classmethod
-    def on_engine_computations_status_changed(cls):
-        pass
-
-    @classmethod
     def on_texture_state_event(cls):
-        pass
-
-    @classmethod
-    def on_camera_properties_changed(cls):
         pass

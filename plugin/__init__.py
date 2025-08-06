@@ -1,4 +1,5 @@
 import webbrowser
+import substance_painter as sp
 
 from .weapon_finish import WeaponFinish
 from .painter import UI, Plugin, Macro, Path, QmlView, Resource
@@ -27,10 +28,13 @@ class CS2WT(Plugin):
     
     @classmethod
     def on_project_opened(cls):
-        if WeaponFinish.is_open():
-            CS2WT.main_view.projectKindChanged.emit(2)
-        else:
-            CS2WT.main_view.projectKindChanged.emit(1)
+        def f():
+            if WeaponFinish.is_open():
+                WeaponFinish.import_econ()
+                CS2WT.main_view.projectKindChanged.emit(2)
+            else:
+                CS2WT.main_view.projectKindChanged.emit(1)
+        sp.project.execute_when_not_busy(f)
 
     @classmethod
     def on_project_created(cls):

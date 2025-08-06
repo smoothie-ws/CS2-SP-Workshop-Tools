@@ -44,7 +44,7 @@ Item {
         Behavior on border.color {
             ColorAnimation {
                 duration: 250
-                easing.type: Easing.OutQuart
+                easing.type: Easing.OutCirc
             }
         }
 
@@ -60,7 +60,7 @@ Item {
             Behavior on shadeOffset {
                 NumberAnimation { 
                     duration: 250
-                    easing.type: Easing.OutQuart
+                    easing.type: Easing.OutCirc
                 }
             }
 
@@ -131,7 +131,7 @@ Item {
                 Behavior on color {
                     ColorAnimation { 
                         duration: 100
-                        easing.type: Easing.OutQuart
+                        easing.type: Easing.OutCirc
                     }
                 }
 
@@ -147,7 +147,7 @@ Item {
                     Behavior on factor {
                         NumberAnimation { 
                             duration: 100
-                            easing.type: Easing.OutQuart
+                            easing.type: Easing.OutCirc
                         }
                     }
                 }

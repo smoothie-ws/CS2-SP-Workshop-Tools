@@ -39,11 +39,17 @@ SPControl {
         radius: 15
 
         Behavior on color {
-            ColorAnimation { duration: 150 }
+            ColorAnimation { 
+                duration: 150 
+                easing.type: Easing.OutCirc
+            }
         }
 
         Behavior on opacity {
-            NumberAnimation { duration: 150 }
+            NumberAnimation { 
+                duration: 150 
+                easing.type: Easing.OutCirc
+            }
         }
 
         Behavior on anchors.margins {
@@ -89,31 +95,31 @@ SPControl {
         Rectangle {
             id: checker
             visible: false
-            width: 30
+            width: height * 2
             height: 15
             radius: height
-            color: Qt.hsva(0.0, 0.0, root.checked ? 0.3 : 0.15, root.hovered ? 0.5 : 1.0)
+            color: root.checked ? "#b3b3b3" : "#242424"
 
             Behavior on color {
                 ColorAnimation {
                     duration: 150
-                    easing.type: Easing.OutQuart
+                    easing.type: Easing.OutCirc
                 }
             }
 
             Rectangle {
-                x: root.checked ? parent.width - width - 2 : 2
+                x: root.checked ? parent.width - width - anchors.margins : anchors.margins
                 width: height
                 radius: width
-                anchors.margins: 2.5
+                anchors.margins: root.hovered ? 1.0 : 2.5
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                color: root.hovered ? "#cfcfcf" : "#b3b3b3"
+                color: root.checked ? "#242424" : "#b3b3b3"
 
                 Behavior on x {
                     NumberAnimation {
                         duration: 150
-                        easing.type: Easing.OutQuart
+                        easing.type: Easing.OutCirc
                     }
                 }
             }

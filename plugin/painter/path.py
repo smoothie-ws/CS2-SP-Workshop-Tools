@@ -3,6 +3,8 @@ import shutil
 import pathlib
 import subprocess
 
+from .log import Log
+
 
 class Path:
     plugin: str = ""
@@ -82,11 +84,13 @@ class Path:
     
     @staticmethod
     def show_in_explorer(path: str) -> None:
-        path = path.replace("/", "\\") # explorer would choke on forward slashes
+        path = os.path.normpath(path)
         if os.path.isdir(path):
-            subprocess.run(['explorer', path])
+            subprocess.Popen(f'explorer,"{path}"')
         elif os.path.isfile(path):
-            subprocess.run(['explorer', '/select,', path])
+            subprocess.Popen(f'explorer /select,"{path}"')
+        else:
+            Log.error(f'Path {path} is invalid')
 
     @staticmethod
     def read(path: str, default: str = "") -> str:

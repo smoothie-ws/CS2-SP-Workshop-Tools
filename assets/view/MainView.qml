@@ -22,8 +22,22 @@ Rectangle {
 
         function onProjectKindChanged(projectKind) {
             root.projectKind = projectKind;
-            if (projectKind == 2)
+            if (projectKind == 2) {
                 weaponFinish.loadParams();
+                const c = weaponFinish.parameters["econitem"];
+                if (c !== undefined) {
+                    const p = c.control[c.prop];
+                    if (p !== undefined) {
+                        const f = p.substring(p.replace("\\", "/").lastIndexOf("/"));
+                        const n = f.substring(1, f.lastIndexOf("."));
+                        if (n !== "") {
+                            finishName.text = `#${n.toUpperCase()}`;
+                            return;
+                        }
+                    }
+                }
+            }
+            finishName.text = "#UNKNOWN";
         }
 
         function onProjectAboutToSave() {
@@ -89,8 +103,42 @@ Rectangle {
             Layout.fillWidth: true
 
             SPButton {
+                tooltip.text: "Create new project and set it up as Weapon Finish"
+                icon.source: Plugin.asset("icons/add.png")
+                icon.width: 18
+                icon.height: 18
+                Layout.alignment: Qt.AlignCenter
+
+                onClicked: Plugin.initWeaponFinish(true)
+            }
+
+            SPButton {
+                enabled: root.projectKind > 0
+                tooltip.text: "Set up opened project as Weapon Finish"
+                icon.source: Plugin.asset("icons/settings.png")
+                icon.width: 18
+                icon.height: 18
+                Layout.alignment: Qt.AlignCenter
+
+                onClicked: Plugin.initWeaponFinish(false)
+            }
+
+            SPSeparator { Layout.fillWidth: true }
+
+            Text {
+                id: finishName
+                text: "#UNKNOWN"
+                Layout.maximumWidth: 150
+                elide: Text.ElideRight
+                color: AlgStyle.text.color.normal
+                font.bold: true
+            }
+
+            SPSeparator { Layout.fillWidth: true }
+
+            SPButton {
                 id: enableLivePreview
-                enabled: baseTextures.ready
+                enabled: root.projectKind == 2 && baseTextures.ready
                 contentAlignment: Qt.AlignCenter
                 implicitWidth: 25
                 implicitHeight: implicitWidth
@@ -116,7 +164,7 @@ Rectangle {
 
             SPButton {
                 id: enablePBRValidation
-                enabled: enableLivePreview.checked
+                enabled: root.projectKind == 2 && enableLivePreview.checked
                 contentAlignment: Qt.AlignCenter
                 implicitWidth: 25
                 implicitHeight: implicitWidth
@@ -133,19 +181,6 @@ Rectangle {
                     sequence: "V"
                     onActivated: if (enablePBRValidation.enabled) enablePBRValidation.checked = !enablePBRValidation.checked
                 }
-            }
-
-            SPSeparator { Layout.fillWidth: true }
-
-            SPButton {
-                text: root.projectKind == 1 ? "Set up as Weapon Finish" : "New Weapon Finish"
-                tooltip.text: root.projectKind == 1 ? "Set up opened project as Weapon Finish" : "Create new project and set it up as a Weapon Finish"
-                icon.source: root.projectKind == 1 ? Plugin.asset("icons/settings.png") : Plugin.asset("icons/add.png")
-                icon.width: 18
-                icon.height: 18
-                Layout.alignment: Qt.AlignCenter
-
-                onClicked: Plugin.initWeaponFinish(root.projectKind != 1)
             }
         }
 
@@ -226,15 +261,17 @@ Rectangle {
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, texturesFolder.scopeWidth)
 
                     SPButton {
-                        text: "Import"
                         enabled: econitem.filePath != ""
+                        tooltip.text: "Import values from the .econitem file"
                         icon.source: Plugin.asset("icons/import.png")
                         icon.width: 15
                         icon.height: 15
-                        tooltip.text: "Import values from the .econitem file"
                         background.color: hovered ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(0, 0, 0, 0.25)
 
-                        onClicked: Plugin.importWeaponFinishEcon()
+                        onClicked: {
+                            Plugin.importWeaponFinishEcon();
+                            weaponFinish.loadParams();
+                        }
                     }
 
                     Text {
@@ -263,7 +300,7 @@ Rectangle {
                     SPButton {
                         text: "Show"
                         enabled: econitem.filePath != ""
-                        tooltip.text: "Reveal in File Explorer"
+                        tooltip.text: "Show in Explorer"
 
                         onClicked: Plugin.showInExplorer(econitem.filePath)
                     }
@@ -318,7 +355,7 @@ Rectangle {
                     SPButton {
                         text: "Show"
                         enabled: texturesFolder.filePath != ""
-                        tooltip.text: "Reveal in File Explorer"
+                        tooltip.text: "Show in Explorer"
 
                         onClicked: Plugin.showInExplorer(texturesFolder.filePath)
                     }
