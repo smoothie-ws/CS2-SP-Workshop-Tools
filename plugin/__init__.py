@@ -1,8 +1,10 @@
+import json
+import urllib.request
 import webbrowser
 import substance_painter as sp
 
 from .weapon_finish import WeaponFinish
-from .painter import UI, Plugin, Macro, Path, QmlView, Resource
+from .painter import UI, Log, Plugin, Macro, Path, QmlView, Resource
 from .painter.qml import QtWidgets, QtGui
 from .controller import MainView, SettingsWindow, WeaponFinishInitWindow
 
@@ -11,11 +13,25 @@ class CS2WT(Plugin):
     main_view: MainView = None
     settings_window: SettingsWindow = None
     wf_init_window: WeaponFinishInitWindow = None
-
+    
     @classmethod
     def start(cls, path):
         super().start(path, "CS2 Workshop Tools")
-        
+        try:
+            url = "https://api.github.com/repos/smoothie-ws/CS2-SP-Workshop-Tools/releases/latest"
+            with urllib.request.urlopen(url, timeout=3) as response:
+                data = json.loads(response.read().decode())
+
+            latest = data.get("tag_name")
+            if latest:
+                if latest.startswith("v"):
+                    latest = latest[1:]
+                if latest != Plugin.version:
+                    download_url = "https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/releases"
+                    Log.warning(f'New version available: {latest}. Download: {download_url}')
+        except:
+            pass
+
     @classmethod
     def on_start(cls):
         CS2WT.checkout()

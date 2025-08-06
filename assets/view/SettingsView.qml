@@ -6,7 +6,6 @@ import "./SPWidgets"
 
 SPDialog {
     id: root
-    color: AlgStyle.background.color.mainWindow
     confirm.text: "Save"
     message.font.pixelSize: 12
     message.textFormat: Text.RichText

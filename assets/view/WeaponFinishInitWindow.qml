@@ -7,7 +7,6 @@ import "./SPWidgets"
 
 SPDialog {
     id: root
-    color: AlgStyle.background.color.mainWindow
     confirm.enabled: nameInput.nameIsValid && weaponBox.currentIndex != -1 && (isNew ? meshFile !== "" : true)
     confirm.text: isNew ? "Create" : "Proceed"
     message.text: switch (nameInput.nameStatus) {

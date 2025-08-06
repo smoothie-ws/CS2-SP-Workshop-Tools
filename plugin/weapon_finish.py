@@ -114,7 +114,7 @@ class WeaponFinish:
 					Path.makedirs(textures_folder)
 					weapon_finish["texturesFolder"] = textures_folder
 				else:
-					Log.warning(f'Be careful: path "{textures_folder}" for textures already exists!')
+					Log.info(f'Be careful: path "{textures_folder}" for textures already exists!')
 
 				# create .econitem file
 				econitem = Path.join(cs2_path, 
@@ -320,7 +320,7 @@ class WeaponFinish:
 			# fetch textures folder
 			textures_folder = weapon_finish.get("texturesFolder", "")
 			if not Path.exists(textures_folder):
-				Log.warning(f'Be careful: path "{textures_folder}" for textures does not exist!')
+				Log.info(f'Be careful: path "{textures_folder}" for textures does not exist!')
 			textures_folder = textures_folder.split("csgo")[-1]
 			if len(textures_folder) > 0 and textures_folder[0] == "/":
 				textures_folder = textures_folder[1:]
