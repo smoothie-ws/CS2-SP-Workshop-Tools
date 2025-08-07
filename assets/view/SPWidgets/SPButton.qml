@@ -98,7 +98,7 @@ SPControl {
             width: height * 2
             height: 15
             radius: height
-            color: root.checked ? "#b3b3b3" : "#242424"
+            color: root.checked ? "#b3b3b3" : "#1f1f1f"
 
             Behavior on color {
                 ColorAnimation {
@@ -111,10 +111,10 @@ SPControl {
                 x: root.checked ? parent.width - width - anchors.margins : anchors.margins
                 width: height
                 radius: width
-                anchors.margins: root.hovered ? 1.0 : 2.5
+                anchors.margins: root.hovered ? 1.5 : 2.5
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                color: root.checked ? "#242424" : "#b3b3b3"
+                color: root.checked ? "#1f1f1f" : "#b3b3b3"
 
                 Behavior on x {
                     NumberAnimation {

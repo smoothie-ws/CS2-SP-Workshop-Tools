@@ -261,6 +261,7 @@ Rectangle {
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, texturesFolder.scopeWidth)
 
                     SPButton {
+                        text: "Import"
                         enabled: econitem.filePath != ""
                         tooltip.text: "Import values from the .econitem file"
                         icon.source: Plugin.asset("icons/import.png")
@@ -470,6 +471,9 @@ Rectangle {
 
             ScrollView {
                 clip: true
+                enabled: enableLivePreview.checked
+                layer.enabled: true
+                opacity: enabled ? 1.0 : 0.5
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 leftPadding: 10

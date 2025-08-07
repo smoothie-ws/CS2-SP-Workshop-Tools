@@ -34,8 +34,8 @@ RowLayout {
 
         onPressed: {
             root.resetRequested();
-            rotationAnimation.from = 0;
-            rotationAnimation.to = 360;
+            rotationAnimation.from = 360;
+            rotationAnimation.to = 0;
             rotationAnimation.start();
         }
     }
