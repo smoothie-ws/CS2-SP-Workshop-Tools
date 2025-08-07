@@ -5,12 +5,12 @@ from .ui import UI, QtVersion
 from .log import Log
 from .path import Path
 from .macro import Macro
-from .resource import Resource
 
 
 class Plugin:
     settings: dict = {}
     version: str = "0.0.1a"
+    connections: dict = {}
     
     @staticmethod
     def save():
@@ -31,8 +31,7 @@ class Plugin:
             Plugin.settings = data.get("settings", {})
             Plugin.version = data.get("version", "0.0.1a")
             Plugin.preprocess()
-            
-            connections = {
+            Plugin.connections = {
                 sp.event.ProjectOpened: lambda _: cls.on_project_opened(),
                 sp.event.ProjectCreated: lambda _: cls.on_project_created(),
                 sp.event.ProjectAboutToClose: lambda _: cls.on_project_about_to_close(),
@@ -50,7 +49,7 @@ class Plugin:
                 sp.event.BakingProcessEnded: lambda _: cls.on_baking_process_ended(),
                 sp.event.TextureStateEvent: lambda _: cls.on_texture_state_event()
             }
-            for event, callback in connections.items():
+            for event, callback in Plugin.connections.items():
                 sp.event.DISPATCHER.connect_strong(event, callback)
                 
             cls.on_start()
@@ -64,11 +63,15 @@ class Plugin:
 
     @classmethod
     def close(cls):
-        UI.clear()
-        Plugin.save()
-        cls.on_close()
-        Resource.refresh()
-        Log.warning("Plugin closed")
+        try:
+            UI.clear()
+            Plugin.save()
+            for event, callback in Plugin.connections.items():
+                sp.event.DISPATCHER.disconnect(event, callback)
+            cls.on_close()
+            Log.warning("Plugin closed")
+        except:
+            Log.fatal()
     
     @classmethod
     def preprocess(cls):

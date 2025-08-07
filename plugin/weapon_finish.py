@@ -325,39 +325,35 @@ class WeaponFinish:
 			if len(textures_folder) > 0 and textures_folder[0] == "/":
 				textures_folder = textures_folder[1:]
 
-			try:
-				with open(Path.asset("template.econitem"), "r", encoding="utf-8") as f:
-					econitem_content = f.read().format(
-						finish_name=finish_name,
-						finish_style=finish_style,
-						weapon=weapon_finish.get("weapon", "ak47"),
-						wear=[wear[0], weapon_finish.get("uWearAmt", 0.5), wear[1]],
-						tex_offsetx=[tex_offsetx[0], tex_transform[0], tex_offsetx[1]],
-						tex_offsety=[tex_offsety[0], tex_transform[1], tex_offsety[1]],
-						tex_scale=tex_transform[2],
-						tex_rotation=[tex_rotation[0], tex_transform[3], tex_rotation[1]],
-						ignore_weapon_size_scale=get_bool("uIgnoreWeaponSizeScale"),
-						color0=colors[0],
-						color1=colors[1],
-						color2=colors[2],
-						color3=colors[3],
-						pearl_scale=weapon_finish.get("uPearlScale", 0.0),
-						rough=weapon_finish.get("uPaintRoughness", 0.6),
-						custom_pearl_mask=get_bool("uUsePearlMask"),
-						custom_rough_tex=get_bool("uUseCustomRough"),
-						custom_normal_map=get_bool("uUseCustomNormal"),
-						custom_mat_masks=get_bool("uUseCustomMasks"),
-						custom_ao_tex=get_bool("uUseCustomAOTex"),
-						ao_tex_path=f'{textures_folder}/{finish_name}_ao.tga',
-						normal_tex_path=f'{textures_folder}/{finish_name}_normal.tga',
-						masks_tex_path=f'{textures_folder}/{finish_name}_masks.tga',
-						rough_tex_path=f'{textures_folder}/{finish_name}_rough.tga',
-						albedo_tex_path=f'{textures_folder}/{finish_name}_color.tga',
-						pearl_tex_path=f'{textures_folder}/{finish_name}_pearl.tga',
-					)
-				with open(econitem, "w", encoding="utf-8") as f:
-					f.write(econitem_content)
-			except Exception as e:
+			econitem_content = Path.read(Path.asset("template.econitem")).format(
+				finish_name=finish_name,
+				finish_style=finish_style,
+				weapon=weapon_finish.get("weapon", "ak47"),
+				wear=[wear[0], weapon_finish.get("uWearAmt", 0.5), wear[1]],
+				tex_offsetx=[tex_offsetx[0], tex_transform[0], tex_offsetx[1]],
+				tex_offsety=[tex_offsety[0], tex_transform[1], tex_offsety[1]],
+				tex_scale=tex_transform[2],
+				tex_rotation=[tex_rotation[0], tex_transform[3], tex_rotation[1]],
+				ignore_weapon_size_scale=get_bool("uIgnoreWeaponSizeScale"),
+				color0=colors[0],
+				color1=colors[1],
+				color2=colors[2],
+				color3=colors[3],
+				pearl_scale=weapon_finish.get("uPearlScale", 0.0),
+				rough=weapon_finish.get("uPaintRoughness", 0.6),
+				custom_pearl_mask=get_bool("uUsePearlMask"),
+				custom_rough_tex=get_bool("uUseCustomRough"),
+				custom_normal_map=get_bool("uUseCustomNormal"),
+				custom_mat_masks=get_bool("uUseCustomMasks"),
+				custom_ao_tex=get_bool("uUseCustomAOTex"),
+				ao_tex_path=f'{textures_folder}/{finish_name}_ao.tga',
+				normal_tex_path=f'{textures_folder}/{finish_name}_normal.tga',
+				masks_tex_path=f'{textures_folder}/{finish_name}_masks.tga',
+				rough_tex_path=f'{textures_folder}/{finish_name}_rough.tga',
+				albedo_tex_path=f'{textures_folder}/{finish_name}_color.tga',
+				pearl_tex_path=f'{textures_folder}/{finish_name}_pearl.tga',
+			)
+			if not Path.write(econitem, econitem_content) > 0:
 				Log.error(f'Failed to sync .econitem file: {str(e)}')
 
 	@staticmethod
