@@ -95,10 +95,14 @@ class WeaponFinishInitWindow(QmlDialog):
     opened = QtCore.Signal(bool)
     
     def open(self, is_new: bool):
-        self.show()
         self.is_new = is_new
+        if is_new:
+            self.window.setWindowTitle("Create Weapon Finish")
+        else:
+            self.window.setWindowTitle("Set up Weapon Finish")
         self.opened.emit(is_new)
-    
+        self.show()
+        
     def on_confirmed(self, data: str):
         d: dict = json.loads(data)
         mesh_file: str = d.get("mesh", "")
@@ -156,6 +160,7 @@ class SettingsWindow(QmlDialog):
     def on_confirmed(self, data: str) -> None:
         for key, value in json.loads(data).items():
             Plugin.settings[key] = value
+        Plugin.save()
             
     # signals
     decompilationStarted = QtCore.Signal()

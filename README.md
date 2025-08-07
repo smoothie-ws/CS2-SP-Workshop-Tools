@@ -60,6 +60,8 @@ It also provides 9 [GLSL](https://helpx.adobe.com/substance-3d-painter/scripting
 
 These shaders are used to preview Weapon Finish settings live inside Substance Painter.
 
+Base weapon texture decompilation has been released using the [Valve Resource Format](https://github.com/ValveResourceFormat/ValveResourceFormat) (VRF) CLI tool.
+
 # Getting Started
 
 ## Installation
@@ -98,11 +100,11 @@ These shaders are used to preview Weapon Finish settings live inside Substance P
 
 Plugin settings are available in the **CS2 Workshop Tools** menu:
 
-![image](https://github.com/user-attachments/assets/3d45106c-0413-4f77-b5a0-12bb9dd7a153)
+![Plugin Settings in menu](https://imgur.com/mUx2YQA.png)
 
 Here you can configure the CS2 path, list of available weapons, default weapon finish settings, and more:
 
-![image](https://github.com/user-attachments/assets/f732598c-e649-479d-a1a1-c9db0d0d6895)
+![Plugin Settings](https://i.imgur.com/8uRCPDM.png)
 
 ### Base Weapon Textures
 
@@ -114,7 +116,7 @@ If you have CS2 installed, the plugin can automatically decompile and extract th
 
 In the plugin settings, you'll see a warning icon next to any weapon missing textures:
 
-![image](https://github.com/user-attachments/assets/0b70fc80-d2f7-4001-b931-ea419722de5d)
+![Weapon warning icons](https://imgur.com/ZYz3AyH.png)
 
 This means required textures could not be found.
 
@@ -124,15 +126,15 @@ To automatically extract base textures:
 
 1. Set the CS2 path:
 
-![image](https://github.com/user-attachments/assets/8e86ed7c-748c-4094-ae11-8cf6b91463c9)
+![CS2 Path](https://imgur.com/kB7NCnL.png)
 
 2. Click the **Decompile** button:
 
-![image](https://github.com/user-attachments/assets/0559bff2-33d2-4419-8412-8486494ee7ef)
+![Decompile button](https://imgur.com/g10GhyR.png)
 
 This will begin the decompilation process:
 
-![image](https://github.com/user-attachments/assets/41cfac2e-3ea5-426c-85f1-4eaad283416d)
+![Decompilation](https://imgur.com/DPF74Ak.png)
 
 > **Note:** This may take several minutes. Do not close the plugin during this process.
 
@@ -147,7 +149,7 @@ To manually provide the textures:
 
 2. Click **Refresh** to reload and validate textures:
 
-![image](https://github.com/user-attachments/assets/751c3dc5-0c47-4675-a969-315d09226e0b)
+![Refresh](https://imgur.com/9WlFs38.png)
 
 # Guide
 
@@ -155,11 +157,11 @@ This section covers the main features of the plugin and how to work with **Weapo
 
 The plugin interface is a dockable widget located in the right tab bar:
 
-![image](https://github.com/user-attachments/assets/7c245451-15de-4570-b454-d95023ddf82c)
+![Plugin icon](https://imgur.com/4BsseJX.png)
 
 You can move and dock it wherever you prefer:
 
-![image](https://github.com/user-attachments/assets/32a3206c-5849-467b-b722-d50f4742beb0)
+![Docked](https://imgur.com/1IFwEU5.png)
 
 ## Creating a Weapon Finish Project
 
@@ -181,11 +183,11 @@ To create a brand-new Weapon Finish project:
 
 1. Go to the plugin widget and click **New Weapon Finish**:
 
-![image](https://github.com/user-attachments/assets/4a597571-8037-41f3-a831-f5db81b85c9e)
+![New Weapon Finish button](https://imgur.com/JOPpVCq.png)
 
 2. Fill in the required fields and click **Create**:
 
-![image](https://github.com/user-attachments/assets/9df76801-4b4b-4c34-a6df-817317d1515f)
+![New Weapon Finish window](https://imgur.com/5sFznDp.png)
 
 3. Wait for the project setup to complete.
 
@@ -197,11 +199,11 @@ You can also set up an existing Substance Painter project:
 
 2. Go to the plugin tools and click **Set up as Weapon Finish**:
 
-![image](https://github.com/user-attachments/assets/36a223c1-ec43-42a6-8c09-f3e5cba2eab7)
+![Set up Weapon Finish button](https://imgur.com/Qvtf3xl.png)
 
 3. Complete the form and click **Proceed**:
 
-![image](https://github.com/user-attachments/assets/6cbb4f38-eec3-402e-aebd-efee25f6bdc4)
+![Set up Weapon Finish window](https://imgur.com/Rah6Iax.png)
 
 4. Wait for the process to finish.
 
@@ -215,7 +217,7 @@ You can preview Weapon Finishes with live settings by clicking **Live Preview** 
 
 Most of the settings mimic the official [CS2 Workshop Tools](https://developer.valvesoftware.com/wiki/Counter-Strike_2_Workshop_Tools/Weapon_Finishes), so they won't be explained in detail here.
 
-![image](https://github.com/user-attachments/assets/6f6ff224-22cb-4720-a093-8900b59393bf)
+![Live Preview button](https://imgur.com/Y5vPdWZ.png)
 
 #### PBR Validation
 
@@ -226,7 +228,7 @@ According to the [official guide](https://www.counter-strike.net/workshop/worksh
 
 Enable validation by clicking **PBR Validation** or pressing **V**. This feature works **only in Live Preview mode**.
 
-![image](https://github.com/user-attachments/assets/6f4da386-d016-4a00-ba0c-daa5f4b81d80)
+![PBR Validation button](https://imgur.com/9jQC0X3.png)
 
 Colors indicate the range status:
 - 🟥 Red — above valid range
@@ -238,17 +240,17 @@ The selected weapon determines which base textures are required.
 
 > **Note:** Switching weapons triggers a re-import of textures, which can take time. Avoid changing frequently.
 
-![image](https://github.com/user-attachments/assets/3442ade2-0959-40ea-a211-a856fcbf77c7)
+![Weapon model](https://imgur.com/aTH8LqC.png)
 
 You can only work with weapons that have base textures. Otherwise, **Live Preview** will be disabled:
 
-![image](https://github.com/user-attachments/assets/ef417002-3cf7-4d4a-9a4d-c87803e32506)
+![Base textures missing](https://imgur.com/HnWioSa.png)
 
 #### Finish Style
 
 Each Weapon Finish style has its own shader and parameters. Switching styles requires changing the shader, which may take time.
 
-![image](https://github.com/user-attachments/assets/97dec7cc-4342-477e-af5b-0a1f5c47b931)
+![Finish styles](https://imgur.com/vQddoyi.png)
 
 ### Publishing
 
@@ -260,17 +262,17 @@ The plugin provides tools to make publishing easier and reduce repetitive tasks 
 
 You can sync your Weapon Finish with its `.econitem` file:
 
-- **Import** (`.econitem` → Weapon Finish): Manual via **Import Econitem** button  
+- **Import** (`.econitem` → Weapon Finish): Manual via **Import** button  
 - **Export** (Weapon Finish → `.econitem`): Automatic when saving
 
-![image](https://github.com/user-attachments/assets/84488ca4-774d-46f4-b9d4-166c645905fd)
+![Econitem](https://imgur.com/qgfqhjM.png)
 
-> **Important:** The official CS2 Workshop Tools **overwrite** `.econitem` files on exit. Be sure to **close** it before exporting to avoid conflicts.
+> **Important:** The official CS2 Workshop Tools **block** and **overwrite** `.econitem` files. Be sure to **close it** before exporting to avoid conflicts.
 
 #### Texture Exporting
 
 Use the **Export Textures** button to export maps using the preset format compatible with CS2 Workshop Tools.
 
-![image](https://github.com/user-attachments/assets/8fc7ccb7-0404-4c1a-9658-01630becfe5d)
+![Textures folder](https://imgur.com/SK2ULne.png)
 
 Enjoy!

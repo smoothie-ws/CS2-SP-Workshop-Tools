@@ -471,9 +471,6 @@ Rectangle {
 
             ScrollView {
                 clip: true
-                enabled: enableLivePreview.checked
-                layer.enabled: true
-                opacity: enabled ? 1.0 : 0.5
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 leftPadding: 10
@@ -482,9 +479,10 @@ Rectangle {
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                 ColumnLayout {
+                    enabled: enableLivePreview.checked
+                    opacity: enabled ? 1.0 : 0.5
                     width: weaponFinishSettings.width - 20
                     spacing: 10
-                    enabled: enableLivePreview.checked
 
                     SPGroup {
                         id: common

@@ -109,7 +109,7 @@ class Decompiler:
 
     @staticmethod
     def run(cmd: str):
-        subprocess.run(
+        result = subprocess.run(
             f'Source2Viewer-CLI.exe {cmd}',
             shell=True,
             stdout=subprocess.PIPE,
@@ -118,4 +118,5 @@ class Decompiler:
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
             text=True
         )
-        
+        return result.returncode, result.stdout, result.stderr
+    
