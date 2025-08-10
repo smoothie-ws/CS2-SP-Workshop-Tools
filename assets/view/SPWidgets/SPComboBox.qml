@@ -9,7 +9,8 @@ SPControl {
 
     property var map: {}
     property var currentKey: null
-    property alias comboBox: comboBox
+    property alias model: comboBox.model
+    property alias currentValue: comboBox.currentValue
     property alias currentIndex: comboBox.currentIndex
 
     Component.onCompleted: {

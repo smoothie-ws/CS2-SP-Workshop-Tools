@@ -150,7 +150,7 @@ class WeaponFinish:
 	@staticmethod
 	def update_style(finish_style: str, callback):
 		if WeaponFinish.is_open():
-			def update_shader(resources):
+			def update(resources):
 				if len(resources) > 0:
 					url = resources[0].identifier().url()
 					sp.js.evaluate(f"""
@@ -161,7 +161,7 @@ class WeaponFinish:
 				else:
 					callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
 				
-			Resource.search_resource(update_shader, "your_assets", "shader", f'cs2_{finish_style.lower()}')
+			Resource.search_resource(update, "your_assets", "shader", f'cs2_{finish_style.lower()}')
 
 	@staticmethod
 	def update_weapon(weapon: str):

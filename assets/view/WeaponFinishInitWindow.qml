@@ -155,7 +155,7 @@ SPDialog {
                 id: weaponBox
                 currentIndex: -1
                 Layout.fillWidth: true
-                map: JSON.parse(Plugin.getWeaponList())
+                map: JSON.parse(Plugin.getWeapons())
             }
         }
         

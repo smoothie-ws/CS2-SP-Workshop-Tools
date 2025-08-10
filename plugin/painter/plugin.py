@@ -27,7 +27,7 @@ class Plugin:
         Path.documents = sp.js.evaluate("alg.documents_directory")
         
         try:
-            data = json.loads(Path.read(Path.settings, {}))
+            data = json.loads(Path.read(Path.settings, ""))
             Plugin.settings = data.get("settings", {})
             Plugin.version = data.get("version", "0.0.1a")
             Plugin.preprocess()

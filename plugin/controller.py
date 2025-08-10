@@ -35,8 +35,8 @@ class MainView(QmlView):
         Path.show_in_explorer(path)
         
     @QtCore.Slot(result=str)
-    def getWeaponList(self):
-        return json.dumps(Plugin.settings.get("weapon_list"))
+    def getWeapons(self):
+        return json.dumps(Plugin.settings.get("weapons", {}))
 
     @QtCore.Slot(bool)
     def initWeaponFinish(self, is_new: bool):
@@ -131,8 +131,8 @@ class WeaponFinishInitWindow(QmlDialog):
         return Plugin.settings.get("weapon_finish", {}).get("style", "gs")
 
     @QtCore.Slot(result=str)
-    def getWeaponList(self):
-        return json.dumps(Plugin.settings.get("weapon_list"))
+    def getWeapons(self):
+        return json.dumps(Plugin.settings.get("weapons"))
 
     @QtCore.Slot(str, result=int)
     def valWeaponFinishName(self, name: str):
@@ -151,7 +151,22 @@ class WeaponFinishInitWindow(QmlDialog):
         else:
             return 0
     
+
+class UpdateWindow(QmlDialog):
+    def __init__(self, path: str, icon: QtGui.QIcon):
+        super().__init__("CS2 Workshop Tools Update", icon, "Plugin", path)
+        self.view.setMinimumSize(QtCore.QSize(550, 350))
+        
+    opened = QtCore.Signal(str, str)
     
+    def open(self, latest: str, commits: list):
+        self.opened.emit(latest, json.dumps(commits))
+        self.show()
+        
+    def on_confirmed(self, _: str) -> None:
+        pass
+    
+
 class SettingsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Settings", icon, "Plugin", path)
@@ -178,7 +193,7 @@ class SettingsWindow(QmlDialog):
         return Decompiler.check_weapon_textures(weapon)
         
     @QtCore.Slot(str, list)
-    def startDecompilation(self, cs2_path, weapon_list: list):
+    def startDecompilation(self, cs2_path, weapons: list):
         def state_changed(state):
             if state != "Finished":
                 self.decompilationStateChanged.emit(state)
@@ -190,7 +205,7 @@ class SettingsWindow(QmlDialog):
         Decompiler.decompile(
             Path.join(cs2_path, "game", "csgo", "pak01_dir.vpk"), 
             Path.asset("textures"),
-            weapon_list,
+            weapons,
             state_changed,
             self.decompilationUpdated.emit
         )

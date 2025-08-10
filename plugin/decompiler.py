@@ -17,9 +17,9 @@ class Decompiler:
         return True
     
     @staticmethod
-    def decompile(pak_path: str, out_path: str, weapon_list: list, state_callback, update_callback):
+    def decompile(pak_path: str, out_path: str, weapons: list, state_callback, update_callback):
         progress = 0.0
-        weapon_list_len = len(weapon_list)
+        weapon_list_len = len(weapons)
         models_path = Path.cleardir(Path.join(out_path, "models"))
         
         # extract
@@ -42,7 +42,7 @@ class Decompiler:
                 for w in Path.listdir(temp_models_path):
                     w_path = Path.join(temp_models_path, w)
                     mat_path = Path.join(w_path, "materials")
-                    if not (w in weapon_list and Path.exists(mat_path)) or Decompiler.check_weapon_textures(w):
+                    if not (w in weapons and Path.exists(mat_path)) or Decompiler.check_weapon_textures(w):
                         Path.remove(w_path)
                         continue
                     futures.append(executor.submit(Decompiler.process, w, w_path, mat_path, state_callback, ucb))

@@ -7,9 +7,8 @@ import "./SPWidgets"
 SPDialog {
     id: root
     confirm.text: "Save"
-    message.font.pixelSize: 12
     message.textFormat: Text.RichText
-    message.text: `<style>a:link{color:${message.hoveredLink ? "#e08ee0" : "#6dabf0"};text-decoration:none;}</style><b><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a><b> v${Plugin.getPluginVersion()}`
+    message.text: `<style>a:link{color:${message.hoveredLink ? "#e08ee0" : "#6dabf0"};text-decoration:none;}</style><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a> v${Plugin.getPluginVersion()}`
     message.onLinkActivated: Qt.openUrlExternally(link)
     
     QtObject {
@@ -17,7 +16,7 @@ SPDialog {
         
         property string cs2Path: ""
         property bool cs2PathIsValid: false
-        property var weaponList: []
+        property var weapons: []
         property bool weaponIsValid: false
 
         property var weaponFinish: {
@@ -47,7 +46,7 @@ SPDialog {
             const id = weaponIdInput.text.trim();
             const name = weaponNameInput.text.trim();
             let exists = false;
-            for (const weapon of weaponList)
+            for (const weapon of weapons)
                 if (weapon.value == id || weapon.text == name) {
                     exists = true;
                     break;
@@ -56,50 +55,50 @@ SPDialog {
         }
 
         function addWeapon() {
-            weaponList.push({
+            weapons.push({
                 value: weaponIdInput.text.trim(),
                 text: weaponNameInput.text.trim()
             });
             weaponIdInput.text = "";
             weaponNameInput.text = "";
             weaponIsValid = false;
-            syncWeaponList();
+            syncWeapons();
         }
 
         function remWeapon(weapon) {
-            for (let i = 0; i < weaponList.length; ++i) {
-                const w = weaponList[i];
+            for (let i = 0; i < weapons.length; ++i) {
+                const w = weapons[i];
                 if (w.value == weapon) {
-                    weaponList.splice(i, 1);
-                    syncWeaponList();
+                    weapons.splice(i, 1);
+                    syncWeapons();
                     return;
                 }
             }
         }
 
-        function syncWeaponList() {
-            weaponListWidgets.widgets = [];
-            weaponListRepater.model = weaponList;
+        function syncWeapons() {
+            weaponsWidgets.widgets = [];
+            weaponsRepater.model = weapons;
         }
 
         function startDecompilation() {
             const m = [];
-            for (const weapon of weaponList)
+            for (const weapon of weapons)
                 m.push(weapon.value);
             Plugin.startDecompilation(cs2Path, m);
         }
     }
     
     function getData() {
-        const weapon_list = {};
-        for (const weapon of internal.weaponList)
-            weapon_list[weapon.value] = weapon.text;
+        const weapons = {};
+        for (const weapon of internal.weapons)
+            weapons[weapon.value] = weapon.text;
         const weapon_finish = {};
         for (const [param, component] of Object.entries(internal.weaponFinish))
             weapon_finish[param] = component.control[component.prop];
         return {
             cs2_path: internal.cs2PathIsValid ? internal.cs2Path : "",
-            weapon_list: weapon_list,
+            weapons: weapons,
             weapon_finish: weapon_finish
         }
     }
@@ -109,11 +108,11 @@ SPDialog {
             const settings = JSON.parse(Plugin.getPluginSettings());
             if ("cs2_path" in settings)
                 internal.cs2Path = settings["cs2_path"];
-            if ("weapon_list" in settings) {
+            if ("weapons" in settings) {
                 const m = [];
-                for (const [value, text] of Object.entries(settings["weapon_list"]))
+                for (const [value, text] of Object.entries(settings["weapons"]))
                     m.push({value: value, text: text});
-                internal.weaponList = m;
+                internal.weapons = m;
             }
             if ("weapon_finish" in settings)
                 for (const [param, value] of Object.entries(settings["weapon_finish"])) {
@@ -121,7 +120,7 @@ SPDialog {
                     if (component !== undefined)
                         component.control[component.prop] = value;
                 }
-            internal.syncWeaponList();
+            internal.syncWeapons();
         } catch (e) {
             Plugin.error(`Failed to open Plugin Settings: ${e.toString()}`);
         }
@@ -149,7 +148,7 @@ SPDialog {
 
             function onDecompilationFinished() {
                 decompilationPopup.close();
-                weaponListWidgets.refresh();
+                weaponsWidgets.refresh();
             }
         }
     }
@@ -262,7 +261,7 @@ SPDialog {
                             icon.height: 15
                             tooltip.text: "Refresh"
 
-                            onClicked: weaponListWidgets.refresh()
+                            onClicked: weaponsWidgets.refresh()
                         }
                     }
 
@@ -324,7 +323,7 @@ SPDialog {
                                 Layout.fillHeight: true
 
                                 ColumnLayout {
-                                    id: weaponListWidgets
+                                    id: weaponsWidgets
                                     anchors.left: parent.left
                                     anchors.right: parent.right
                                     anchors.rightMargin: 15
@@ -337,7 +336,7 @@ SPDialog {
                                     }
                                     
                                     Repeater {
-                                        id: weaponListRepater
+                                        id: weaponsRepater
 
                                         delegate: Item {
                                             id: weapon
@@ -410,7 +409,7 @@ SPDialog {
                                         }
 
                                         onItemAdded: (i, item) => {
-                                            weaponListWidgets.widgets.push(item);
+                                            weaponsWidgets.widgets.push(item);
                                             item.refresh();
                                         }
                                     }

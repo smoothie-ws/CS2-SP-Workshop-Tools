@@ -1,16 +1,15 @@
-import json
-import urllib.request
 import webbrowser
 import substance_painter as sp
 
 from .weapon_finish import WeaponFinish
-from .painter import UI, Log, Plugin, Macro, Path, QmlView, Resource
+from .painter import UI, Log, Plugin, Macro, Path, QmlView, Resource, Updates
 from .painter.qml import QtWidgets, QtGui
-from .controller import MainView, SettingsWindow, WeaponFinishInitWindow
+from .controller import MainView, UpdateWindow, SettingsWindow, WeaponFinishInitWindow
 
 
 class CS2WT(Plugin):
     main_view: MainView = None
+    update_window: UpdateWindow = None
     settings_window: SettingsWindow = None
     wf_init_window: WeaponFinishInitWindow = None
     
@@ -18,19 +17,29 @@ class CS2WT(Plugin):
     def start(cls, path):
         super().start(path, "CS2 Workshop Tools")
         try:
-            url = "https://api.github.com/repos/smoothie-ws/CS2-SP-Workshop-Tools/releases/latest"
-            with urllib.request.urlopen(url, timeout=3) as response:
-                data = json.loads(response.read().decode())
-
-            latest = data.get("tag_name")
-            if latest:
-                if latest.startswith("v"):
-                    latest = latest[1:]
-                if latest != Plugin.version:
-                    download_url = "https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/releases"
-                    Log.warning(f'New version available: {latest}. Download: {download_url}')
-        except:
-            pass
+            latest, commits_raw = Updates.check_for_updates("smoothie-ws/CS2-SP-Workshop-Tools", f'v{Plugin.version}')
+            if latest and commits_raw:
+                commits_added = []
+                commits_fixed = []
+                commits_misc = []
+                for commit in commits_raw:
+                    msg: str = commit["message"]
+                    if msg.startswith("feat:"):
+                        commit["message"] = msg[5:]
+                        commits_added.append(commit)
+                    elif msg.startswith("fix:"):
+                        commit["message"] = msg[4:]
+                        commits_fixed.append(commit)
+                    else:
+                        commits_misc.append(commit)
+                        
+                CS2WT.update_window.open(latest, [
+                    { "name": "Added", "color": "#206332", "commits": commits_added },
+                    { "name": "Fixed", "color": "#204E63", "commits": commits_fixed },
+                    { "name": "Misc", "color": "#612063", "commits": commits_misc }
+                ])
+        except Exception as e:
+            Log.info(f'Failed to check for updates: {e}')
 
     @classmethod
     def on_start(cls):
@@ -76,15 +85,16 @@ class CS2WT(Plugin):
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
         CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon)
+        CS2WT.update_window = UpdateWindow(QmlView.view_path("UpdateWindow.qml"), icon)
         CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
         CS2WT.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon)
         
     @staticmethod
     def checkout():
+        # shader files
         sp_shaders_path = Path.join(Path.documents, "assets", "shaders")
         sp_shaders_ui_path = Path.join(sp_shaders_path, "custom-ui")
 
-        # shader files
         with open(Path.asset("shader", "cs2.glsl"), "r", encoding="utf-8") as f:
             shader_source = f.read()
 
@@ -108,14 +118,22 @@ class CS2WT(Plugin):
         if not Path.exists(Path.join(sp_shaders_ui_path, "ui.qml")):
             Path.copy(Path.join(shader_path, "ui.qml"), sp_shader_ui_path)
         
+        # environment files
+        sp_env_path = Path.join(Path.documents, "assets", "environments")
+        env_path = Path.asset("maps")
+        for m in Path.listdir(env_path):
+            sp_env_file_path = Path.join(sp_env_path, m)
+            if not Path.exists(sp_env_file_path):
+                Path.copy(Path.join(env_path, m), sp_env_file_path)
+                
     @staticmethod
     def on_settings():
         CS2WT.settings_window.open()
             
     @staticmethod
     def on_help():
-        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools?tab=readme-ov-file#table-of-contents")
+        webbrowser.open(f'https://github.com/{REPO}?tab=readme-ov-file#table-of-contents')
 
     @staticmethod
     def on_report_a_bug():
-        webbrowser.open("https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/issues")
+        webbrowser.open(f'https://github.com/{REPO}/issues')

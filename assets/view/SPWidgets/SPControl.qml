@@ -43,7 +43,7 @@ MouseArea {
 
         background: Rectangle {
             color: Qt.rgba(0.12, 0.12, 0.12)
-            radius: 15
+            radius: 5
         }
     }
 }

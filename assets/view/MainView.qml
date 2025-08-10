@@ -372,7 +372,7 @@ Rectangle {
                     SPComboBox {
                         id: weaponBox
                         Layout.fillWidth: true
-                        map: JSON.parse(Plugin.getWeaponList())
+                        map: JSON.parse(Plugin.getWeapons())
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, style.scopeWidth)

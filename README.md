@@ -262,8 +262,8 @@ The plugin provides tools to make publishing easier and reduce repetitive tasks 
 
 You can sync your Weapon Finish with its `.econitem` file:
 
-- **Import** (`.econitem` → Weapon Finish): Manual via **Import** button  
-- **Export** (Weapon Finish → `.econitem`): Automatic when saving
+- **Import** (`.econitem` → Weapon Finish): Automatic on open and manual via **Import** button.
+- **Export** (Weapon Finish → `.econitem`): Automatic on save.
 
 ![Econitem](https://imgur.com/qgfqhjM.png)
 

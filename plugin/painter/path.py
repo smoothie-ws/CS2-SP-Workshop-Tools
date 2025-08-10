@@ -33,7 +33,9 @@ class Path:
     
     @staticmethod
     def listdir(path: str) -> list:
-        return os.listdir(path)
+        if Path.exists(path) and Path.isdir(path):
+            return os.listdir(path)
+        return []
 
     @staticmethod
     def makedirs(path: str) -> None:
