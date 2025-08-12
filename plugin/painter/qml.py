@@ -7,7 +7,7 @@ from time import localtime, strftime
 from .log import Log
 from .path import Path
 from .plugin import Plugin
-from .ui import UI, QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui
+from .ui import UI, QtVersion, QtQuickWidgets, QtWidgets, QtCore, QtGui
 
 
 class QmlView(QtCore.QObject):
@@ -80,6 +80,10 @@ class QmlView(QtCore.QObject):
     def error(self, msg: str):
         Log.error(msg)
 
+    @QtCore.Slot(result=int)
+    def getQtVersion(self) -> int:
+        return QtVersion
+    
     @QtCore.Slot(result=str)
     def getPluginPath(self) -> str:
         return Path.plugin

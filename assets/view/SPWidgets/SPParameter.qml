@@ -1,0 +1,42 @@
+import QtQuick 2.15
+import QtQuick.Controls 2.1
+import QtQuick.Layouts 1.3
+
+RowLayout {
+    id: root
+    layoutDirection: Qt.RightToLeft
+    
+    signal resetRequested()
+
+    SPButton {
+        id: resetButton
+        padding: 5
+        contentAlignment: Qt.AlignCenter
+        implicitWidth: 25
+        implicitHeight: implicitWidth
+        icon.source: "./icons/cycle.png"
+        icon.width: implicitWidth * 0.5
+        icon.height: implicitHeight * 0.5
+        tooltip.text: "Reset value"
+        background.opacity: hovered ? 1.0 : 0.0
+
+        transform: Rotation { 
+            origin.x: resetButton.width * 0.5
+            origin.y: resetButton.height * 0.5 
+            angle: 0
+
+            NumberAnimation on angle {
+                id: rotationAnimation
+                duration: 250
+                easing.type: Easing.OutQuad
+            }
+        }
+
+        onPressed: {
+            root.resetRequested();
+            rotationAnimation.from = 360;
+            rotationAnimation.to = 0;
+            rotationAnimation.start();
+        }
+    }
+}

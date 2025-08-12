@@ -3,6 +3,8 @@ import shutil
 import pathlib
 import subprocess
 
+from .log import Log
+
 
 class Path:
     plugin: str = ""
@@ -31,12 +33,20 @@ class Path:
     
     @staticmethod
     def listdir(path: str) -> list:
-        return os.listdir(path)
+        if Path.exists(path) and Path.isdir(path):
+            return os.listdir(path)
+        return []
 
     @staticmethod
     def makedirs(path: str) -> None:
         os.makedirs(path)
 
+    @staticmethod
+    def cleardir(path: str):
+        Path.remove(path)
+        Path.makedirs(path)
+        return path
+    
     @staticmethod
     def copy(src: str, dst: str) -> None:
         shutil.copyfile(src, dst)
@@ -76,11 +86,13 @@ class Path:
     
     @staticmethod
     def show_in_explorer(path: str) -> None:
-        path = path.replace("/", "\\") # explorer would choke on forward slashes
+        path = os.path.normpath(path)
         if os.path.isdir(path):
-            subprocess.run(['explorer', path])
+            subprocess.Popen(f'explorer,"{path}"')
         elif os.path.isfile(path):
-            subprocess.run(['explorer', '/select,', path])
+            subprocess.Popen(f'explorer /select,"{path}"')
+        else:
+            Log.error(f'Path {path} is invalid')
 
     @staticmethod
     def read(path: str, default: str = "") -> str:

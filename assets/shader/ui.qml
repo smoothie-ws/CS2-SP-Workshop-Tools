@@ -10,7 +10,7 @@ Rectangle {
     
     onHeightChanged: if (height != label.height) height = Qt.binding(() => label.height)
 
-    Label {
+    Text {
         id: label
         width: root.width
         height: 35

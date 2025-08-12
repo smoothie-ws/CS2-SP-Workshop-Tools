@@ -1,9 +1,10 @@
 import json
 
-from .utils import Decompiler
-from .weapon_finish import WeaponFinish
-from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings
+from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings, Updates
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
+
+from .decompiler import Decompiler
+from .weapon_finish import WeaponFinish
 
 
 class MainView(QmlView):
@@ -34,8 +35,8 @@ class MainView(QmlView):
         Path.show_in_explorer(path)
         
     @QtCore.Slot(result=str)
-    def getWeaponList(self):
-        return json.dumps(Plugin.settings.get("weapon_list"))
+    def getWeapons(self):
+        return json.dumps(Plugin.settings.get("weapons", {}))
 
     @QtCore.Slot(bool)
     def initWeaponFinish(self, is_new: bool):
@@ -94,15 +95,19 @@ class WeaponFinishInitWindow(QmlDialog):
     opened = QtCore.Signal(bool)
     
     def open(self, is_new: bool):
-        self.show()
         self.is_new = is_new
+        if is_new:
+            self.window.setWindowTitle("Create Weapon Finish")
+        else:
+            self.window.setWindowTitle("Set up Weapon Finish")
         self.opened.emit(is_new)
-    
+        self.show()
+        
     def on_confirmed(self, data: str):
         d: dict = json.loads(data)
         mesh_file: str = d.get("mesh", "")
         # fetch default weapon finish settings
-        weapon_finish = Plugin.settings.get("weapon_finish", {})
+        weapon_finish: dict = Plugin.settings.get("weapon_finish", {}).copy()
         weapon_finish["name"] = d.get("name")
         weapon_finish["style"] = d.get("style")
         weapon_finish["weapon"] = d.get("weapon")
@@ -126,8 +131,8 @@ class WeaponFinishInitWindow(QmlDialog):
         return Plugin.settings.get("weapon_finish", {}).get("style", "gs")
 
     @QtCore.Slot(result=str)
-    def getWeaponList(self):
-        return json.dumps(Plugin.settings.get("weapon_list"))
+    def getWeapons(self):
+        return json.dumps(Plugin.settings.get("weapons"))
 
     @QtCore.Slot(str, result=int)
     def valWeaponFinishName(self, name: str):
@@ -146,7 +151,85 @@ class WeaponFinishInitWindow(QmlDialog):
         else:
             return 0
     
+
+class UpdateWindow(QmlDialog):
+    def __init__(self, path: str, icon: QtGui.QIcon):
+        super().__init__("CS2 Workshop Tools Update", icon, "Plugin", path)
+        self.view.setMinimumSize(QtCore.QSize(500, 500))
+        
+    opened = QtCore.Signal(str, str)
     
+    def check_for_updates(self):
+        try:
+            latest, commits_raw = Updates.check_for_updates("smoothie-ws/CS2-SP-Workshop-Tools", Plugin.version)
+            if latest and commits_raw:
+                self.latest = latest
+                commits_added = []
+                commits_fixed = []
+                commits_misc = []
+                for commit in commits_raw:
+                    msg: str = commit["message"].lower().strip()
+                    if msg.startswith("feat:"):
+                        commit["message"] = msg[5:]
+                        commits_added.append(commit)
+                    elif msg.startswith("fix:"):
+                        commit["message"] = msg[4:]
+                        commits_fixed.append(commit)
+                    else:
+                        commits_misc.append(commit)
+                        
+                self.open(self.latest, [
+                    { "name": "Added", "color": "#60206332", "commits": commits_added },
+                    { "name": "Fixed", "color": "#60204E63", "commits": commits_fixed },
+                    { "name": "Misc", "color": "#60612063", "commits": commits_misc }
+                ])
+        except Exception as e:
+            Log.info(f'Failed to check for updates: {e}')
+        
+    def open(self, latest: str, commits: list):
+        self.opened.emit(latest, json.dumps(commits))
+        self.show()
+    
+    # signals
+    downloadingStarted = QtCore.Signal()
+    downloadingUpdated = QtCore.Signal(float)
+    downloadingStateChanged = QtCore.Signal(str)
+    downloadingFinished = QtCore.Signal()
+
+    # slots
+    @QtCore.Slot(str)
+    def confirm(self, _: str):
+        try:
+            def state_changed(state):
+                if state != "Finished" and state != "Error":
+                    self.downloadingStateChanged.emit(state)
+                else:
+                    self.downloadingFinished.emit()
+                    self.window.close()
+                    if state == "Finished":
+                        Plugin.version = self.latest
+                        Log.warning(f'Installed version {Plugin.version}. Please restart the plugin to apply.')
+                        
+            self.downloadingStarted.emit()
+            Updates.update(
+                "smoothie-ws/CS2-SP-Workshop-Tools", 
+                self.latest, 
+                Path.join(Path.plugin, self.latest), 
+                state_changed,
+                self.downloadingUpdated.emit
+            )
+        except Exception as e:
+            Log.error(f'Failed to download an update: {e}')
+    
+    @QtCore.Slot(result=bool)
+    def getCheckForUpdates(self) -> bool:
+        return Plugin.settings.get("check_for_updates", True)
+    
+    @QtCore.Slot(bool)
+    def setCheckForUpdates(self, check: bool):
+        Plugin.settings["check_for_updates"] = check
+    
+
 class SettingsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Settings", icon, "Plugin", path)
@@ -155,6 +238,7 @@ class SettingsWindow(QmlDialog):
     def on_confirmed(self, data: str) -> None:
         for key, value in json.loads(data).items():
             Plugin.settings[key] = value
+        Plugin.save()
             
     # signals
     decompilationStarted = QtCore.Signal()
@@ -171,8 +255,13 @@ class SettingsWindow(QmlDialog):
     def checkWeaponTextures(self, weapon:str) -> bool:
         return Decompiler.check_weapon_textures(weapon)
         
-    @QtCore.Slot(list)
-    def startDecompilation(self, weapon_list: list):
+    @QtCore.Slot()
+    def checkForUpdates(self) -> None:
+        from . import CS2WT
+        CS2WT.update_window.check_for_updates()
+        
+    @QtCore.Slot(str, list)
+    def startDecompilation(self, cs2_path, weapons: list):
         def state_changed(state):
             if state != "Finished":
                 self.decompilationStateChanged.emit(state)
@@ -180,10 +269,11 @@ class SettingsWindow(QmlDialog):
                 self.decompilationFinished.emit()
         
         self.decompilationStarted.emit()
+        Plugin.settings["cs2_path"] = cs2_path
         Decompiler.decompile(
-            Path.join(Plugin.settings.get("cs2_path"), "game", "csgo", "pak01_dir.vpk"), 
+            Path.join(cs2_path, "game", "csgo", "pak01_dir.vpk"), 
             Path.asset("textures"),
-            weapon_list,
+            weapons,
             state_changed,
             self.decompilationUpdated.emit
         )

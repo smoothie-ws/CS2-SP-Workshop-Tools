@@ -1,15 +1,16 @@
 import json
 import substance_painter as sp
 
-from .ui import UI
+from .ui import UI, QtVersion
 from .log import Log
 from .path import Path
-from .resource import Resource
+from .macro import Macro
 
 
 class Plugin:
     settings: dict = {}
-    version: str = "0.0.1a"
+    version: str = "v0.0.1a"
+    connections: dict = {}
     
     @staticmethod
     def save():
@@ -26,11 +27,11 @@ class Plugin:
         Path.documents = sp.js.evaluate("alg.documents_directory")
         
         try:
-            data = json.loads(Path.read(Path.settings, {}))
+            data = json.loads(Path.read(Path.settings, ""))
             Plugin.settings = data.get("settings", {})
-            Plugin.version = data.get("version", "0.0.1a")
-            
-            connections = {
+            Plugin.version = data.get("version", "v0.0.1a")
+            Plugin.preprocess()
+            Plugin.connections = {
                 sp.event.ProjectOpened: lambda _: cls.on_project_opened(),
                 sp.event.ProjectCreated: lambda _: cls.on_project_created(),
                 sp.event.ProjectAboutToClose: lambda _: cls.on_project_about_to_close(),
@@ -46,12 +47,9 @@ class Plugin:
                 sp.event.BakingProcessAboutToStart: lambda _: cls.on_baking_process_about_to_start(),
                 sp.event.BakingProcessProgress: lambda _: cls.on_baking_process_progress(),
                 sp.event.BakingProcessEnded: lambda _: cls.on_baking_process_ended(),
-                sp.event.LayerStacksModelDataChanged: lambda _: cls.on_layer_stacks_model_data_changed(),
-                sp.event.EngineComputationsStatusChanged: lambda _: cls.on_engine_computations_status_changed(),
-                sp.event.TextureStateEvent: lambda _: cls.on_texture_state_event(),
-                sp.event.CameraPropertiesChanged: lambda _: cls.on_camera_properties_changed(),
+                sp.event.TextureStateEvent: lambda _: cls.on_texture_state_event()
             }
-            for event, callback in connections.items():
+            for event, callback in Plugin.connections.items():
                 sp.event.DISPATCHER.connect_strong(event, callback)
                 
             cls.on_start()
@@ -65,12 +63,40 @@ class Plugin:
 
     @classmethod
     def close(cls):
-        UI.clear()
-        Plugin.save()
-        cls.on_close()
-        Resource.refresh()
-        Log.warning("Plugin closed")
+        try:
+            UI.clear()
+            Plugin.save()
+            for event, callback in Plugin.connections.items():
+                sp.event.DISPATCHER.disconnect(event, callback)
+            cls.on_close()
+            Log.warning("Plugin closed")
+        except:
+            Log.fatal()
     
+    @classmethod
+    def preprocess(cls):
+        asset_view_path = Path.asset("view")
+        
+        if Path.exists(asset_view_path):
+            view_path = Path.cleardir(Path.join(Path.plugin, "view"))
+            def process(path: str):
+                asset_path = Path.join(asset_view_path, path)
+                if Path.isdir(asset_path):
+                    Path.cleardir(Path.join(view_path, path))
+                    for p in Path.listdir(asset_path):
+                        process(Path.join(path, p))
+                else:
+                    view_asset_path = Path.join(view_path, path)
+                    if path.lower().endswith("qml"):
+                        sources = Path.read(asset_path)
+                        sources = Macro.process(sources, {"QT_VERSION": QtVersion})
+                        Path.write(view_asset_path, sources)
+                    else:
+                        Path.copy(asset_path, view_asset_path)
+                
+            for p in Path.listdir(asset_view_path):
+                process(p)
+                
     # to override
     
     @classmethod
@@ -142,17 +168,5 @@ class Plugin:
         pass
 
     @classmethod
-    def on_layer_stacks_model_data_changed(cls):
-        pass
-
-    @classmethod
-    def on_engine_computations_status_changed(cls):
-        pass
-
-    @classmethod
     def on_texture_state_event(cls):
-        pass
-
-    @classmethod
-    def on_camera_properties_changed(cls):
         pass
