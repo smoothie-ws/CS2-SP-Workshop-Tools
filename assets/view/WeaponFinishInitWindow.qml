@@ -9,33 +9,37 @@ SPDialog {
     id: root
     confirm.enabled: nameInput.nameIsValid && weaponBox.currentIndex != -1 && (isNew ? meshFile !== "" : true)
     confirm.text: isNew ? "Create" : "Proceed"
-    message.text: switch (nameInput.nameStatus) {
-        case 0:
-            "Missing CS2 Path";
-            break;
-        case 1:
-            "";
-            break;
-        case 2:
-            "Name cannot be empty";
-            break;
-        case 3:
-            "This name is already in use";
-            break;
-    }
-    message.color: switch (nameInput.nameStatus) {
-        case 0:
-            Qt.rgba(0.85, 0.85, 0.5);
-            break;
-        case 1:
-            Qt.rgba(0.85, 0.5, 0.5);
-            break;
-        case 2:
-            Qt.rgba(0.85, 0.5, 0.5);
-            break;
-        case 3:
-            Qt.rgba(0.85, 0.5, 0.5);
-            break;
+    option: Text {
+        text: switch (nameInput.nameStatus) {
+            case 0:
+                "Missing CS2 Path";
+                break;
+            case 1:
+                "";
+                break;
+            case 2:
+                "Name cannot be empty";
+                break;
+            case 3:
+                "This name is already in use";
+                break;
+        }
+        color: switch (nameInput.nameStatus) {
+            case 0:
+                Qt.rgba(0.85, 0.85, 0.5);
+                break;
+            case 1:
+                Qt.rgba(0.85, 0.5, 0.5);
+                break;
+            case 2:
+                Qt.rgba(0.85, 0.5, 0.5);
+                break;
+            case 3:
+                Qt.rgba(0.85, 0.5, 0.5);
+                break;
+        }
+        opacity: 0.75
+        Layout.fillWidth: true
     }
 
     property bool isNew: true

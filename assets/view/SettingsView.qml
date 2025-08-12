@@ -7,10 +7,27 @@ import "./SPWidgets"
 SPDialog {
     id: root
     confirm.text: "Save"
-    message.textFormat: Text.RichText
-    message.text: `<style>a:link{color:${message.hoveredLink ? "#e08ee0" : "#6dabf0"};text-decoration:none;}</style><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a> v${Plugin.getPluginVersion()}`
-    message.onLinkActivated: Qt.openUrlExternally(link)
-    
+    option: Row {
+        spacing: 10
+
+        Text {
+            text: `<style>a:link{color:${hoveredLink ? "#e08ee0" : "#6dabf0"};text-decoration:none;}</style><a href="https://github.com/smoothie-ws/CS2-SP-Workshop-Tools">CS2 Workshop Tools</a> ${Plugin.getPluginVersion()}`
+            textFormat: Text.RichText
+            color: AlgStyle.text.color.normal
+            opacity: 0.75
+            anchors.verticalCenter: parent.verticalCenter
+
+            onLinkActivated: Qt.openUrlExternally(link)
+        }
+        
+        SPButton {
+            text: "Check for updates"
+            anchors.verticalCenter: parent.verticalCenter
+
+            onClicked: Plugin.checkForUpdates()
+        }
+    }
+
     QtObject {
         id: internal
         
@@ -126,8 +143,24 @@ SPDialog {
         }
     }
 
-    DecompilationPopup {
+    SPPopup {
         id: decompilationPopup
+        anchors.centerIn: parent
+        title: "Decompiling"
+        ignorable: false
+        closable: false
+        acceptable: false
+        cancelable: false
+
+        property real progress: 0.0
+        property string log: ""
+        property string currentState: "Decompiling"
+
+        onOpened: {
+            progress = 0.0;
+            log = "";
+            currentState = "Decompiling";
+        }
 
         Connections {
             target: Plugin
@@ -149,6 +182,59 @@ SPDialog {
             function onDecompilationFinished() {
                 decompilationPopup.close();
                 weaponsWidgets.refresh();
+            }
+        }
+
+        content: ColumnLayout {
+            width: 400
+            spacing: 15
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Text {
+                    text: `${decompilationPopup.currentState}...`
+                    color: AlgStyle.text.color.normal
+                    Layout.fillWidth: true
+                }
+
+                Text {
+                    color: AlgStyle.text.color.normal
+                    text: `${parseInt(decompilationPopup.progress * 100)}%`
+                }
+            }
+
+            Rectangle {
+                height: 10
+                radius: 15
+                Layout.fillWidth: true
+                color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
+
+                Rectangle {
+                    height: parent.height
+                    radius: parent.radius
+                    width: Math.max(height, decompilationPopup.progress * parent.width)
+                    color: AlgStyle.text.color.normal
+                }
+            }
+            
+            Rectangle {
+                height: 100
+                radius: 15
+                Layout.fillWidth: true
+                color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
+
+                ScrollView {
+                    anchors.fill: parent
+                    clip: true
+
+                    Text {
+                        text: decompilationPopup.log
+                        color: AlgStyle.text.color.normal
+                        anchors.fill: parent
+                        anchors.margins: 10
+                    }
+                }
             }
         }
     }
@@ -390,6 +476,7 @@ SPDialog {
                                                 
                                                 SPButton {
                                                     padding: 5
+                                                    contentAlignment: Qt.AlignCenter
                                                     implicitWidth: 20
                                                     implicitHeight: implicitWidth
                                                     #if QT_VERSION >= 6

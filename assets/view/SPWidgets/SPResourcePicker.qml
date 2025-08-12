@@ -103,6 +103,7 @@ Item {
 
             SPButton {
                 padding: 5
+                contentAlignment: Qt.AlignCenter
                 implicitWidth: Math.min(20, parent.height)
                 implicitHeight: implicitWidth
                 icon.source: "./icons/close.png"

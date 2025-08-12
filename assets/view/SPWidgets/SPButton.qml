@@ -59,7 +59,7 @@ SPControl {
 
     RowLayout {
         id: content
-        anchors.margins: root.checkable ? 0.0 : 5.0
+        anchors.margins: root.checkable ? 0.0 : 10.0
         anchors.left: parseInt(root.contentAlignment & Qt.AlignLeft) != 0 ? parent.left : undefined
         anchors.horizontalCenter: parseInt(root.contentAlignment & Qt.AlignHCenter) != 0 ? parent.horizontalCenter : undefined
         anchors.right: parseInt(root.contentAlignment & Qt.AlignRight) != 0 ? parent.right : undefined
@@ -70,6 +70,7 @@ SPControl {
         Image {
             id: icon
             asynchronous: true
+            mipmap: true
             visible: status == Image.Ready
             opacity: root.hovered ? 1.0 : 0.5
             height: parent.height
@@ -89,7 +90,7 @@ SPControl {
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: checker.visible ? Text.AlignLeft : Text.AlignHCenter
             Layout.fillWidth: true
-            Layout.minimumWidth: implicitWidth + 25
+            Layout.minimumWidth: implicitWidth + 15
         }
 
         Rectangle {

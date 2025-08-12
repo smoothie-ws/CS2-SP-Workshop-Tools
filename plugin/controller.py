@@ -1,6 +1,6 @@
 import json
 
-from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings
+from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings, Updates
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
 
 from .decompiler import Decompiler
@@ -155,16 +155,79 @@ class WeaponFinishInitWindow(QmlDialog):
 class UpdateWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Update", icon, "Plugin", path)
-        self.view.setMinimumSize(QtCore.QSize(550, 350))
+        self.view.setMinimumSize(QtCore.QSize(500, 500))
         
     opened = QtCore.Signal(str, str)
     
+    def check_for_updates(self):
+        try:
+            latest, commits_raw = Updates.check_for_updates("smoothie-ws/CS2-SP-Workshop-Tools", Plugin.version)
+            if latest and commits_raw:
+                self.latest = latest
+                commits_added = []
+                commits_fixed = []
+                commits_misc = []
+                for commit in commits_raw:
+                    msg: str = commit["message"].lower().strip()
+                    if msg.startswith("feat:"):
+                        commit["message"] = msg[5:]
+                        commits_added.append(commit)
+                    elif msg.startswith("fix:"):
+                        commit["message"] = msg[4:]
+                        commits_fixed.append(commit)
+                    else:
+                        commits_misc.append(commit)
+                        
+                self.open(self.latest, [
+                    { "name": "Added", "color": "#60206332", "commits": commits_added },
+                    { "name": "Fixed", "color": "#60204E63", "commits": commits_fixed },
+                    { "name": "Misc", "color": "#60612063", "commits": commits_misc }
+                ])
+        except Exception as e:
+            Log.info(f'Failed to check for updates: {e}')
+        
     def open(self, latest: str, commits: list):
         self.opened.emit(latest, json.dumps(commits))
         self.show()
-        
-    def on_confirmed(self, _: str) -> None:
-        pass
+    
+    # signals
+    downloadingStarted = QtCore.Signal()
+    downloadingUpdated = QtCore.Signal(float)
+    downloadingStateChanged = QtCore.Signal(str)
+    downloadingFinished = QtCore.Signal()
+
+    # slots
+    @QtCore.Slot(str)
+    def confirm(self, _: str):
+        try:
+            def state_changed(state):
+                if state != "Finished" and state != "Error":
+                    self.downloadingStateChanged.emit(state)
+                else:
+                    self.downloadingFinished.emit()
+                    self.window.close()
+                    if state == "Finished":
+                        Plugin.version = self.latest
+                        Log.warning(f'Installed version {Plugin.version}. Please restart the plugin to apply.')
+                        
+            self.downloadingStarted.emit()
+            Updates.update(
+                "smoothie-ws/CS2-SP-Workshop-Tools", 
+                self.latest, 
+                Path.join(Path.plugin, self.latest), 
+                state_changed,
+                self.downloadingUpdated.emit
+            )
+        except Exception as e:
+            Log.error(f'Failed to download an update: {e}')
+    
+    @QtCore.Slot(result=bool)
+    def getCheckForUpdates(self) -> bool:
+        return Plugin.settings.get("check_for_updates", True)
+    
+    @QtCore.Slot(bool)
+    def setCheckForUpdates(self, check: bool):
+        Plugin.settings["check_for_updates"] = check
     
 
 class SettingsWindow(QmlDialog):
@@ -191,6 +254,11 @@ class SettingsWindow(QmlDialog):
     @QtCore.Slot(str, result=bool)
     def checkWeaponTextures(self, weapon:str) -> bool:
         return Decompiler.check_weapon_textures(weapon)
+        
+    @QtCore.Slot()
+    def checkForUpdates(self) -> None:
+        from . import CS2WT
+        CS2WT.update_window.check_for_updates()
         
     @QtCore.Slot(str, list)
     def startDecompilation(self, cs2_path, weapons: list):

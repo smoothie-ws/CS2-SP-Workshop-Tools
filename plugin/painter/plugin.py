@@ -9,7 +9,7 @@ from .macro import Macro
 
 class Plugin:
     settings: dict = {}
-    version: str = "0.0.1a"
+    version: str = "v0.0.1a"
     connections: dict = {}
     
     @staticmethod
@@ -29,7 +29,7 @@ class Plugin:
         try:
             data = json.loads(Path.read(Path.settings, ""))
             Plugin.settings = data.get("settings", {})
-            Plugin.version = data.get("version", "0.0.1a")
+            Plugin.version = data.get("version", "v0.0.1a")
             Plugin.preprocess()
             Plugin.connections = {
                 sp.event.ProjectOpened: lambda _: cls.on_project_opened(),

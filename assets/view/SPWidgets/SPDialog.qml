@@ -8,7 +8,7 @@ Rectangle {
     color: AlgStyle.background.color.mainWindow
 
     default property alias data: content.data
-    property alias message: messageLabel
+    property alias option: optionLoader.sourceComponent
     property alias confirm: confirmButton
     property alias cancel: cancelButton
     
@@ -45,11 +45,9 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-
-            Text {
-                id: messageLabel
-                color: AlgStyle.text.color.normal
-                opacity: 0.75
+            
+            Loader {
+                id: optionLoader
                 Layout.fillWidth: true
             }
 

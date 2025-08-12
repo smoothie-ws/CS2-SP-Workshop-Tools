@@ -91,10 +91,12 @@ ColumnLayout {
             id: clampButton
             padding: 5
             visible: root.pickValue
-            implicitWidth: 30
+            contentAlignment: Qt.AlignCenter
+            implicitWidth: 25
+            implicitHeight: implicitWidth
             icon.source: "./icons/clamp.png"
-            icon.width: 20
-            icon.height: 20
+            icon.width: implicitWidth * 0.75
+            icon.height: implicitHeight * 0.75
             tooltip.text: "Shrink range to current value"
             background.opacity: hovered ? 1.0 : 0.0
 

@@ -2,7 +2,7 @@ import webbrowser
 import substance_painter as sp
 
 from .weapon_finish import WeaponFinish
-from .painter import UI, Log, Plugin, Macro, Path, QmlView, Resource, Updates
+from .painter import UI, Plugin, Macro, Path, QmlView, Resource
 from .painter.qml import QtWidgets, QtGui
 from .controller import MainView, UpdateWindow, SettingsWindow, WeaponFinishInitWindow
 
@@ -16,30 +16,8 @@ class CS2WT(Plugin):
     @classmethod
     def start(cls, path):
         super().start(path, "CS2 Workshop Tools")
-        try:
-            latest, commits_raw = Updates.check_for_updates("smoothie-ws/CS2-SP-Workshop-Tools", f'v{Plugin.version}')
-            if latest and commits_raw:
-                commits_added = []
-                commits_fixed = []
-                commits_misc = []
-                for commit in commits_raw:
-                    msg: str = commit["message"]
-                    if msg.startswith("feat:"):
-                        commit["message"] = msg[5:]
-                        commits_added.append(commit)
-                    elif msg.startswith("fix:"):
-                        commit["message"] = msg[4:]
-                        commits_fixed.append(commit)
-                    else:
-                        commits_misc.append(commit)
-                        
-                CS2WT.update_window.open(latest, [
-                    { "name": "Added", "color": "#206332", "commits": commits_added },
-                    { "name": "Fixed", "color": "#204E63", "commits": commits_fixed },
-                    { "name": "Misc", "color": "#612063", "commits": commits_misc }
-                ])
-        except Exception as e:
-            Log.info(f'Failed to check for updates: {e}')
+        if Plugin.settings.get("check_for_updates", True):
+            CS2WT.update_window.check_for_updates()
 
     @classmethod
     def on_start(cls):

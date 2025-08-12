@@ -12,7 +12,7 @@ RowLayout {
         id: resetButton
         padding: 5
         contentAlignment: Qt.AlignCenter
-        implicitWidth: 30
+        implicitWidth: 25
         implicitHeight: implicitWidth
         icon.source: "./icons/cycle.png"
         icon.width: implicitWidth * 0.5

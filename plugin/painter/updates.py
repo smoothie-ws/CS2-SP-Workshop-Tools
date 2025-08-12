@@ -1,5 +1,6 @@
-import os, io, json, zipfile, shutil, tempfile
+import os, io, json, zipfile, shutil, tempfile, threading
 
+from datetime import datetime
 from urllib import error as urlerror
 from urllib import request as urlrequest
 
@@ -21,14 +22,21 @@ class Updates:
     @staticmethod
     def check_for_updates(repo: str, tag: str):
         def fmt(commits):
+            def get_date(c: dict):
+                raw_date = c.get("commit", {}).get("committer", {}).get("date")
+                if not raw_date:
+                    return None
+                return datetime.strptime(raw_date, "%Y-%m-%dT%H:%M:%SZ").strftime("%d %b %Y")
+            
             return [{
                 "sha": c.get("sha",""),
                 "author": (c.get("author") or {}).get("login", "unknown"),
+                "date": get_date(c),
                 "message": c.get("commit",{}).get("message","").strip()
             } for c in commits]
 
-        def all_commits_to(tag_with_v, limit=100, timeout=5):
-            url = f'https://api.github.com/repos/{repo}/commits?sha={tag_with_v}&per_page=100'
+        def all_commits_to(tag, limit=100, timeout=5):
+            url = f'https://api.github.com/repos/{repo}/commits?sha={tag}&per_page=100'
             acc = []
             while url and len(acc) < limit:
                 data, headers = fetch_json(url, timeout)
@@ -60,60 +68,88 @@ class Updates:
         return None, None
     
     @staticmethod
-    def update(repo: str, tag: str, dest: str):
-        def download_bytes(url, timeout=30):
-            with urlrequest.urlopen(url, timeout=timeout) as r:
-                return r.read()
+    def update(repo: str, tag: str, dest: str, state_callback, update_callback):
+        def task():
+            try:
+                # release info
+                try:
+                    rel, _ = fetch_json(f'https://api.github.com/repos/{repo}/releases/tags/{tag}')
+                except Exception as e:
+                    Log.error(f'Failed to download an update: {e}')
+                    state_callback("Error"); return
 
-        def extract_zip_bytes(blob: bytes, out_dir: str) -> str:
-            with zipfile.ZipFile(io.BytesIO(blob)) as z:
-                top = z.namelist()[0].split("/")[0]
-                z.extractall(out_dir)
-            return os.path.join(out_dir, top)
+                asset_url = None
+                for a in rel.get("assets") or []:
+                    name = (a.get("name") or "").lower()
+                    if name.endswith(".zip"):
+                        asset_url = a.get("browser_download_url"); break
+                if not asset_url:
+                    asset_url = rel.get("zipball_url")
+                if not asset_url:
+                    Log.error("Failed to download an update")
+                    state_callback("Error"); return
 
-        def copy_overwrite(src: str, dst: str):
-            for root, dirs, files in os.walk(src):
-                rel = os.path.relpath(root, src)
-                target_root = os.path.join(dst, rel) if rel != "." else dst
-                os.makedirs(target_root, exist_ok=True)
-                for d in dirs:
-                    os.makedirs(os.path.join(target_root, d), exist_ok=True)
-                for f in files:
-                    shutil.copy2(os.path.join(root, f), os.path.join(target_root, f))
+                # download (30%)
+                try:
+                    state_callback("Downloading")
+                    req = urlrequest.Request(asset_url, headers={"User-Agent": "CS2-SP-Workshop-Tools"})
+                    with urlrequest.urlopen(req, timeout=30) as r:
+                        total = r.headers.get("Content-Length")
+                        total = int(total) if total and total.isdigit() else None
+                        buf = io.BytesIO()
+                        read = 0
+                        chunk = 1024 * 64
+                        while True:
+                            b = r.read(chunk)
+                            if not b: break
+                            buf.write(b)
+                            read += len(b)
+                            if total:
+                                update_callback(min(0.3 * (read / total), 0.3))
+                        blob = buf.getvalue()
+                    if not total:
+                        update_callback(0.3)
+                except Exception as e:
+                    Log.error(f'Failed to download an update: {e}')
+                    state_callback("Error"); return
 
-        try:
-            rel = fetch_json(f'https://api.github.com/repos/{repo}/releases/tags/{tag}')
-        except Exception:
-            Log.fatal()
-            return False
+                # install (70%)
+                state_callback("Installing")
+                tmpdir = tempfile.mkdtemp(prefix="plugin_update_")
+                try:
+                    with zipfile.ZipFile(io.BytesIO(blob)) as z:
+                        z.extractall(tmpdir)
+                        top = z.namelist()[0].split("/")[0]
+                    unpack_root = os.path.join(tmpdir, top)
 
-        asset_url = None
-        for a in rel.get("assets") or []:
-            name = (a.get("name") or "").lower()
-            if name.endswith(".zip"):
-                asset_url = a.get("browser_download_url")
-                break
-        if not asset_url:
-            asset_url = rel.get("zipball_url")
-        if not asset_url:
-            Log.fatal()
-            return False
+                    total_files = 0
+                    for _, _, files in os.walk(unpack_root):
+                        total_files += len(files)
+                    processed = 0
+                    weight_base = 0.3
+                    weight_install = 0.7
 
-        try:
-            blob = download_bytes(asset_url)
-        except Exception:
-            Log.fatal()
-            return False
+                    for root, dirs, files in os.walk(unpack_root):
+                        relp = os.path.relpath(root, unpack_root)
+                        target_root = os.path.join(dest, relp) if relp != "." else dest
+                        os.makedirs(target_root, exist_ok=True)
+                        for d in dirs:
+                            os.makedirs(os.path.join(target_root, d), exist_ok=True)
+                        for f in files:
+                            shutil.copy2(os.path.join(root, f), os.path.join(target_root, f))
+                            processed += 1
+                            frac = processed / total_files if total_files else 1.0
+                            update_callback(weight_base + weight_install * frac)
+                except Exception as e:
+                    Log.error(f'Failed to install update: {e}')
+                    state_callback("Error"); return
+                finally:
+                    shutil.rmtree(tmpdir, ignore_errors=True)
 
-        tmpdir = tempfile.mkdtemp(prefix="plugin_update_")
-        try:
-            unpack_root = extract_zip_bytes(blob, tmpdir)
-            copy_overwrite(unpack_root, dest)
-        except Exception:
-            Log.fatal()
-            return False
-        finally:
-            shutil.rmtree(tmpdir, ignore_errors=True)
+                state_callback("Finished")
 
-        Log.info(f'Installed version {tag}. Please restart the plugin to apply.')
-        return True
+            except Exception as e:
+                Log.error(f'Unexpected update error: {e}')
+                state_callback("Error")
+
+        threading.Thread(target=task, daemon=True).start()

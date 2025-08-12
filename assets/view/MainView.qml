@@ -104,9 +104,12 @@ Rectangle {
 
             SPButton {
                 tooltip.text: "Create new project and set it up as Weapon Finish"
+                contentAlignment: Qt.AlignCenter
+                implicitWidth: 25
+                implicitHeight: implicitWidth
                 icon.source: Plugin.asset("icons/add.png")
-                icon.width: 18
-                icon.height: 18
+                icon.width: implicitWidth * 0.75
+                icon.height: implicitHeight * 0.75
                 Layout.alignment: Qt.AlignCenter
 
                 onClicked: Plugin.initWeaponFinish(true)
@@ -115,9 +118,12 @@ Rectangle {
             SPButton {
                 enabled: root.projectKind > 0
                 tooltip.text: "Set up opened project as Weapon Finish"
+                contentAlignment: Qt.AlignCenter
+                implicitWidth: 25
+                implicitHeight: implicitWidth
                 icon.source: Plugin.asset("icons/settings.png")
-                icon.width: 18
-                icon.height: 18
+                icon.width: implicitWidth * 0.75
+                icon.height: implicitHeight * 0.75
                 Layout.alignment: Qt.AlignCenter
 
                 onClicked: Plugin.initWeaponFinish(false)
