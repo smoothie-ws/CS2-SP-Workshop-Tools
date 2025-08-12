@@ -214,7 +214,7 @@ class UpdateWindow(QmlDialog):
             Updates.update(
                 "smoothie-ws/CS2-SP-Workshop-Tools", 
                 self.latest, 
-                Path.join(Path.plugin, self.latest), 
+                Path.plugin, 
                 state_changed,
                 self.downloadingUpdated.emit
             )
