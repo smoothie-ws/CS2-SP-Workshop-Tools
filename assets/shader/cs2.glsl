@@ -350,14 +350,14 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // Outputs -------------------------------------------------------- //
 
-    // Occlusion
+    // occlusion
     outputs.orm.r = uUseCustomAOTex ? getAO(inputs.sparse_coord, true) : ao;
-    // Roughness
+    // roughness
     outputs.orm.g = mix(matRough, baseRough, paintBlend);
-    // Metallic
+    // metallic
     outputs.orm.b = mix(matMetal, baseMetal, paintBlend);
 
-    // Normal
+    // normal
     if (uUseCustomNormal)
         outputs.vectors = computeLocalFrame(inputs);
     else {
@@ -371,7 +371,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         outputs.vectors = computeLocalFrame(inputs, inputs.normal, 0.0);
     }
     
-    // Color
+    // color
     paintCol *= grungeCol.rgb;
 
     // pearlescence
@@ -382,11 +382,11 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // pbr validation
     if (uPBRValidation) {
-        float g = dot(paintCol, vec3(0.3, 0.59, 0.11));
+        float g = dot(paintCol, vec3(0.2126, 0.7152, 0.0722));
         vec3 valCol = mix(
-                vec3(step(0.91, g), 0.0, step(g, 0.02)), // non-metallic
-                vec3(step(0.97, g), 0.0, step(g, 0.12)), // metalic
-                step(0.75, matMetal)
+                vec3(step(245 / 255, g), 0.0, step(g, 50 / 255)), // non-metallic
+                vec3(step(255 / 255, g), 0.0, step(g, 106 / 255)), // metalic
+                step(0.5, matMetal)
             );
         valCol = mix(valCol, vec3(0.0), paintBlend);
         outputs.color = outputs.color * (1.0 - length(valCol));

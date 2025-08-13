@@ -2,21 +2,22 @@ import json
 import math
 import substance_painter as sp
 
-from .painter import Log, Path, Plugin, Resource, ProjectSettings
+from .painter import Log, Path, Macro, Plugin, Resource, ProjectSettings
 
 class WeaponFinish:
-	FINISH_STYLES = [
-		"so", # Solid Color
-		"hy", # Hydrographic
-		"sp", # Spray-Paint
-		"an", # Anodized
-		"am", # Anodized Multicolored
-		"aa", # Anodized Airbrushed
-		"cu", # Custom Paint Job
-		"aq", # Patina
-		"gs"  # Gunsmith
-	]
-
+	SHELF = "your_assets"
+	FINISH_STYLES = {
+		"so" : { "index": 0, "uuid": "9b92692d-4c88-4db2-9b4e-0f7c5f663f0d" }, # Solid Color
+		"hy" : { "index": 1, "uuid": "e5c73031-b09c-4696-92c0-37a3253ef0ec" }, # Hydrographic
+		"sp" : { "index": 2, "uuid": "f48e98cf-0ffb-4da4-8a64-0f1b29b52c0a" }, # Spray-Paint
+		"an" : { "index": 3, "uuid": "bfb92f18-ec91-4d69-a172-a93e7c78d202" }, # Anodized
+		"am" : { "index": 4, "uuid": "b34cf297-4cd6-4c08-86c8-79df8590c3cf" }, # Anodized Multicolored
+		"aa" : { "index": 5, "uuid": "c5874ae6-d198-4723-a2f3-cbd57b2c2e25" }, # Anodized Airbrushed
+		"cu" : { "index": 6, "uuid": "3a1bc8f6-c01a-4b9f-99c5-848f5d82bff0" }, # Custom Paint Job
+		"aq" : { "index": 7, "uuid": "fc1c3533-8c19-4e12-804d-8913e8f8f8dc" }, # Patina
+		"gs" : { "index": 8, "uuid": "5d2348a8-98cb-4f70-9445-6df4a5af77ad" }  # Gunsmith
+	}
+ 
 	@staticmethod
 	def current() -> dict:
 		return ProjectSettings.get("weapon_finish")
@@ -109,7 +110,7 @@ class WeaponFinish:
 			if cs2_path is not None and Path.exists(cs2_path):
 
 				# create folder for textures
-				textures_folder = Path.join(cs2_path, "content", "csgo", "weapons", "paints", "workshop", finish_name)
+				textures_folder = Path.join(cs2_path, "content", "csgo_addons", "workshop_items", "weapons", "paints", "workshop", finish_name)
 				if not Path.exists(textures_folder):
 					Path.makedirs(textures_folder)
 					weapon_finish["texturesFolder"] = textures_folder
@@ -141,27 +142,42 @@ class WeaponFinish:
 				)
 			)
 
-		if sp.resource.Shelf("your_assets").is_crawling():
+		if sp.resource.Shelf("session").is_crawling():
 			delayed = True
 			sp.event.DISPATCHER.connect_strong(sp.event.ShelfCrawlingEnded, proceed)
 		else:
 			proceed(None)
 
 	@staticmethod
-	def update_style(finish_style: str, callback):
+	def update_style(fs: str, callback):
 		if WeaponFinish.is_open():
-			def update(resources):
-				if len(resources) > 0:
-					url = resources[0].identifier().url()
-					sp.js.evaluate(f"""
-						if (alg.shaders.instances()[0].url != "{url}")
-							alg.shaders.updateShaderInstance(0, "{url}")
-					""")
-					callback(True, f'Finish Style was set to `{finish_style.upper()}`')
-				else:
-					callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
+			# shader files
+			shelf = sp.resource.Shelf(WeaponFinish.SHELF)
+			shader_source = Path.read(Path.asset("shader", "cs2.glsl"))
+   
+			if len(shader_source) > 0:
+				shader_dir = Path.cleardir(Path.join(Path.plugin, "shaders"))
+	
+				name = f'cs2_{fs}'
+				path = Path.join(shader_dir, f'{name}.glsl')
+				style = WeaponFinish.FINISH_STYLES[fs]
+				Path.write(path, Macro.process(shader_source, {"FINISH_STYLE": style["index"]}))
 				
-			Resource.search_resource(update, "your_assets", "shader", f'cs2_{finish_style.lower()}')
+    			# import shader
+				shader_resource = shelf.import_resource(path, Resource.Usage.SHADER, name, "CS2", style["uuid"])
+    
+				# set icon
+				icon_path = Path.asset("icons", f'{name}.png')
+				if Path.exists(icon_path):
+					shader_resource.set_custom_preview(icon_path)
+				
+				# update instance
+				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{shader_resource.identifier().url()}")')
+    
+				callback(True, f'Finish Style was set to `{fs.upper()}`')
+			else:
+				callback(False, f'Failed to find shader for `{fs.upper()}` finish style')
+    
 
 	@staticmethod
 	def update_weapon(weapon: str):
@@ -172,7 +188,7 @@ class WeaponFinish:
 			for param in ["uBaseColor", "uBaseRough", "uBaseSurface", "uBaseMasks", "uBaseCavity"]:
 				tex_path = Path.join(path, f'{weapon}_{param[5:].lower()}.png')
 				if Path.exists(tex_path):
-					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE).identifier().url()
+					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE, group="CS2").identifier().url()
 		return resources
 
 	@staticmethod
@@ -321,7 +337,7 @@ class WeaponFinish:
 			textures_folder = weapon_finish.get("texturesFolder", "")
 			if not Path.exists(textures_folder):
 				Log.info(f'Be careful: path "{textures_folder}" for textures does not exist!')
-			textures_folder = textures_folder.split("csgo")[-1]
+			textures_folder = textures_folder.split("workshop_items")[-1]
 			if len(textures_folder) > 0 and textures_folder[0] == "/":
 				textures_folder = textures_folder[1:]
 

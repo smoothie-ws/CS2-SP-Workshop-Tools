@@ -3,7 +3,7 @@ import re
 
 class Macro:
     @staticmethod
-    def process(code: str, macros: dict={}):
+    def process(code: str, macros: dict={}, remove_comments: bool = True):
         for macro in macros.keys():
             macros[macro] = str(macros[macro])
         condition_stack = []
@@ -33,6 +33,8 @@ class Macro:
         processed_lines = []
         for line in code.split("\n"):
             if not line.startswith("//:"):
+                if remove_comments:
+                    line = line.split("//")[0]
                 for macro in macros.keys():
                     line = line.replace(macro, macros[macro])
                 
@@ -91,3 +93,4 @@ class Macro:
         assert current_level() == 0, "Missing #endif"
 
         return "\n".join(processed_lines)
+    

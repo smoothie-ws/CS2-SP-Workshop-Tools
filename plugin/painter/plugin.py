@@ -60,6 +60,7 @@ class Plugin:
         except:
             cls.on_close()
             Log.fatal()
+            
 
     @classmethod
     def close(cls):
@@ -89,7 +90,7 @@ class Plugin:
                     view_asset_path = Path.join(view_path, path)
                     if path.lower().endswith("qml"):
                         sources = Path.read(asset_path)
-                        sources = Macro.process(sources, {"QT_VERSION": QtVersion})
+                        sources = Macro.process(sources, {"QT_VERSION": QtVersion}, False)
                         Path.write(view_asset_path, sources)
                     else:
                         Path.copy(asset_path, view_asset_path)

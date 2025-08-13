@@ -28,7 +28,7 @@ class MainView(QmlView):
     # slots
     @QtCore.Slot(str, result=str)
     def importTexture(self, path:str) -> str:
-        return Resource.import_session_resource(path, Resource.Usage.TEXTURE).identifier().url()
+        return Resource.import_session_resource(path, Resource.Usage.TEXTURE, group="CS2").identifier().url()
         
     @QtCore.Slot(str)
     def showInExplorer(self, path:str):
