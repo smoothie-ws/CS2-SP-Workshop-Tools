@@ -33,7 +33,7 @@ QtObject {
                     control[prop + "Changed"].connect(() => 
                         Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${control[prop]}"`)
                     );
-                else if (["range", "arrayColor", "transform"].includes(prop))
+                else if (["range", "ranges", "arrayColor", "transform"].includes(prop))
                     control[prop + "Changed"].connect(() => 
                         Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${control[prop]}]`)
                     );

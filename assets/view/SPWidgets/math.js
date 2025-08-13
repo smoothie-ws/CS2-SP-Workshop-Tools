@@ -19,3 +19,7 @@ function random(seed) {
     const x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
 }
+
+function round(x, precision) {
+    return parseFloat(x.toFixed(precision));
+}

@@ -14,6 +14,8 @@ import lib-normal.glsl
 #define AQ 7 // Patina
 #define GS 8 // Gunsmith
 
+#define PI2 6.28318530718
+
 //: metadata {
 //:  "custom-ui" : "cs2-ui.qml"
 //: }
@@ -57,6 +59,8 @@ uniform sampler2D uBaseCavity;
 uniform_specialization bool uLivePreview;
 //: param custom { "default": false, "group" : "General" }
 uniform_specialization bool uPBRValidation;
+//: param custom { "default": [50, 245, 106, 255], "group" : "General" }
+uniform vec4 uPBRRanges; // packed values: [non-metallic min:max, metallic min:max]
 
 // Common Parameters ---------------------------------------------- //
 
@@ -152,7 +156,7 @@ vec3 hsl2rgb(vec3 hsl) {
 
 vec3 hueShift(vec3 col, float factor) {
     vec3 hsl = rgb2hsl(col);
-    hsl.x = mod(hsl.x + factor / (2.0 * 3.14159265359), 1.0);
+    hsl.x = mod(hsl.x + factor / PI2, 1.0);
     return hsl2rgb(hsl);
 }
 
@@ -383,13 +387,17 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // pbr validation
     if (uPBRValidation) {
         float g = dot(paintCol, vec3(0.2126, 0.7152, 0.0722));
+        g = clamp(g * 255.0, 0.0, 255.0);
+
         vec3 valCol = mix(
-                vec3(step(245 / 255, g), 0.0, step(g, 50 / 255)), // non-metallic
-                vec3(step(255 / 255, g), 0.0, step(g, 106 / 255)), // metalic
-                step(0.5, matMetal)
-            );
+            vec3(step(uPBRRanges[1], g), 0.0, 1.0 - step(uPBRRanges[0], g)), // non-metallic
+            vec3(step(uPBRRanges[3], g), 0.0, 1.0 - step(uPBRRanges[2], g)), // metallic
+            step(0.5, matMetal)
+        );
+
         valCol = mix(valCol, vec3(0.0), paintBlend);
         outputs.color = outputs.color * (1.0 - length(valCol));
+
         emissiveColorOutput(valCol);
     }
 }
@@ -397,7 +405,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 void shadePBR(ShaderOutputs outputs) {
     float shadow = outputs.orm.r * getShadowFactor();
     vec3 diffColor = generateDiffuseColor(outputs.color, outputs.orm.b);
-    vec3 specColor = generateSpecularColor(0.5, outputs.color, outputs.orm.b);
+    vec3 specColor = generateSpecularColor(0.04, outputs.color, outputs.orm.b);
     float specOcclusion = specularOcclusionCorrection(shadow, outputs.orm.b, outputs.orm.g);
 
     albedoOutput(diffColor);

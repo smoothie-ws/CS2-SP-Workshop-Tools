@@ -13,6 +13,7 @@ ColumnLayout {
     property alias pressed: mouseArea.pressed
     property alias hovered: mouseArea.containsMouse
 
+    property int precision: 2
     property real from: 0.0
     property real to: 1.0
     property real minValue: 0.0
@@ -28,23 +29,27 @@ ColumnLayout {
 
     onRangeChanged: {
         internal.update(() => {
-            minValue = range[0];
-            maxValue = range[1];
+            minValue = MathUtils.round(range[0], root.precision);
+            maxValue = MathUtils.round(range[1], root.precision);
         });
         internal.syncValue();
     }
 
-    onValueChanged: internal.update(() => {
+    onValueChanged: internal.update(() => 
         internal.normPosition = MathUtils.norm(value, minValue, maxValue)
-    })
+    )
 
     onMinValueChanged: {
-        internal.update(() => range = [minValue, maxValue]);
+        internal.update(() => 
+            range = [MathUtils.round(minValue, root.precision), MathUtils.round(maxValue, root.precision)]
+        );
         internal.syncValue();
     }
     
     onMaxValueChanged: {
-        internal.update(() => range = [minValue, maxValue]);
+        internal.update(() => 
+            range = [MathUtils.round(minValue, root.precision), MathUtils.round(maxValue, root.precision)]
+        );
         internal.syncValue();
     }
     
@@ -72,7 +77,7 @@ ColumnLayout {
         }
 
         function syncValue() {
-            sync(() => value = MathUtils.mapNorm(normPosition, minValue, maxValue));
+            sync(() => value = MathUtils.round(MathUtils.mapNorm(normPosition, minValue, maxValue), root.precision));
         }
     }
     
@@ -112,22 +117,22 @@ ColumnLayout {
             model: ["minValue", "value", "maxValue"]
             delegate: SPTextInput {
                 Layout.preferredWidth: 50
-                text: root[modelData].toFixed(2)
+                text: root[modelData].toFixed(root.precision)
                 visible: index == 1 ? root.pickValue : true
                 validator: SPRegExprValidator { expr: /^-?[0-9]*\.?[0-9]*$/ }
 
                 Component.onCompleted: {
                     if (index == 0)
                         editingFinished.connect(() => 
-                            root[modelData] = MathUtils.clamp(parseFloat(text), from, root.maxValue)
+                            root[modelData] = MathUtils.round(MathUtils.clamp(parseFloat(text), from, root.maxValue), root.precision)
                         );
                     else if (index == 1)
                         editingFinished.connect(() => 
-                            root[modelData] = MathUtils.clamp(parseFloat(text), root.minValue, root.maxValue)
+                            root[modelData] = MathUtils.round(MathUtils.clamp(parseFloat(text), root.minValue, root.maxValue), root.precision)
                         );
                     else
                         editingFinished.connect(() => 
-                            root[modelData] = MathUtils.clamp(parseFloat(text), root.minValue, to)
+                            root[modelData] = MathUtils.round(MathUtils.clamp(parseFloat(text), root.minValue, to), root.precision)
                         );
                 }
             }
@@ -183,18 +188,21 @@ ColumnLayout {
             }
 
             function syncMousePosition() {
+                let clamped = 0.0;
                 const position = MathUtils.norm(mouseX - line.x, 0.0, line.width);
-                if (mouseArea.closest == 0) {
-                    const clamped = MathUtils.clamp(position, 0.0, root.maxVisualPosition);
-                    root.minValue = MathUtils.mapNorm(clamped, root.from, root.to);
-                }
-                else if (mouseArea.closest == 1) {
-                    const clamped = MathUtils.clamp(position, root.minVisualPosition, root.maxVisualPosition);
-                    root.value = MathUtils.mapNorm(clamped, root.from, root.to);
-                }
-                else if (mouseArea.closest == 2) {
-                    const clamped = MathUtils.clamp(position, root.minVisualPosition, 1.0);
-                    root.maxValue = MathUtils.mapNorm(clamped, root.from, root.to);
+                switch (mouseArea.closest) {
+                    case 0:
+                        clamped = MathUtils.clamp(position, 0.0, root.maxVisualPosition);
+                        root.minValue = MathUtils.round(MathUtils.mapNorm(clamped, root.from, root.to), root.precision);
+                        break;
+                    case 1:
+                        clamped = MathUtils.clamp(position, root.minVisualPosition, root.maxVisualPosition);
+                        root.value = MathUtils.round(MathUtils.mapNorm(clamped, root.from, root.to), root.precision);
+                        break;
+                    case 2:
+                        clamped = MathUtils.clamp(position, root.minVisualPosition, 1.0);
+                        root.maxValue = MathUtils.round(MathUtils.mapNorm(clamped, root.from, root.to), root.precision);
+                        break;
                 }
             }
 
@@ -243,7 +251,7 @@ ColumnLayout {
                     model: ["min", "", "max"]
                     delegate: SPSliderHandler {
                         z: 1
-                        text: root[modelData + (modelData.length == 0 ? "value" : "Value")].toFixed(2)
+                        text: root[modelData + (modelData.length == 0 ? "value" : "Value")].toFixed(root.precision)
                         x: root[modelData + (modelData.length == 0 ? "visualPosition" : "VisualPosition")] * parent.width - width * 0.5
                         anchors.verticalCenter: parent.verticalCenter
                         visible: index == 1 ? root.pickValue : true

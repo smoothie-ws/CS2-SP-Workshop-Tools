@@ -53,6 +53,20 @@ Rectangle {
         }
     }
 
+    Component.onCompleted: {
+        weaponFinish.connect();
+        styleBox.currentKeyChanged.connect(() => {
+            if (root.projectKind == 2) 
+                Plugin.updateStyle(styleBox.currentKey);
+        });
+        weaponBox.currentKeyChanged.connect(() => {
+            if (root.projectKind == 2) 
+                weaponFinish.updateWeapon(weaponBox.currentKey);
+        });
+        weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.tga").slice(5));
+        weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/scratches.png").slice(5));
+    }
+
     WeaponFinish {
         id: weaponFinish
 
@@ -66,12 +80,15 @@ Rectangle {
             "texRotationRange":       { control: texRotation,            prop: "range"        },
             "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
             "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
+            "nmPBRRange":             { control: nmPBRRange,             prop: "range"        },
+            "mPBRRange":              { control: mPBRRange,              prop: "range"        },
             // shader parameters
             "uLivePreview":           { control: enableLivePreview,      prop: "checked"      },
             "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
+            "uPBRRanges":             { control: pbrRanges,              prop: "ranges"       },
             "uWearAmt":               { control: wearAmount,             prop: "value"        },
             "uTexTransform":          { control: texTransform,           prop: "transform"    },
-            "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale, prop: "checked"      },
+            "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
             "uUsePearlMask":          { control: usePearlescentMask,     prop: "checked"      },
             "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
             "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
@@ -91,6 +108,39 @@ Rectangle {
             "uUseCustomNormal":       { control: null,                   prop: "checked"      },
             "uUseCustomMasks":        { control: null,                   prop: "checked"      },
             "uUseCustomAOTex":        { control: null,                   prop: "checked"      }
+        }
+    }
+
+    QtObject {
+        id: texTransform
+
+        property bool updating: false
+        property var transform: [0.0, 0.0, 1.0, 0.0]
+
+        onTransformChanged: update(() => {
+            texOffsetX.value = transform[0];
+            texOffsetY.value = transform[1];
+            texScale.value = transform[2];
+            texRotation.value = transform[3] * 180.0 / Math.PI;
+        })
+
+        function update(f) {
+            if (!updating) {
+                updating = true;
+                f();
+                updating = false;
+            }
+        }
+
+        function sync() {
+            update(() => {
+                transform = [
+                    texOffsetX.value, 
+                    texOffsetY.value,
+                    texScale.value, 
+                    texRotation.value * Math.PI / 180.0
+                ];
+            });
         }
     }
 
@@ -198,53 +248,6 @@ Rectangle {
             enabled: root.projectKind == 2
             opacity: enabled ? 1.0 : 0.5
             spacing: 0
-            
-            Component.onCompleted: {
-                weaponFinish.connect();
-                styleBox.currentKeyChanged.connect(() => {
-                    if (root.projectKind == 2) 
-                        Plugin.updateStyle(styleBox.currentKey);
-                });
-                weaponBox.currentKeyChanged.connect(() => {
-                    if (root.projectKind == 2) 
-                        weaponFinish.updateWeapon(weaponBox.currentKey);
-                });
-                weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.tga").slice(5));
-                weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/scratches.png").slice(5));
-            }
-
-            QtObject {
-                id: texTransform
-
-                property bool updating: false
-                property var transform: [0.0, 0.0, 1.0, 0.0]
-
-                onTransformChanged: update(() => {
-                    texOffsetX.value = transform[0];
-                    texOffsetY.value = transform[1];
-                    texScale.value = transform[2];
-                    texRotation.value = transform[3] * 180.0 / Math.PI;
-                })
-
-                function update(f) {
-                    if (!updating) {
-                        updating = true;
-                        f();
-                        updating = false;
-                    }
-                }
-
-                function sync() {
-                    update(() => {
-                        transform = [
-                            texOffsetX.value, 
-                            texOffsetY.value,
-                            texScale.value, 
-                            texRotation.value * Math.PI / 180.0
-                        ];
-                    });
-                }
-            }
 
             SPGroup {
                 id: general
@@ -471,6 +474,68 @@ Rectangle {
                             baseTextures.labelScopeWidth = Math.max(baseTextures.labelScopeWidth, control.scopeWidth);
                             control.scopeWidth = Qt.binding(() => baseTextures.labelScopeWidth);
                         }
+                    }
+                }
+
+                SPGroup {
+                    id: pbrRanges
+                    Layout.fillWidth: true
+                    toggled: false
+                    text: "PBR Ranges"
+
+                    property bool updating: false
+                    property var ranges: [0.0, 0.0, 1.0, 0.0]
+
+                    onRangesChanged: update(() => {
+                        nmPBRRange.minValue = ranges[0];
+                        nmPBRRange.maxValue = ranges[1];
+                        mPBRRange.minValue = ranges[2];
+                        mPBRRange.maxValue = ranges[3];
+                    })
+
+                    function update(f) {
+                        if (!updating) {
+                            updating = true;
+                            f();
+                            updating = false;
+                        }
+                    }
+
+                    function sync() {
+                        update(() => {
+                            ranges = [
+                                nmPBRRange.minValue, 
+                                nmPBRRange.maxValue,
+                                mPBRRange.minValue, 
+                                mPBRRange.maxValue
+                            ];
+                        });
+                    }
+
+                    SPParameter {
+                        SPRangeSlider {
+                            id: nmPBRRange
+                            text: "Non-metallic:"
+                            from: 0
+                            to: 255
+                            precision: 0
+                            pickValue: false
+                            onRangeChanged: pbrRanges.sync()
+                        }
+                        onResetRequested: weaponFinish.resetParameter("nmPBRRange")
+                    }
+
+                    SPParameter {
+                        SPRangeSlider {
+                            id: mPBRRange
+                            text: "Metallic:"
+                            from: 0
+                            to: 255
+                            precision: 0
+                            pickValue: false
+                            onRangeChanged: pbrRanges.sync()
+                        }
+                        onResetRequested: weaponFinish.resetParameter("mPBRRange")
                     }
                 }
             }

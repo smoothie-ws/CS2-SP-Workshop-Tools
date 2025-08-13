@@ -37,6 +37,8 @@ SPDialog {
         property bool weaponIsValid: false
 
         property var weaponFinish: {
+            "nmPBRRange":             { control: nmPBRRange,             prop: "range"        },
+            "mPBRRange":              { control: mPBRRange,              prop: "range"        },
             "style":                  { control: styleBox,               prop: "currentKey"   },
             "texScale":               { control: texScale,               prop: "value"        },
             "texRotationRange":       { control: texRotation,            prop: "range"        },
@@ -542,6 +544,33 @@ SPDialog {
 
                         ColumnLayout {
                             width: weaponFinishBackground.width - 30
+
+                            SPLabeled {
+                                text: "PBR Ranges"
+                                label.font.bold: true
+                                Layout.fillWidth: true
+                                Layout.topMargin: 20
+                                Layout.bottomMargin: 10
+                                SPSeparator { Layout.fillWidth: true }
+                            }
+
+                            SPRangeSlider {
+                                id: nmPBRRange
+                                text: "Non-metallic:"
+                                from: 0
+                                to: 255
+                                precision: 0
+                                pickValue: false
+                            }
+
+                            SPRangeSlider {
+                                id: mPBRRange
+                                text: "Metallic:"
+                                from: 0
+                                to: 255
+                                precision: 0
+                                pickValue: false
+                            }
 
                             SPLabeled {
                                 text: "Common"

@@ -40,6 +40,14 @@
             "taser": "Zeus x27"
         },
         "weapon_finish": {
+            "nmPBRRange": [
+                50,
+                245
+            ],
+            "mPBRRange": [
+                106,
+                255
+            ],
             "style": "gs",
             "texScale": 1,
             "texRotationRange": [
