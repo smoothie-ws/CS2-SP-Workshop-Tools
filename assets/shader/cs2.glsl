@@ -57,6 +57,8 @@ uniform sampler2D uBaseCavity;
 
 //: param custom { "default": true, "group" : "General" }
 uniform_specialization bool uLivePreview;
+//: param custom { "default": 0, "group" : "General" }
+uniform_specialization int uDebugChannel;
 //: param custom { "default": false, "group" : "General" }
 uniform_specialization bool uPBRValidation;
 //: param custom { "default": [50, 245, 106, 255], "group" : "General" }
@@ -103,6 +105,7 @@ uniform bool uUseCustomAOTex;
 
 struct ShaderOutputs {
     LocalVectors vectors;
+    float wear;
     vec3 color, orm;
 };
 
@@ -349,7 +352,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     #endif
 
     float dirtAmt = dirtMask * uWearAmt;
-    matRough += dirtAmt * mix(0.48, 0.16, matMasks.r);
+    matRough += dirtAmt * (1.0 - matMasks.r);
     matMetal -= dirtAmt;
 
     // Outputs -------------------------------------------------------- //
@@ -383,15 +386,15 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     paintCol = hueShift(paintCol, pearlFactor * (1.0 - NdV));
 
     outputs.color = mix(paintCol, baseColor.rgb, paintBlend);
+    outputs.wear = 1.0 - paintBlend;
 
     // pbr validation
     if (uPBRValidation) {
-        float g = dot(paintCol, vec3(0.2126, 0.7152, 0.0722));
-        g = clamp(g * 255.0, 0.0, 255.0);
+        float g = dot(linear2sRGB(paintCol), vec3(0.2126, 0.7152, 0.0722));
 
         vec3 valCol = mix(
-            vec3(step(uPBRRanges[1], g), 0.0, 1.0 - step(uPBRRanges[0], g)), // non-metallic
-            vec3(step(uPBRRanges[3], g), 0.0, 1.0 - step(uPBRRanges[2], g)), // metallic
+            vec3(step(uPBRRanges[1], g), 0.0, step(g, uPBRRanges[0])), // non-metallic
+            vec3(step(uPBRRanges[3], g), 0.0, step(g, uPBRRanges[2])), // metallic
             step(0.5, matMetal)
         );
 
@@ -416,15 +419,27 @@ void shadePBR(ShaderOutputs outputs) {
 void shade(V2F inputs) {
     ShaderOutputs outputs;
 
-    if (uLivePreview)
+    if (uLivePreview) {
         applyFinish(inputs, outputs);
-    else {
+        switch (uDebugChannel) {
+            case 1:
+                emissiveColorOutput(vec3(outputs.wear));
+                break;
+            case 2:
+                emissiveColorOutput(outputs.color);
+                break;
+            case 3:
+                emissiveColorOutput(vec3(outputs.orm.g));
+                break;
+            default:
+                shadePBR(outputs);
+        }
+    } else {
         outputs.vectors = computeLocalFrame(inputs);
         outputs.color = tex2D(uMatColor, inputs).rgb;
         outputs.orm.r = getAO(inputs.sparse_coord, true);
         outputs.orm.g = tex2D(uMatRough, inputs).r;
         outputs.orm.b = tex2D(uMatMasks, inputs).r;
+        shadePBR(outputs);
     }
-
-    shadePBR(outputs);
 }

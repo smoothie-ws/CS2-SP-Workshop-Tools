@@ -84,8 +84,11 @@ QtObject {
     }
 
     function resetParameter(parameter) {
-        const component = parameters[parameter];
-        component.control[component.prop] = loadWeaponFinishProject()[parameter];
+        const value = JSON.parse(Plugin.getDefaultWeaponFinishParameter(parameter));
+        if (value !== undefined && value !== null) {
+            const component = parameters[parameter];
+            component.control[component.prop] = value;
+        }
     }
 
     function loadWeaponFinishProject() {

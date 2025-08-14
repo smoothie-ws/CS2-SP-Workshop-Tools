@@ -74,6 +74,7 @@ Rectangle {
             "econitem":               { control: econitem,               prop: "filePath"     },
             "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
             "style":                  { control: styleBox,               prop: "currentKey"   },
+            "uDebugChannel":          { control: debugChannel,           prop: "currentKey"   },
             "weapon":                 { control: weaponBox,              prop: "currentKey"   },
             "wearRange":              { control: wearRange,              prop: "range"        },
             "texScale":               { control: texScale,               prop: "value"        },
@@ -412,6 +413,84 @@ Rectangle {
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)
                 }
 
+                SPLabeled {
+                    text: "Debug Channel"
+                    Layout.fillWidth: true
+
+                    SPComboBox {
+                        id: debugChannel
+                        Layout.fillWidth: true
+                        map: {
+                            0: "Combined", 
+                            1: "Wear",
+                            2: "Albedo", 
+                            3: "Roughness"
+                        }
+                    }
+                }
+
+                SPGroup {
+                    id: pbrRanges
+                    Layout.fillWidth: true
+                    toggled: false
+                    text: "PBR Ranges"
+
+                    property bool updating: false
+                    property var ranges: [0.0, 0.0, 1.0, 0.0]
+
+                    onRangesChanged: update(() => {
+                        nmPBRRange.minValue = ranges[0] * 255;
+                        nmPBRRange.maxValue = ranges[1] * 255;
+                        mPBRRange.minValue = ranges[2] * 255;
+                        mPBRRange.maxValue = ranges[3] * 255;
+                    })
+
+                    function update(f) {
+                        if (!updating) {
+                            updating = true;
+                            f();
+                            updating = false;
+                        }
+                    }
+
+                    function sync() {
+                        update(() => {
+                            ranges = [
+                                nmPBRRange.minValue / 255, 
+                                nmPBRRange.maxValue / 255,
+                                mPBRRange.minValue / 255, 
+                                mPBRRange.maxValue / 255
+                            ];
+                        });
+                    }
+
+                    SPParameter {
+                        SPRangeSlider {
+                            id: nmPBRRange
+                            text: "Non-metallic:"
+                            from: 0
+                            to: 255
+                            precision: 0
+                            pickValue: false
+                            onRangeChanged: pbrRanges.sync()
+                        }
+                        onResetRequested: weaponFinish.resetParameter("nmPBRRange")
+                    }
+
+                    SPParameter {
+                        SPRangeSlider {
+                            id: mPBRRange
+                            text: "Metallic:"
+                            from: 0
+                            to: 255
+                            precision: 0
+                            pickValue: false
+                            onRangeChanged: pbrRanges.sync()
+                        }
+                        onResetRequested: weaponFinish.resetParameter("mPBRRange")
+                    }
+                }
+                
                 SPGroup {
                     id: baseTextures
                     Layout.fillWidth: true
@@ -451,21 +530,15 @@ Rectangle {
                             { param: "uBaseCavity",       text: "Cavity"            }
                         ]
 
-                        delegate: SPParameter {
+                        delegate: SPLabeled {
+                            text: modelData.text
+
                             property alias url: resourcePicker.url
-                            property alias scopeWidth: resourceLabel.scopeWidth
 
-                            onResetRequested: weaponFinish.resetParameter(modelData.param)
-
-                            SPLabeled {
-                                id: resourceLabel
-                                text: modelData.text
-
-                                SPResourcePicker {
-                                    id: resourcePicker
-                                    Layout.fillWidth: true
-                                    filters: AlgResourcePicker.TEXTURE
-                                }
+                            SPResourcePicker {
+                                id: resourcePicker
+                                Layout.fillWidth: true
+                                filters: AlgResourcePicker.TEXTURE
                             }
                         }
 
@@ -474,68 +547,6 @@ Rectangle {
                             baseTextures.labelScopeWidth = Math.max(baseTextures.labelScopeWidth, control.scopeWidth);
                             control.scopeWidth = Qt.binding(() => baseTextures.labelScopeWidth);
                         }
-                    }
-                }
-
-                SPGroup {
-                    id: pbrRanges
-                    Layout.fillWidth: true
-                    toggled: false
-                    text: "PBR Ranges"
-
-                    property bool updating: false
-                    property var ranges: [0.0, 0.0, 1.0, 0.0]
-
-                    onRangesChanged: update(() => {
-                        nmPBRRange.minValue = ranges[0];
-                        nmPBRRange.maxValue = ranges[1];
-                        mPBRRange.minValue = ranges[2];
-                        mPBRRange.maxValue = ranges[3];
-                    })
-
-                    function update(f) {
-                        if (!updating) {
-                            updating = true;
-                            f();
-                            updating = false;
-                        }
-                    }
-
-                    function sync() {
-                        update(() => {
-                            ranges = [
-                                nmPBRRange.minValue, 
-                                nmPBRRange.maxValue,
-                                mPBRRange.minValue, 
-                                mPBRRange.maxValue
-                            ];
-                        });
-                    }
-
-                    SPParameter {
-                        SPRangeSlider {
-                            id: nmPBRRange
-                            text: "Non-metallic:"
-                            from: 0
-                            to: 255
-                            precision: 0
-                            pickValue: false
-                            onRangeChanged: pbrRanges.sync()
-                        }
-                        onResetRequested: weaponFinish.resetParameter("nmPBRRange")
-                    }
-
-                    SPParameter {
-                        SPRangeSlider {
-                            id: mPBRRange
-                            text: "Metallic:"
-                            from: 0
-                            to: 255
-                            precision: 0
-                            pickValue: false
-                            onRangeChanged: pbrRanges.sync()
-                        }
-                        onResetRequested: weaponFinish.resetParameter("mPBRRange")
                     }
                 }
             }
@@ -591,21 +602,18 @@ Rectangle {
                             }
                         }
 
-                        SPParameter {
-                            SPSlider {
-                                id: wearAmount
-                                text: `Wear Amount (${
-                                    value < 0.07 ? "Factory New" : (
-                                    value < 0.15 ? "Minimal Wear" : (
-                                    value < 0.37 ? "Field Tested" : (
-                                    value < 0.44 ? "Well Worn" : 
-                                    "Battle Scarred")))
-                                })`
-                                from: wearRange.minValue.toFixed(2)
-                                to: wearRange.maxValue.toFixed(2)
-                                onValueChanged: wearRange.value = value
-                            }
-                            onResetRequested: weaponFinish.resetParameter("uWearAmt")
+                        SPSlider {
+                            id: wearAmount
+                            text: `Wear Amount (${
+                                value < 0.07 ? "Factory New" : (
+                                value < 0.15 ? "Minimal Wear" : (
+                                value < 0.37 ? "Field Tested" : (
+                                value < 0.44 ? "Well Worn" : 
+                                "Battle Scarred")))
+                            })`
+                            from: wearRange.minValue.toFixed(2)
+                            to: wearRange.maxValue.toFixed(2)
+                            onValueChanged: wearRange.value = value
                         }
 
                         SPParameter {

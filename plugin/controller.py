@@ -85,6 +85,10 @@ class MainView(QmlView):
     def exportWeaponFinishTextures(self):
         WeaponFinish.export_textures()
 
+    @QtCore.Slot(str, result=str)
+    def getDefaultWeaponFinishParameter(self, parameter: str) -> str:
+        return json.dumps(Plugin.settings.get("weapon_finish", {}).get(parameter))
+
 
 class WeaponFinishInitWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
