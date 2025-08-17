@@ -63,8 +63,8 @@ Rectangle {
             if (root.projectKind == 2) 
                 weaponFinish.updateWeapon(weaponBox.currentKey);
         });
-        weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.tga").slice(5));
-        weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/scratches.png").slice(5));
+        weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.png").slice(5));
+        weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/wear.png").slice(5));
     }
 
     WeaponFinish {
@@ -424,7 +424,8 @@ Rectangle {
                             0: "Combined", 
                             1: "Wear",
                             2: "Albedo", 
-                            3: "Roughness"
+                            3: "Roughness",
+                            4: "Pearl factor"
                         }
                     }
                 }
@@ -720,6 +721,7 @@ Rectangle {
                                         tooltip.text: styleBox.currentIndex > 6 ? modelData[0].tooltip : modelData[1].tooltip
                                     }
                                 }
+                                
                                 onResetRequested: weaponFinish.resetParameter(`uCol${index}`)
                             }
 
