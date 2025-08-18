@@ -64,85 +64,78 @@ SPDialog {
         function valWeapon() {
             const id = weaponIdInput.text.trim();
             const name = weaponNameInput.text.trim();
-            let exists = false;
-            for (const weapon of weapons)
-                if (weapon.value == id || weapon.text == name) {
-                    exists = true;
-                    break;
+            const length = weaponLengthInput.text.trim();
+            const uv_scale = weaponUVScaleInput.text.trim();
+            for (const [wid, w] of Object.entries(weapons))
+                if (wid == id || w.name == name) {
+                    weaponIsValid = false;
+                    return;
                 }
-            weaponIsValid = id != "" && name != "" && !exists;
+            weaponIsValid = id != "" && name != "" && length != "" && uv_scale != "";
         }
 
         function addWeapon() {
-            weapons.push({
-                value: weaponIdInput.text.trim(),
-                text: weaponNameInput.text.trim()
-            });
+            weapons[weaponIdInput.text.trim()] = {
+                name: weaponNameInput.text.trim(),
+                length: weaponLengthInput.value,
+                uv_scale: weaponUVScaleInput.value,
+            }
             weaponIdInput.text = "";
             weaponNameInput.text = "";
+            weaponLengthInput.text = "";
+            weaponUVScaleInput.text = "";
             weaponIsValid = false;
             syncWeapons();
         }
 
         function remWeapon(weapon) {
-            for (let i = 0; i < weapons.length; ++i) {
-                const w = weapons[i];
-                if (w.value == weapon) {
-                    weapons.splice(i, 1);
-                    syncWeapons();
-                    return;
-                }
-            }
+            delete weapons[weapon];
+            syncWeapons();
         }
 
         function syncWeapons() {
             weaponsWidgets.widgets = [];
-            weaponsRepater.model = weapons;
+
+            const weaponModel = [];
+            for (const [wid, w] of Object.entries(weapons))
+                weaponModel.push({
+                    id: wid,
+                    name: w.name,
+                    length: w.length,
+                    uv_scale: w.uv_scale
+                });
+            weaponsRepater.model = weaponModel;
         }
 
         function startDecompilation() {
-            const m = [];
-            for (const weapon of weapons)
-                m.push(weapon.value);
-            Plugin.startDecompilation(cs2Path, m);
+            Plugin.startDecompilation(cs2Path, Object.keys(weapons));
         }
     }
     
     function getData() {
-        const weapons = {};
-        for (const weapon of internal.weapons)
-            weapons[weapon.value] = weapon.text;
         const weapon_finish = {};
         for (const [param, component] of Object.entries(internal.weaponFinish))
             weapon_finish[param] = component.control[component.prop];
         return {
             cs2_path: internal.cs2PathIsValid ? internal.cs2Path : "",
-            weapons: weapons,
+            weapons: internal.weapons,
             weapon_finish: weapon_finish
         }
     }
 
     onOpened: {
-        try {
-            const settings = JSON.parse(Plugin.getPluginSettings());
-            if ("cs2_path" in settings)
-                internal.cs2Path = settings["cs2_path"];
-            if ("weapons" in settings) {
-                const m = [];
-                for (const [value, text] of Object.entries(settings["weapons"]))
-                    m.push({value: value, text: text});
-                internal.weapons = m;
+        const settings = JSON.parse(Plugin.getPluginSettings());
+        if ("cs2_path" in settings)
+            internal.cs2Path = settings["cs2_path"];
+        if ("weapons" in settings) 
+            internal.weapons = settings["weapons"];
+        if ("weapon_finish" in settings)
+            for (const [param, value] of Object.entries(settings["weapon_finish"])) {
+                const component = internal.weaponFinish[param];
+                if (component !== undefined)
+                    component.control[component.prop] = value;
             }
-            if ("weapon_finish" in settings)
-                for (const [param, value] of Object.entries(settings["weapon_finish"])) {
-                    const component = internal.weaponFinish[param];
-                    if (component !== undefined)
-                        component.control[component.prop] = value;
-                }
-            internal.syncWeapons();
-        } catch (e) {
-            Plugin.error(`Failed to open Plugin Settings: ${e.toString()}`);
-        }
+        internal.syncWeapons();
     }
 
     SPPopup {
@@ -339,15 +332,17 @@ SPDialog {
                         }
 
                         SPButton {
-                            text: "Refresh"
+                            tooltip.text: "Refresh"
+                            implicitWidth: 25
+                            implicitHeight: implicitWidth
+                            contentAlignment: Qt.AlignCenter
                             #if QT_VERSION >= 6
                             icon.source: "./icons/cycle.png"
                             #else
                             icon.source: "./SPWidgets/icons/cycle.png"
                             #endif
-                            icon.width: 15
-                            icon.height: 15
-                            tooltip.text: "Refresh"
+                            icon.width: implicitWidth * 0.5
+                            icon.height: implicitHeight * 0.5
 
                             onClicked: weaponsWidgets.refresh()
                         }
@@ -366,30 +361,76 @@ SPDialog {
                             RowLayout {
                                 spacing: 10
                                 height: 50
+                                opacity: 0.5
+                                Layout.leftMargin: 5
                                 Layout.fillWidth: true
                                 
                                 SPLabeled {
-                                    text: "ID:"
-
-                                    SPTextInput {
-                                        id: weaponIdInput
-                                        Layout.preferredWidth: 75
-                                        tooltip.text: "Weapon Identifier"
-
-                                        onTextEdited: internal.valWeapon()
-                                    }
+                                    text: "ID"
+                                    Layout.preferredWidth: 75
                                 }
                                 
                                 SPLabeled {
-                                    text: "Name:"
+                                    text: "Name"
+                                    Layout.preferredWidth: 100
+                                }
 
-                                    SPTextInput {
-                                        id: weaponNameInput
-                                        Layout.preferredWidth: 100
-                                        tooltip.text: "Weapon Name"
+                                SPLabeled {
+                                    text: "Length"
+                                    Layout.preferredWidth: 50
+                                }
+                                
+                                SPLabeled {
+                                    text: "UV Scale"
+                                    Layout.preferredWidth: 50
+                                }
 
-                                        onTextEdited: internal.valWeapon()
-                                    }
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            SPSeparator { Layout.fillWidth: true }
+
+                            RowLayout {
+                                spacing: 10
+                                height: 50
+                                Layout.fillWidth: true
+                                
+                                SPTextInput {
+                                    id: weaponIdInput
+                                    Layout.preferredWidth: 75
+                                    tooltip.text: "Weapon Identifier"
+
+                                    onTextEdited: internal.valWeapon()
+                                }
+
+                                SPTextInput {
+                                    id: weaponNameInput
+                                    Layout.preferredWidth: 100
+                                    tooltip.text: "Weapon Name"
+
+                                    onTextEdited: internal.valWeapon()
+                                }
+
+                                SPTextInput {
+                                    id: weaponLengthInput
+                                    Layout.preferredWidth: 50
+                                    tooltip.text: "Weapon Length"
+                                    validator: SPRegExprValidator { expr: /^-?[0-9]*\.?[0-9]*$/ }
+
+                                    readonly property real value: parseFloat(text)
+
+                                    onTextEdited: internal.valWeapon()
+                                }
+
+                                SPTextInput {
+                                    id: weaponUVScaleInput
+                                    Layout.preferredWidth: 50
+                                    tooltip.text: "Weapon UV Scale"
+                                    validator: SPRegExprValidator { expr: /^-?[0-9]*\.?[0-9]*$/ }
+
+                                    readonly property real value: parseFloat(text)
+                                    
+                                    onTextEdited: internal.valWeapon()
                                 }
 
                                 Item { Layout.fillWidth: true }
@@ -407,6 +448,7 @@ SPDialog {
 
                             ScrollView {
                                 clip: true
+                                Layout.leftMargin: 5
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
 
@@ -425,46 +467,46 @@ SPDialog {
                                     
                                     Repeater {
                                         id: weaponsRepater
-
                                         delegate: Item {
                                             id: weapon
                                             Layout.fillWidth: true
                                             height: 25
-
-                                            readonly property string weaponId: modelData.value
-                                            readonly property string weaponName: modelData.text
                                             
                                             property bool missingTextures: true
 
                                             function refresh() {
-                                                missingTextures = !Plugin.checkWeaponTextures(weaponId);
+                                                missingTextures = !Plugin.checkWeaponTextures(modelData.id);
                                             }
 
                                             RowLayout {
                                                 spacing: 10
                                                 anchors.fill: parent
                                                 
-                                                SPLabeled {
-                                                    text: "ID:"
-                                                    label.opacity: 0.5
-
-                                                    Text {
-                                                        Layout.preferredWidth: 75
-                                                        text: modelData.value
-                                                        color: AlgStyle.text.color.normal
-                                                    }
+                                                Text {
+                                                    Layout.preferredWidth: 75
+                                                    text: modelData.id
+                                                    color: AlgStyle.text.color.normal
                                                 }
-                                                
-                                                SPLabeled {
-                                                    text: "Name:"
-                                                    label.opacity: 0.5
 
-                                                    Text {
-                                                        Layout.preferredWidth: 100
-                                                        text: modelData.text
-                                                        color: AlgStyle.text.color.normal
-                                                    }
+                                                Text {
+                                                    Layout.preferredWidth: 100
+                                                    text: modelData.name
+                                                    color: AlgStyle.text.color.normal
                                                 }
+
+                                                Text {
+                                                    Layout.preferredWidth: 50
+                                                    text: modelData.length.toFixed(3)
+                                                    color: AlgStyle.text.color.normal
+                                                }
+
+                                                Text {
+                                                    Layout.preferredWidth: 50
+                                                    text: modelData.uv_scale.toFixed(3)
+                                                    color: AlgStyle.text.color.normal
+                                                }
+
+                                                Item { Layout.fillWidth: true }
 
                                                 Text {
                                                     text: "!"
@@ -492,7 +534,7 @@ SPDialog {
                                                     background.color: "black"
                                                     background.opacity: hovered ? 0.5 : 0.25
 
-                                                    onClicked: internal.remWeapon(modelData.value)
+                                                    onClicked: internal.remWeapon(modelData.id)
                                                 }
                                             }
                                         }

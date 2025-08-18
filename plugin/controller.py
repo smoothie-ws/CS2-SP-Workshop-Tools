@@ -237,7 +237,7 @@ class UpdateWindow(QmlDialog):
 class SettingsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Settings", icon, "Plugin", path)
-        self.view.setMinimumSize(QtCore.QSize(735, 425))
+        self.view.setMinimumSize(QtCore.QSize(875, 425))
         
     def on_confirmed(self, data: str) -> None:
         for key, value in json.loads(data).items():

@@ -194,7 +194,7 @@ class WeaponFinish:
 	@staticmethod
 	def import_econ():
 		weapon_finish: dict = WeaponFinish.current()
-		tex_transform = weapon_finish.get("uTexTransform", [0.0, 0.0, 1.0, 0.0])
+		tex_transform = weapon_finish.get("uTexTransform", [1.0, 0.0, 0.0, 0.0])
   
 		def set_weapon(_: str, value):
 			parts = value.split("_")
@@ -227,15 +227,15 @@ class WeaponFinish:
 			else:
 				Log.warning("Failed to fetch wear")
    
+		def set_tex_scale(_: str, value):
+			tex_transform[0] = value
+		
 		def set_tex_offset(param: str, value):
 			if len(value) == 3:
 				weapon_finish[f'texOffset{param}Range'] = [value[0], value[2]]
-				tex_transform[0 if param == "X" else 1] = value[1]
+				tex_transform[1 if param == "X" else 2] = value[1]
 			else:
 				Log.warning(f'Failed to fetch texture {param} offset')
-		
-		def set_tex_scale(_: str, value):
-			tex_transform[2] = value
 		
 		def set_tex_rotation(_: str, value):
 			if len(value) == 3:
@@ -319,7 +319,7 @@ class WeaponFinish:
 			wear = weapon_finish.get("wearRange", [0.0, 1.0])
 
 			# packed values: [offsetX, offsetY, scale, rotation]
-			tex_transform = weapon_finish.get("uTexTransform", [0.0, 0.0, 1.0, 0.0])
+			tex_transform = weapon_finish.get("uTexTransform", [1.0, 0.0, 0.0, 0.0])
 			# radians to degrees
 			tex_transform[3] *= 180 / math.pi
 
@@ -346,9 +346,9 @@ class WeaponFinish:
 				finish_style=finish_style,
 				weapon=weapon_finish.get("weapon", "ak47"),
 				wear=[wear[0], weapon_finish.get("uWearAmt", 0.5), wear[1]],
-				tex_offsetx=[tex_offsetx[0], tex_transform[0], tex_offsetx[1]],
-				tex_offsety=[tex_offsety[0], tex_transform[1], tex_offsety[1]],
-				tex_scale=tex_transform[2],
+				tex_scale=tex_transform[0],
+				tex_offsetx=[tex_offsetx[0], tex_transform[1], tex_offsetx[1]],
+				tex_offsety=[tex_offsety[0], tex_transform[2], tex_offsety[1]],
 				tex_rotation=[tex_rotation[0], tex_transform[3], tex_rotation[1]],
 				ignore_weapon_size_scale=get_bool("uIgnoreWeaponSizeScale"),
 				color0=colors[0],

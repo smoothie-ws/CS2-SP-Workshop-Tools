@@ -7,6 +7,7 @@ import Painter 1.0
 import AlgWidgets 2.0
 import "./SPWidgets"
 import "./SPWidgets/math.js" as MathUtils
+import "./random.mjs" as Random
 
 Rectangle {
     id: root
@@ -63,8 +64,8 @@ Rectangle {
             if (root.projectKind == 2) 
                 weaponFinish.updateWeapon(weaponBox.currentKey);
         });
+        weaponFinish.parameters["uWearTex"].control.url = Plugin.importTexture(Plugin.asset("textures/wear.png").slice(5));
         weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.png").slice(5));
-        weaponFinish.parameters["uScratchesTex"].control.url = Plugin.importTexture(Plugin.asset("textures/wear.png").slice(5));
     }
 
     WeaponFinish {
@@ -88,15 +89,18 @@ Rectangle {
             "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
             "uPBRRanges":             { control: pbrRanges,              prop: "ranges"       },
             "uWearAmt":               { control: wearAmount,             prop: "value"        },
+            "uWeaponSize":            { control: weaponBox,              prop: "weaponSize"   },
             "uTexTransform":          { control: texTransform,           prop: "transform"    },
+            "uWearTransform":         { control: wearTransform,          prop: "transform"    },
+            "uGrungeTransform":       { control: grungeTransform,        prop: "transform"    },
             "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
             "uUsePearlMask":          { control: usePearlescentMask,     prop: "checked"      },
             "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
             "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
             "uPaintRoughness":        { control: paintRoughness,         prop: "value"        },
             // dynamically generated components
+            "uWearTex":               { control: null,                   prop: "url"          },
             "uGrungeTex":             { control: null,                   prop: "url"          },
-            "uScratchesTex":          { control: null,                   prop: "url"          },
             "uBaseColor":             { control: null,                   prop: "url"          },
             "uBaseRough":             { control: null,                   prop: "url"          },
             "uBaseSurface":           { control: null,                   prop: "url"          },
@@ -116,12 +120,12 @@ Rectangle {
         id: texTransform
 
         property bool updating: false
-        property var transform: [0.0, 0.0, 1.0, 0.0]
+        property var transform: [1.0, 0.0, 0.0, 0.0]
 
         onTransformChanged: update(() => {
-            texOffsetX.value = transform[0];
-            texOffsetY.value = transform[1];
-            texScale.value = transform[2];
+            texScale.value = transform[0];
+            texOffsetX.value = transform[1];
+            texOffsetY.value = transform[2];
             texRotation.value = transform[3] * 180.0 / Math.PI;
         })
 
@@ -136,13 +140,23 @@ Rectangle {
         function sync() {
             update(() => {
                 transform = [
+                    texScale.value, 
                     texOffsetX.value, 
                     texOffsetY.value,
-                    texScale.value, 
                     texRotation.value * Math.PI / 180.0
                 ];
             });
         }
+    }
+
+    QtObject {
+        id: wearTransform
+        property var transform: [1.5, 0.0, 0.0, 0.0]
+    }
+
+    QtObject {
+        id: grungeTransform
+        property var transform: [1.5, 0.0, 0.0, 0.0]
     }
 
     ColumnLayout {
@@ -382,7 +396,20 @@ Rectangle {
                     SPComboBox {
                         id: weaponBox
                         Layout.fillWidth: true
-                        map: JSON.parse(Plugin.getWeapons())
+                        map: {
+                            const weaponMap = {};
+                            for (const w of Object.keys(weapons))
+                                weaponMap[w] = weapons[w].name;
+                            weaponMap;
+                        }
+
+                        property var weapons: JSON.parse(Plugin.getWeapons())
+                        property var weaponSize: [weapons[currentKey].length, weapons[currentKey].uv_scale]
+
+                        onCurrentKeyChanged: {
+                            const w = weapons[currentKey];
+                            weaponSize = [w.length, w.uv_scale];
+                        }
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, style.scopeWidth)
@@ -522,8 +549,8 @@ Rectangle {
                     Repeater {
                         id: textureRepeater
                         model: [
+                            { param: "uWearTex",          text: "Wear"              },
                             { param: "uGrungeTex",        text: "Grunge"            },
-                            { param: "uScratchesTex",     text: "Wear"              },
                             { param: "uBaseColor",        text: "Base Color"        },
                             { param: "uBaseRough",        text: "Roughness"         },
                             { param: "uBaseMasks",        text: "Masks"             },
@@ -575,9 +602,25 @@ Rectangle {
                         property int seed: 0
 
                         onSeedChanged: {
-                            texOffsetX.value = MathUtils.mapNorm(MathUtils.random(seed + 2), texOffsetX.minValue, texOffsetX.maxValue);
-                            texOffsetY.value = MathUtils.mapNorm(MathUtils.random(seed + 3), texOffsetY.minValue, texOffsetY.maxValue);
-                            texRotation.value = MathUtils.mapNorm(MathUtils.random(seed + 4), texRotation.minValue, texRotation.maxValue);
+                            const r = new Random.Stream(seed);
+                            texTransform.transform = [
+                                texScale.value, 
+                                r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue),
+                                r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue),
+                                r.randomFloat(texRotation.minValue, texRotation.maxValue) * Math.PI / 180.0
+                            ];
+                            wearTransform.transform = [
+                                r.randomFloat(1.6, 1.8),
+                                r.randomFloat(0.0, 1.0),
+                                r.randomFloat(0.0, 1.0),
+                                r.randomFloat(0.0, 360.0) * Math.PI / 180.0
+                            ];
+                            grungeTransform.transform = [
+                                r.randomFloat(1.6, 1.8),
+                                r.randomFloat(0.0, 1.0),
+                                r.randomFloat(0.0, 1.0),
+                                r.randomFloat(0.0, 360.0) * Math.PI / 180.0
+                            ];
                         }
 
                         SPLabeled {
