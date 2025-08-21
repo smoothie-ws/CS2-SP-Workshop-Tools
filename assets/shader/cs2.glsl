@@ -69,8 +69,8 @@ uniform sampler2D uBaseSurface;
 //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5], "group" : "Base Textures" }
 uniform sampler2D uBaseCavity;
 
-//: param custom { "default": "[1.0, 1.0]", "group" : "Base Textures" }
-uniform vec2 uWeaponSize; // packed values: [length, uv scale]
+//: param custom { "default": "1.0", "group" : "Base Textures" }
+uniform float uBaseScale;
 
 // Common Parameters ---------------------------------------------- //
 
@@ -167,29 +167,52 @@ vec3 hueShift(vec3 col, float factor) {
     return hsl2rgb(hsl);
 }
 
-vec2 transform(vec2 uv, float baseScale, vec4 t) {
-    const vec2 center = vec2(0.5);
+vec2 transformScaled(vec2 uv, float scale, vec4 T) {
+    const vec2 center = vec2(0.0, 1.0);
+    const float aY = radians(225);
 
-    float s = sin(t.w);
-    float c = cos(t.w);
+    float t = radians(T.w);
+    float ph = aY - t;
+    float s = sin(t), c = cos(t);
+    mat2 R = mat2(c, s, -s, c);
 
-    uv -= center;
-    uv *= baseScale * t.x;
-    uv *= mat2(c, -s, s, c);
-    uv += center;
-    uv += t.yz;
+    float k = T.x * scale;
+    mat2 M = R * k;
 
+    uv = (uv - center) * M + center;
+    uv += vec2(
+        T.y -0.242083900
+        + 0.120783182*cos(t) + 0.363446580*sin(t)
+        + 0.239495884*cos(2*t) + 0.011083886*sin(2*t)
+        - 0.111909933*cos(3*t) - 0.119415550*sin(3*t)
+        - 0.002499804*cos(4*t) - 0.012991006*sin(4*t)
+        - 0.010486454*cos(5*t) + 0.005537425*sin(5*t)
+        + 0.009166245*cos(6*t) + 0.006667128*sin(6*t)
+        + 0.001144764*cos(7*t) - 0.008146670*sin(7*t)
+        - 0.006666702*cos(8*t) - 0.000000561*sin(8*t)
+        + 0.003580020*cos(9*t) + 0.003919847*sin(9*t)
+        + 0.001338404*cos(10*t) - 0.001911703*sin(10*t)
+        - 0.003111698*cos(11*t) + 0.000463051*sin(11*t)
+        + 0.001249993*cos(12*t) - 0.000609821*sin(12*t),
+        T.z - 0.000000019
+        + 0.121653612*cos(t) + 0.122981305*sin(t)
+        - 0.001356802*cos(2*t) - 0.250269265*sin(2*t)
+        - 0.121874362*cos(3*t) + 0.121034799*sin(3*t)
+        + 0.000832699*cos(4*t) - 0.004329784*sin(4*t)
+        + 0.000603414*cos(5*t) + 0.000486125*sin(5*t)
+        + 0.004166510*cos(6*t) - 0.000833192*sin(6*t)
+        + 0.000217609*cos(7*t) + 0.001941126*sin(7*t)
+        - 0.000000252*cos(8*t) + 0.002886739*sin(8*t)
+        + 0.001871666*cos(9*t) + 0.002705391*sin(9*t)
+        - 0.002804974*cos(10*t) - 0.000564782*sin(10*t)
+        - 0.002476065*cos(11*t) + 0.003191289*sin(11*t)
+        - 0.000833036*cos(12*t) - 0.004679668*sin(12*t)
+    );
     return uv;
 }
 
 void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     vec2 uv = inputs.tex_coord;
-
-    #if (FINISH_STYLE == SP || FINISH_STYLE == AA)
-        float baseScale = uWeaponSize.x / 36;
-    #else 
-        float baseScale = uWeaponSize.y;
-    #endif
 
     // base textures
     vec4 baseCol = sRGB2linear(texture(uBaseColor, uv));
@@ -201,11 +224,11 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     float baseAO = baseCavity.g;
 
     // grunge textures
-    float paintWear = texture(uWearTex, transform(uv, baseScale, uWearTransform)).r;
-    vec4 grungeCol = texture(uGrungeTex, transform(uv, baseScale, uGrungeTransform));
+    float paintWear = texture(uWearTex, transformScaled(uv, uBaseScale, uWearTransform)).r;
+    vec4 grungeCol = texture(uGrungeTex, transformScaled(uv, uBaseScale, uGrungeTransform));
     
     // pattern textures
-    uv = transform(uv, uIgnoreWeaponSizeScale ? 1.0 : baseScale, uTexTransform);
+    uv = transformScaled(uv, uIgnoreWeaponSizeScale ? 1.0 : uBaseScale, uTexTransform);
     vec4 matCol = vec4(texture(uMatColor.tex, uv).rgb, texture(uMatAlpha.tex, uv).r);
     float matRough = uUseCustomRough ? texture(uMatRough.tex, uv).r : uPaintRoughness;
 
@@ -332,13 +355,13 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         float grimeBlend = clamp(baseCurv * baseAO - uWearAmt * 0.1, 0.0, 1.0) - grunge;
         grimeBlend = smoothstep(0.0, 0.15, grimeBlend + 0.08);
 
-        vec3 patinaCol = mix(uCol1, uCol2, uWearAmt);
-        vec3 grimeCol = mix(uCol1, uCol3, pow(uWearAmt, 0.5));
-        patinaCol = mix(grimeCol, patinaCol, grimeBlend) * matCol.rgb;
-        patinaCol += (max(uCol1.r, max(uCol1.g, uCol1.b)) - max(patinaCol.r, max(patinaCol.g, patinaCol.b))) * 0.1;
-
         float patternLum = dot(matCol.rgb, vec3(0.3, 0.59, 0.11));
         vec3 scratchesCol = uCol0 * patternLum;
+
+        patternLum = dot(matCol.rgb * uCol1, vec3(0.3, 0.59, 0.11));
+        vec3 patinaCol = mix(uCol1, uCol2 + patternLum, uWearAmt);
+        vec3 grimeCol = mix(uCol1, uCol3 + patternLum, pow(uWearAmt, 0.5));
+        patinaCol = mix(grimeCol, patinaCol, grimeBlend) * matCol.rgb;
 
         patinaCol = mix(patinaCol, scratchesCol, patinaBlend);
 

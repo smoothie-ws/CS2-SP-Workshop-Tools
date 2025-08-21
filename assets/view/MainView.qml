@@ -89,7 +89,7 @@ Rectangle {
             "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
             "uPBRRanges":             { control: pbrRanges,              prop: "ranges"       },
             "uWearAmt":               { control: wearAmount,             prop: "value"        },
-            "uWeaponSize":            { control: weaponBox,              prop: "weaponSize"   },
+            "uBaseScale":             { control: weaponBox,              prop: "baseScale"    },
             "uTexTransform":          { control: texTransform,           prop: "transform"    },
             "uWearTransform":         { control: wearTransform,          prop: "transform"    },
             "uGrungeTransform":       { control: grungeTransform,        prop: "transform"    },
@@ -126,7 +126,7 @@ Rectangle {
             texScale.value = transform[0];
             texOffsetX.value = transform[1];
             texOffsetY.value = transform[2];
-            texRotation.value = transform[3] * 180.0 / Math.PI;
+            texRotation.value = transform[3];
         })
 
         function update(f) {
@@ -143,7 +143,7 @@ Rectangle {
                     texScale.value, 
                     texOffsetX.value, 
                     texOffsetY.value,
-                    texRotation.value * Math.PI / 180.0
+                    texRotation.value
                 ];
             });
         }
@@ -404,11 +404,14 @@ Rectangle {
                         }
 
                         property var weapons: JSON.parse(Plugin.getWeapons())
-                        property var weaponSize: [weapons[currentKey].length, weapons[currentKey].uv_scale]
+                        property real baseScale: 1.0
 
                         onCurrentKeyChanged: {
                             const w = weapons[currentKey];
-                            weaponSize = [w.length, w.uv_scale];
+                            let b = w.length * 0.027777778;
+                            if (!["sp", "aa"].includes(styleBox.currentKey))
+                                b *= Math.sqrt(w.uv_scale);
+                            baseScale = b;
                         }
                     }
 
@@ -606,20 +609,20 @@ Rectangle {
                             texTransform.transform = [
                                 texScale.value, 
                                 r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue),
-                                r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue),
-                                r.randomFloat(texRotation.minValue, texRotation.maxValue) * Math.PI / 180.0
+                                texOffsetY.maxValue + texOffsetY.minValue - r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue),
+                                r.randomFloat(texRotation.minValue, texRotation.maxValue)
                             ];
                             wearTransform.transform = [
                                 r.randomFloat(1.6, 1.8),
                                 r.randomFloat(0.0, 1.0),
-                                r.randomFloat(0.0, 1.0),
-                                r.randomFloat(0.0, 360.0) * Math.PI / 180.0
+                                1.0 - r.randomFloat(0.0, 1.0),
+                                r.randomFloat(0.0, 360.0)
                             ];
                             grungeTransform.transform = [
                                 r.randomFloat(1.6, 1.8),
                                 r.randomFloat(0.0, 1.0),
-                                r.randomFloat(0.0, 1.0),
-                                r.randomFloat(0.0, 360.0) * Math.PI / 180.0
+                                1.0 - r.randomFloat(0.0, 1.0),
+                                r.randomFloat(0.0, 360.0)
                             ];
                         }
 

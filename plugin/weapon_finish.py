@@ -240,8 +240,7 @@ class WeaponFinish:
 		def set_tex_rotation(_: str, value):
 			if len(value) == 3:
 				weapon_finish["texRotationRange"] = [value[0], value[2]]
-				# degrees to radians
-				tex_transform[3] = value[0] * math.pi / 180
+				tex_transform[3] = value[0]
 			else:
 				Log.warning("Failed to fetch texture rotation")
 		
@@ -320,9 +319,6 @@ class WeaponFinish:
 
 			# packed values: [offsetX, offsetY, scale, rotation]
 			tex_transform = weapon_finish.get("uTexTransform", [1.0, 0.0, 0.0, 0.0])
-			# radians to degrees
-			tex_transform[3] *= 180 / math.pi
-
 			tex_offsetx = weapon_finish.get("texOffsetXRange", [-1.0, 1.0])
 			tex_offsety = weapon_finish.get("texOffsetYRange", [-1.0, 1.0])
 			tex_rotation = weapon_finish.get("texRotationRange", [-360.0, 360.0])

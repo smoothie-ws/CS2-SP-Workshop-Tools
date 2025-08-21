@@ -23,7 +23,6 @@ export class Stream {
 
     generateRandomNumber() {
         let j, k;
-
         if (this.mIdum <= 0 || this.mIy === 0) {
             this.mIdum = -this.mIdum < 1 ? 1 : -this.mIdum;
 
