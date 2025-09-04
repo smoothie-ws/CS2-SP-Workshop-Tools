@@ -167,48 +167,27 @@ vec3 hueShift(vec3 col, float factor) {
     return hsl2rgb(hsl);
 }
 
-vec2 transformScaled(vec2 uv, float scale, vec4 T) {
-    const vec2 center = vec2(0.0, 1.0);
-    const float aY = radians(225);
+vec2 transform(vec2 uv, float scale, vec4 T) {
+    const float PI = 3.14159265358979323846;
 
+    uv.y = 1.0 - uv.y;
+    // rotation
     float t = radians(T.w);
-    float ph = aY - t;
     float s = sin(t), c = cos(t);
     mat2 R = mat2(c, s, -s, c);
+    uv = R * uv;
+    // scale
+    uv *= T.x * scale;
+    // translation
+    uv += T.yz;
+    uv.y = 1.0 - uv.y;
+    
+    // offset
+    float E = t - PI;
+    float k = 1.0 / E - 0.1 * E + 0.5;
+    vec2 o = vec2(s, c) * (k * s * s);
 
-    float k = T.x * scale;
-    mat2 M = R * k;
-
-    uv = (uv - center) * M + center;
-    uv += vec2(
-        T.y -0.242083900
-        + 0.120783182*cos(t) + 0.363446580*sin(t)
-        + 0.239495884*cos(2*t) + 0.011083886*sin(2*t)
-        - 0.111909933*cos(3*t) - 0.119415550*sin(3*t)
-        - 0.002499804*cos(4*t) - 0.012991006*sin(4*t)
-        - 0.010486454*cos(5*t) + 0.005537425*sin(5*t)
-        + 0.009166245*cos(6*t) + 0.006667128*sin(6*t)
-        + 0.001144764*cos(7*t) - 0.008146670*sin(7*t)
-        - 0.006666702*cos(8*t) - 0.000000561*sin(8*t)
-        + 0.003580020*cos(9*t) + 0.003919847*sin(9*t)
-        + 0.001338404*cos(10*t) - 0.001911703*sin(10*t)
-        - 0.003111698*cos(11*t) + 0.000463051*sin(11*t)
-        + 0.001249993*cos(12*t) - 0.000609821*sin(12*t),
-        T.z - 0.000000019
-        + 0.121653612*cos(t) + 0.122981305*sin(t)
-        - 0.001356802*cos(2*t) - 0.250269265*sin(2*t)
-        - 0.121874362*cos(3*t) + 0.121034799*sin(3*t)
-        + 0.000832699*cos(4*t) - 0.004329784*sin(4*t)
-        + 0.000603414*cos(5*t) + 0.000486125*sin(5*t)
-        + 0.004166510*cos(6*t) - 0.000833192*sin(6*t)
-        + 0.000217609*cos(7*t) + 0.001941126*sin(7*t)
-        - 0.000000252*cos(8*t) + 0.002886739*sin(8*t)
-        + 0.001871666*cos(9*t) + 0.002705391*sin(9*t)
-        - 0.002804974*cos(10*t) - 0.000564782*sin(10*t)
-        - 0.002476065*cos(11*t) + 0.003191289*sin(11*t)
-        - 0.000833036*cos(12*t) - 0.004679668*sin(12*t)
-    );
-    return uv;
+    return uv + o;
 }
 
 void applyFinish(V2F inputs, out ShaderOutputs outputs) {
@@ -224,11 +203,11 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     float baseAO = baseCavity.g;
 
     // grunge textures
-    float paintWear = texture(uWearTex, transformScaled(uv, uBaseScale, uWearTransform)).r;
-    vec4 grungeCol = texture(uGrungeTex, transformScaled(uv, uBaseScale, uGrungeTransform));
+    float paintWear = texture(uWearTex, transform(uv, uBaseScale, uWearTransform)).r;
+    vec4 grungeCol = texture(uGrungeTex, transform(uv, uBaseScale, uGrungeTransform));
     
     // pattern textures
-    uv = transformScaled(uv, uIgnoreWeaponSizeScale ? 1.0 : uBaseScale, uTexTransform);
+    uv = transform(uv, uIgnoreWeaponSizeScale ? 1.0 : uBaseScale, uTexTransform);
     vec4 matCol = vec4(texture(uMatColor.tex, uv).rgb, texture(uMatAlpha.tex, uv).r);
     float matRough = uUseCustomRough ? texture(uMatRough.tex, uv).r : uPaintRoughness;
 

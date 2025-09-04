@@ -151,12 +151,12 @@ Rectangle {
 
     QtObject {
         id: wearTransform
-        property var transform: [1.5, 0.0, 0.0, 0.0]
+        property var transform: [1.0, 0.0, 0.0, 0.0]
     }
 
     QtObject {
         id: grungeTransform
-        property var transform: [1.5, 0.0, 0.0, 0.0]
+        property var transform: [1.0, 0.0, 0.0, 0.0]
     }
 
     ColumnLayout {
@@ -609,7 +609,7 @@ Rectangle {
                             texTransform.transform = [
                                 texScale.value, 
                                 r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue),
-                                texOffsetY.maxValue + texOffsetY.minValue - r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue),
+                                1.0 - r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue),
                                 r.randomFloat(texRotation.minValue, texRotation.maxValue)
                             ];
                             wearTransform.transform = [
@@ -637,7 +637,7 @@ Rectangle {
                                 Layout.preferredWidth: 45
                                 text: common.seed
                                 validator: SPRegExprValidator { expr: /^-?[0-9]*/ }
-                                onEditingFinished: common.seed = MathUtils.clamp(parseInt(text), 0, 9999);
+                                onEditingFinished: common.seed = MathUtils.clamp(parseInt(text), 0, 1000);
                             }
 
                             SPButton {
