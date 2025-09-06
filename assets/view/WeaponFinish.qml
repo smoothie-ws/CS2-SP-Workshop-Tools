@@ -59,7 +59,7 @@ QtObject {
                 const value = component.control[component.prop];
                 if (["filePath", "url"].includes(component.prop))
                     Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${value}"`);
-                else if (["range", "arrayColor", "transform"].includes(component.prop))
+                else if (["range", "ranges", "arrayColor", "transform"].includes(component.prop))
                     Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${value}]`);
                 else
                     Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${value}`);

@@ -1,20 +1,13 @@
 import lib-pbr.glsl
 import lib-utils.glsl
 import lib-normal.glsl
+import lib-defines.glsl
 import lib-vectors.glsl
 import lib-sampler.glsl
 
-#define SO 0 // Solid Color
-#define HY 1 // Hydrographic
-#define SP 2 // Spray-Paint
-#define AN 3 // Anodized
-#define AM 4 // Anodized Multicolored
-#define AA 5 // Anodized Airbrushed
-#define CU 6 // Custom Paint Job
-#define AQ 7 // Patina
-#define GS 8 // Gunsmith
-
-#define PI2 6.28318530718
+#define CU 0 // Custom Paint Job
+#define AQ 1 // Patina
+#define GS 2 // Gunsmith
 
 //: metadata {
 //:  "custom-ui" : "cs2-ui.qml"
@@ -34,15 +27,15 @@ uniform vec4 uPBRRanges; // packed values: [non-metallic min:max, metallic min:m
 // Paint Textures ------------------------------------------------- //
 
 //: param auto channel_basecolor
-uniform SamplerSparse uMatColor;
+uniform SamplerSparse uPatternColor;
 //: param auto channel_roughness
-uniform SamplerSparse uMatRough;
+uniform SamplerSparse uPatternRough;
 //: param auto channel_user0
-uniform SamplerSparse uMatMasks;
+uniform SamplerSparse uPatternMasks;
 //: param auto channel_user1
-uniform SamplerSparse uMatAlpha;
+uniform SamplerSparse uPatternAlpha;
 //: param auto channel_user2
-uniform SamplerSparse uMatPearl;
+uniform SamplerSparse uPatternPearl;
 
 // Grunge Textures ------------------------------------------------ //
 
@@ -97,7 +90,7 @@ uniform float uPearlScale;
 //: param custom { "default": true, "group" : "Effects" }
 uniform bool uUseCustomRough;
 //: param custom { "default": 0.60, "group" : "Effects" }
-uniform float uPaintRoughness;
+uniform float uPaintRough;
 //: param custom { "default": true, "group" : "Advanced" }
 uniform bool uUseCustomNormal;
 #if FINISH_STYLE != CU
@@ -163,29 +156,22 @@ vec3 hsl2rgb(vec3 hsl) {
 
 vec3 hueShift(vec3 col, float factor) {
     vec3 hsl = rgb2hsl(col);
-    hsl.x = mod(hsl.x + factor / PI2, 1.0);
+    hsl.x = mod(hsl.x + factor / M_2PI, 1.0);
     return hsl2rgb(hsl);
 }
 
 vec2 transform(vec2 uv, float scale, vec4 T) {
-    const float PI = 3.14159265358979323846;
-
-    uv.y = 1.0 - uv.y;
-    // rotation
     float t = radians(T.w);
     float s = sin(t), c = cos(t);
     mat2 R = mat2(c, s, -s, c);
-    uv = R * uv;
-    // scale
-    uv *= T.x * scale;
-    // translation
-    uv += T.yz;
-    uv.y = 1.0 - uv.y;
-    
-    // offset
-    float E = t - PI;
+
+    float E = t - M_PI;
     float k = 1.0 / E - 0.1 * E + 0.5;
     vec2 o = vec2(s, c) * (k * s * s);
+
+    uv.y = 1.0 - uv.y;
+    uv = R * uv * T.x * scale + T.yz;
+    uv.y = 1.0 - uv.y;
 
     return uv + o;
 }
@@ -194,7 +180,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     vec2 uv = inputs.tex_coord;
 
     // base textures
-    vec4 baseCol = sRGB2linear(texture(uBaseColor, uv));
+    vec4 baseColor = sRGB2linear(texture(uBaseColor, uv));
     vec4 baseCavity = sRGB2linear(texture(uBaseCavity, uv));
     vec3 baseMasks = texture(uBaseMasks, uv).rgb;
     vec3 baseNormal = texture(uBaseSurface, uv).rgb;
@@ -202,14 +188,26 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     float baseCurv = baseCavity.r;
     float baseAO = baseCavity.g;
 
+    #if FINISH_STYLE != CU
+        vec3 masks;
+        if (uUseCustomMasks)
+            masks = texture(uPatternMasks.tex, uv).rgb;
+        else
+            masks = baseMasks;
+        outputs.color = uCol0;
+    #else
+        vec3 masks = baseMasks;
+        masks.r = 0.0;
+    #endif
+
     // grunge textures
-    float paintWear = texture(uWearTex, transform(uv, uBaseScale, uWearTransform)).r;
-    vec4 grungeCol = texture(uGrungeTex, transform(uv, uBaseScale, uGrungeTransform));
+    float patternWear = texture(uWearTex, transform(uv, uBaseScale, uWearTransform)).r;
+    vec4 grungeColor = texture(uGrungeTex, transform(uv, uBaseScale, uGrungeTransform));
     
     // pattern textures
-    uv = transform(uv, uIgnoreWeaponSizeScale ? 1.0 : uBaseScale, uTexTransform);
-    vec4 matCol = vec4(texture(uMatColor.tex, uv).rgb, texture(uMatAlpha.tex, uv).r);
-    float matRough = uUseCustomRough ? texture(uMatRough.tex, uv).r : uPaintRoughness;
+    float patternScale = uIgnoreWeaponSizeScale ? 1.0 : uBaseScale;
+    uv = transform(uv, patternScale, uTexTransform);
+    float patternRough = uUseCustomRough ? texture(uPatternRough.tex, uv).r : uPaintRough;
 
     // normal
     if (uUseCustomNormal)
@@ -220,184 +218,129 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         outputs.vectors = computeLocalFrame(inputs, inputs.normal, 0.0);
     }
 
-    // masks & colors
-    #if FINISH_STYLE != CU
-        vec3 matMasks;
-        if (uUseCustomMasks)
-            matMasks = texture(uMatMasks.tex, uv).rgb;
-        else
-            matMasks = baseMasks;
-        outputs.color = uCol0;
-    #else
-        vec3 matMasks = baseMasks;
-        outputs.color = matCol.rgb;
-        matMasks.r = 0.0;
-    #endif
-
     outputs.pearlFactor = uPearlScale;
     if (uUsePearlMask)
-        outputs.pearlFactor *= texture(uMatPearl.tex, uv).r;
+        outputs.pearlFactor *= texture(uPatternPearl.tex, uv).r;
 
     // Paint Wear ----------------------------------------------------- //
 
     outputs.wear = baseCavity.a;
 
     #if FINISH_STYLE != AQ 
-        outputs.wear += paintWear * baseCurv;
+        outputs.wear += patternWear * baseCurv;
         outputs.wear *= uWearAmt * 6.0 + 1.0;
 
-        #if (FINISH_STYLE == HY || FINISH_STYLE == AM || FINISH_STYLE == CU || FINISH_STYLE == GS)
-            outputs.wear += smoothstep(0.5, 0.6, matCol.a) * smoothstep(1.0, 0.9, matCol.a);
+        #if (FINISH_STYLE == CU || FINISH_STYLE == GS)
+            vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
+            outputs.wear += smoothstep(0.5, 0.6, patternColor.a) * smoothstep(1.0, 0.9, patternColor.a);
 
             float cuttable = 1.0;
-            #if (FINISH_STYLE == HY || FINISH_STYLE == AM)
-                cuttable = 1.0 - clamp(matMasks.g + matMasks.b, 0.0, 1.0);
-            #endif
 
-            #if FINISH_STYLE == AM
-                matCol.a = clamp(matCol.a * 2.0, 0.0, 1.0);
-                float matMetal = 1.0;
-            #elif FINISH_STYLE == GS
-                outputs.wear *= max(1.0 - cuttable, smoothstep(0.0, 0.5, matCol.a));
-                matCol.a = mix(matCol.a, clamp(matCol.a * 2.0, 0.0, 1.0), matMasks.r);
-                float matMetal = matMasks.r;
+            #if FINISH_STYLE == GS
+                outputs.wear *= max(1.0 - cuttable, smoothstep(0.0, 0.5, patternColor.a));
+                patternColor.a = mix(patternColor.a, clamp(patternColor.a * 2.0, 0.0, 1.0), masks.r);
+                float patternMetal = masks.r;
             #else
-                outputs.wear *= max(1.0 - cuttable, smoothstep(0.0, 0.5, matCol.a));
-                float matMetal = 0.0;
+                outputs.wear *= max(1.0 - cuttable, smoothstep(0.0, 0.5, patternColor.a));
+                float patternMetal = 0.0;
             #endif
         #else
-            float matMetal = 0.0;
+            float patternMetal = 0.0;
         #endif
     #else
-        float matMetal = 1.0;
-    #endif
-
-    #if (FINISH_STYLE == HY || FINISH_STYLE == SP)
-        vec3 spread = vec3(0.06 * uWearAmt);
-        spread.y *= 2.0;
-        spread.z *= 3.0;
-
-        vec3 paintEdges = vec3(1.0);
-        paintEdges.x = smoothstep(0.58, 0.56 - spread.x, outputs.wear);
-        paintEdges.y = smoothstep(0.56 - spread.x, 0.54 - spread.y, outputs.wear);
-        paintEdges.z = smoothstep(0.54 - spread.y, 0.52 - spread.z, outputs.wear);
+        float patternMetal = 1.0;
     #endif
 
     #if (FINISH_STYLE != AQ && FINISH_STYLE != GS)
         outputs.wear = smoothstep(0.58, 0.68, outputs.wear);
     #elif FINISH_STYLE == GS
-        outputs.wear = mix(smoothstep(0.58, 0.68, outputs.wear), outputs.wear, matMasks.r);
-    #endif
-
-    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
-        float paintEdge = smoothstep(0.0, 0.01, outputs.wear);
+        outputs.wear = mix(smoothstep(0.58, 0.68, outputs.wear), outputs.wear, masks.r);
     #endif
 
     #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
-        float grunge = grungeCol.r * grungeCol.g * grungeCol.b;
+        float grunge = grungeColor.r * grungeColor.g * grungeColor.b;
     #endif
-    grungeCol = mix(vec4(1.0), grungeCol, (pow((1.0 - baseCurv), 4.0) * 0.25 + 0.75 * uWearAmt));
+
+    grungeColor = mix(vec4(1.0), grungeColor, (pow((1.0 - baseCurv), 4.0) * 0.25 + 0.75 * uWearAmt));
 
     // Paint Color  --------------------------------------------------- //
 
-    // Solid Color
-    #if FINISH_STYLE == SO
-        outputs.color = mix(outputs.color, uCol1, matMasks.r);
-        outputs.color = mix(outputs.color, uCol2, matMasks.g);
-        outputs.color = mix(outputs.color, uCol3, matMasks.b);
+    #if FINISH_STYLE == CU
+        outputs.color = patternColor.rgb;
     #endif
 
-    // Hydrographic / Anodized Multicolored
-    #if FINISH_STYLE == HY || FINISH_STYLE == AM
-        outputs.color = mix(mix(mix(uCol0, uCol1, matCol.r), uCol2, matCol.g), uCol3, matCol.b);
-        outputs.color = mix(outputs.color, uCol2, matMasks.g);
-        outputs.color = mix(outputs.color, uCol3, matMasks.b);
-    #endif
-
-    // TODO: Spraypaint / Anodized Airbrushed
-
-    // Anodized
-    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
-        #if FINISH_STYLE == AN
-            outputs.color = uCol0;
-        #endif
-        outputs.color = mix(outputs.color, vec3(0.05), paintEdge);
-        grungeCol.rgb = mix(grungeCol.rgb, vec3(1.0), paintEdge);
-        outputs.wear = clamp(1.0 + outputs.wear - matMasks.r, 0.0, 1.0);
+    #if FINISH_STYLE == AQ
+        vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
     #endif
 
     // Antiqued / Gunsmith
     #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
-        float patinaBlend = paintWear * baseAO * baseCurv * baseCurv;
+        float patinaBlend = patternWear * baseAO * baseCurv * baseCurv;
         patinaBlend = smoothstep(0.1, 0.2, patinaBlend * uWearAmt);
 
         float grimeBlend = clamp(baseCurv * baseAO - uWearAmt * 0.1, 0.0, 1.0) - grunge;
         grimeBlend = smoothstep(0.0, 0.15, grimeBlend + 0.08);
 
-        float patternLum = dot(matCol.rgb, vec3(0.3, 0.59, 0.11));
+        float patternLum = dot(patternColor.rgb, vec3(0.3, 0.59, 0.11));
         vec3 scratchesCol = uCol0 * patternLum;
 
-        patternLum = dot(matCol.rgb * uCol1, vec3(0.3, 0.59, 0.11));
+        patternLum = dot(patternColor.rgb * uCol1, vec3(0.3, 0.59, 0.11));
         vec3 patinaCol = mix(uCol1, uCol2 + patternLum, uWearAmt);
         vec3 grimeCol = mix(uCol1, uCol3 + patternLum, pow(uWearAmt, 0.5));
-        patinaCol = mix(grimeCol, patinaCol, grimeBlend) * matCol.rgb;
+        patinaCol = mix(grimeCol, patinaCol, grimeBlend) * patternColor.rgb;
 
         patinaCol = mix(patinaCol, scratchesCol, patinaBlend);
 
         #if FINISH_STYLE == AQ
             outputs.color = patinaCol;
-            outputs.wear = 1.0 - matMasks.r;
+            outputs.wear = 1.0 - masks.r;
         #else
-            outputs.color = mix(matCol.rgb, patinaCol, matMasks.r);
-            outputs.wear *= 1.0 - matMasks.r;
+            outputs.color = mix(patternColor.rgb, patinaCol, masks.r);
+            outputs.wear *= 1.0 - masks.r;
         #endif
     #endif
 
     // Outputs -------------------------------------------------------- //
 
     // color
-    outputs.color *= grungeCol.rgb;
+    outputs.color *= grungeColor.rgb;
     // pearlescence
     outputs.pearlFactor *= 1.0 - max(0.0, dot(outputs.vectors.normal, outputs.vectors.eye));
     outputs.color = hueShift(outputs.color, outputs.pearlFactor);
-    outputs.color = mix(outputs.color, baseCol.rgb, outputs.wear);
+    outputs.color = mix(outputs.color, baseColor.rgb, outputs.wear);
 
-    #define PAINT_PHONG_INTENSITY 0.6
-    #define PHONG_ALBEDO_FACTOR 0.2
-    #define ANODIZED_BASE_PHONG_INTENSITY 0.5
-    
     // dirt
-    float dirtMask = grungeCol.a;
-    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA || FINISH_STYLE == AQ || FINISH_STYLE == GS)
+    float dirtMask = grungeColor.a;
+    #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
         #if FINISH_STYLE == AQ
             dirtMask *= mix(grimeBlend * (1.0 - patinaBlend * uWearAmt), 1.0, patinaBlend);
         #elif FINISH_STYLE == GS
-            float paintSpecBlend = smoothstep(0.9, 1.0, outputs.wear) * matMasks.r;
-            dirtMask *= mix(smoothstep(0.01, 0.0, outputs.wear), mix(grimeBlend * (1.0 - patinaBlend * uWearAmt), 1.0, patinaBlend), matMasks.r);
+            float patternSpecBlend = smoothstep(0.9, 1.0, outputs.wear) * masks.r;
+            dirtMask *= mix(smoothstep(0.01, 0.0, outputs.wear), mix(grimeBlend * (1.0 - patinaBlend * uWearAmt), 1.0, patinaBlend), masks.r);
         #else
-            dirtMask *= mix(PAINT_PHONG_INTENSITY, ANODIZED_BASE_PHONG_INTENSITY, paintEdge);
+            dirtMask *= mix(0.6, 0.5, patternEdge);
         #endif
 
         #if FINISH_STYLE == GS
-            float dirt = mix(dirtMask, baseCol.a, paintSpecBlend);
-            float dirtMult = mix(PAINT_PHONG_INTENSITY, PHONG_ALBEDO_FACTOR, matMasks.r);
+            float dirt = mix(dirtMask, baseColor.a, patternSpecBlend);
+            float dirtMult = mix(0.6, 0.2, masks.r);
         #else
-            float dirt = mix(dirtMask, baseCol.a, outputs.wear);
-            float dirtMult = PHONG_ALBEDO_FACTOR;
+            float dirt = mix(dirtMask, baseColor.a, outputs.wear);
+            float dirtMult = 0.2;
         #endif
     #else
-        float paintSpecBlend = smoothstep(0.9, 1.0, outputs.wear);
+        float patternSpecBlend = smoothstep(0.9, 1.0, outputs.wear);
         dirtMask *= smoothstep(0.01, 0.0, outputs.wear);
-        float dirt = mix(dirtMask, baseCol.a, paintSpecBlend);
-        float dirtMult = PAINT_PHONG_INTENSITY;
+        float dirt = mix(dirtMask, baseColor.a, patternSpecBlend);
+        float dirtMult = 0.6;
     #endif
 
     // occlusion
     outputs.orm.r = uUseCustomAOTex ? getAO(inputs.sparse_coord, true) : baseAO;
     // roughness
-    outputs.orm.g = mix(matRough + (1.0 - dirt) * dirtMult * uWearAmt, baseRough, outputs.wear);
+    outputs.orm.g = mix(patternRough + (1.0 - dirt) * dirtMult * uWearAmt, baseRough, outputs.wear);
     // metallic
-    outputs.orm.b = mix(matMetal * mix(1.0, dirt * 0.75 + 0.25, uWearAmt), baseMasks.r, outputs.wear);
+    outputs.orm.b = mix(patternMetal * mix(1.0, dirt * 0.75 + 0.25, uWearAmt), baseMasks.r, outputs.wear);
 }
 
 void shadePBR(ShaderOutputs outputs) {
@@ -418,13 +361,13 @@ void shade(V2F inputs) {
         applyFinish(inputs, outputs);
         // pbr validation
         if (uPBRValidation) {
-            float g = dot(outputs.color, vec3(0.2126, 0.7152, 0.0722));
+            float g = dot(linear2sRGB(outputs.color), vec3(0.2126, 0.7152, 0.0722));
 
             vec3 valCol = mix(
-                vec3(step(uPBRRanges[1], g), 0.0, step(g, uPBRRanges[0])), // non-metallic
-                vec3(step(uPBRRanges[3], g), 0.0, step(g, uPBRRanges[2])), // metallic
+                vec3(step(uPBRRanges[1] / 255, g), 0.0, step(g, uPBRRanges[0] / 255)), // non-metallic
+                vec3(step(uPBRRanges[3] / 255, g), 0.0, step(g, uPBRRanges[2] / 255)), // metallic
                 step(0.5, outputs.orm.b)
-           );
+            );
 
             valCol = mix(valCol, vec3(0.0), outputs.wear);
             outputs.color = clamp(outputs.color - length(valCol), 0.0, 1.0) + valCol;
@@ -443,17 +386,17 @@ void shade(V2F inputs) {
                 emissiveColorOutput(sRGB2linear(vec3(outputs.orm.g)));
                 break;
             case 4:
-                emissiveColorOutput(sRGB2linear(vec3(outputs.pearlFactor / PI2 + 0.5)));
+                emissiveColorOutput(sRGB2linear(vec3(outputs.pearlFactor / M_2PI + 0.5)));
                 break;
             default:
                 shadePBR(outputs);
         }
     } else {
         outputs.vectors = computeLocalFrame(inputs);
-        outputs.color = textureSparse(uMatColor, inputs.sparse_coord).rgb;
+        outputs.color = textureSparse(uPatternColor, inputs.sparse_coord).rgb;
         outputs.orm.r = getAO(inputs.sparse_coord, true);
-        outputs.orm.g = textureSparse(uMatRough, inputs.sparse_coord).r;
-        outputs.orm.b = textureSparse(uMatMasks, inputs.sparse_coord).r;
+        outputs.orm.g = textureSparse(uPatternRough, inputs.sparse_coord).r;
+        outputs.orm.b = textureSparse(uPatternMasks, inputs.sparse_coord).r;
         shadePBR(outputs);
     }
 }

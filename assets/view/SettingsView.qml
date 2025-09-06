@@ -632,12 +632,6 @@ SPDialog {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     map: {
-                                        "so": "Solid Color",
-                                        "hy": "Hydrographic",
-                                        "sp": "Spray Paint",
-                                        "an": "Anodized",
-                                        "am": "Anodized Multicolored",
-                                        "aa": "Anodized Airbrushed",
                                         "cu": "Custom Paint Job",
                                         "aq": "Patina",
                                         "gs": "Gunsmith"
