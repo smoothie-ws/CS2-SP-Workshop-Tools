@@ -210,7 +210,7 @@
             "uUsePearlMask": true,
             "uPearlScale": 0,
             "uUseCustomRough": true,
-            "uPaintRoughness": 0.6,
+            "uPaintRough": 0.6,
             "uCol0": [
                 1,
                 1,
@@ -233,7 +233,29 @@
             ],
             "uUseCustomNormal": true,
             "uUseCustomMasks": true,
-            "uUseCustomAOTex": true
+            "uUseCustomAOTex": true,
+            "uSprayBlend": [
+                1.0,
+                0.0
+            ],
+            "uPaintRoughNum": [
+                0.5,
+                0.5,
+                0.5,
+                0.5
+            ],
+            "uPaintMetalNum": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            "uPaintDurabilityNum": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ]
         },
         "check_for_updates": false
     }

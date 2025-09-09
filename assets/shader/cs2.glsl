@@ -5,9 +5,15 @@ import lib-defines.glsl
 import lib-vectors.glsl
 import lib-sampler.glsl
 
-#define CU 0 // Custom Paint Job
-#define AQ 1 // Patina
-#define GS 2 // Gunsmith
+#define SO 0 // Solid Color
+#define HY 1 // Hydrographic
+#define SP 2 // Spray-Paint
+#define AN 3 // Anodized
+#define AM 4 // Anodized Multicolored
+#define AA 5 // Anodized Airbrushed
+#define CU 6 // Custom Paint Job
+#define AQ 7 // Patina
+#define GS 8 // Gunsmith
 
 //: metadata {
 //:  "custom-ui" : "cs2-ui.qml"
@@ -15,17 +21,19 @@ import lib-sampler.glsl
 
 // General Parameters --------------------------------------------- //
 
-//: param custom { "default": true, "group" : "General" }
+//: param custom { "default": true }
 uniform_specialization bool uLivePreview;
-//: param custom { "default": 0, "group" : "General" }
+//: param custom { "default": 0 }
 uniform_specialization int uDebugChannel;
-//: param custom { "default": false, "group" : "General" }
+//: param custom { "default": false }
 uniform_specialization bool uPBRValidation;
-//: param custom { "default": [50, 245, 106, 255], "group" : "General" }
+//: param custom { "default": [50, 245, 106, 255] }
 uniform vec4 uPBRRanges; // packed values: [non-metallic min:max, metallic min:max]
 
 // Paint Textures ------------------------------------------------- //
 
+//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
+uniform vec4 uTexTransform; // packed values: [scale, translateX, translateY, rotation]
 //: param auto channel_basecolor
 uniform SamplerSparse uPatternColor;
 //: param auto channel_roughness
@@ -37,67 +45,72 @@ uniform SamplerSparse uPatternAlpha;
 //: param auto channel_user2
 uniform SamplerSparse uPatternPearl;
 
-// Grunge Textures ------------------------------------------------ //
-
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5], "group" : "Base Textures" }
-uniform sampler2D uWearTex;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5], "group" : "Base Textures" }
-uniform sampler2D uGrungeTex;
-
-//: param custom { "default": [1.5, 0.0, 0.0, 0.0], "group" : "Base Textures" }
-uniform vec4 uWearTransform; // packed values: [scale, translateX, translateY, rotation]
-//: param custom { "default": [1.5, 0.0, 0.0, 0.0], "group" : "Base Textures" }
-uniform vec4 uGrungeTransform; // packed values: [scale, translateX, translateY, rotation]
-
 // Weapon Base Textures ------------------------------------------- //
 
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5], "group" : "Base Textures" }
+//: param custom { "default": "1.0" }
+uniform float uBaseScale;
+//: param custom { "default": true }
+uniform bool uIgnoreWeaponSizeScale;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D uBaseColor;
-//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5], "group" : "Base Textures" }
+//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
 uniform sampler2D uBaseRough;
-//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0], "group" : "Base Textures" }
+//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
 uniform sampler2D uBaseMasks;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0], "group" : "Base Textures" }
+//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
 uniform sampler2D uBaseSurface;
-//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5], "group" : "Base Textures" }
+//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
 uniform sampler2D uBaseCavity;
 
-//: param custom { "default": "1.0", "group" : "Base Textures" }
-uniform float uBaseScale;
+// Grunge Textures ------------------------------------------------ //
+
+//: param custom { "default": [1.5, 0.0, 0.0, 0.0] }
+uniform vec4 uWearTransform; // packed values: [scale, translateX, translateY, rotation]
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D uWearTex;
+//: param custom { "default": [1.5, 0.0, 0.0, 0.0] }
+uniform vec4 uGrungeTransform; // packed values: [scale, translateX, translateY, rotation]
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D uGrungeTex;
 
 // Common Parameters ---------------------------------------------- //
 
-//: param custom { "default": 0.00, "group" : "Common" }
+//: param custom { "default": 0.00 }
 uniform float uWearAmt;
-//: param custom { "default": true, "group" : "Common" }
-uniform bool uIgnoreWeaponSizeScale;
-//: param custom { "default": [1.0, 0.0, 0.0, 0.0], "group" : "Common" }
-uniform vec4 uTexTransform; // packed values: [scale, translateX, translateY, rotation]
-#if FINISH_STYLE != CU
-//: param custom { "default": [1.0, 1.0, 1.0], "group" : "Color" }
-uniform vec3 uCol0;
-//: param custom { "default": [1.0, 1.0, 1.0], "group" : "Color" }
-uniform vec3 uCol1;
-//: param custom { "default": [1.0, 1.0, 1.0], "group" : "Color" }
-uniform vec3 uCol2;
-//: param custom { "default": [1.0, 1.0, 1.0], "group" : "Color" }
-uniform vec3 uCol3;
-#endif
-//: param custom { "default": true, "group" : "Effects" }
-uniform bool uUsePearlMask;
-//: param custom { "default": 0.00, "group" : "Effects" }
-uniform float uPearlScale;
-//: param custom { "default": true, "group" : "Effects" }
-uniform bool uUseCustomRough;
-//: param custom { "default": 0.60, "group" : "Effects" }
+
+//: param custom { "default": 0.6 }
 uniform float uPaintRough;
-//: param custom { "default": true, "group" : "Advanced" }
-uniform bool uUseCustomNormal;
+//: param custom { "default": 0.0 }
+uniform float uPearlScale;
+#if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP)
+//: param custom { "default": [0.6, 0.6, 0.6, 0.6] }
+uniform vec4 uPaintRoughNum;
+//: param custom { "default": [0.0, 0.0, 0.0, 0.0] }
+uniform vec4 uPaintMetalNum;
+//: param custom { "default": [0.0, 0.0, 0.0, 0.0] }
+uniform vec4 uPaintDurabilityNum;
+#endif
+
 #if FINISH_STYLE != CU
-//: param custom { "default": true, "group" : "Advanced" }
+//: param custom { "default": [1.0, 1.0, 1.0] }
+uniform vec3 uCol0;
+//: param custom { "default": [1.0, 1.0, 1.0] }
+uniform vec3 uCol1;
+//: param custom { "default": [1.0, 1.0, 1.0] }
+uniform vec3 uCol2;
+//: param custom { "default": [1.0, 1.0, 1.0] }
+uniform vec3 uCol3;
+
+//: param custom { "default": true }
 uniform bool uUseCustomMasks;
 #endif
-//: param custom { "default": true, "group" : "Advanced" }
+//: param custom { "default": true }
+uniform bool uUsePearlMask;
+//: param custom { "default": true }
+uniform bool uUseCustomRough;
+//: param custom { "default": true }
+uniform bool uUseCustomNormal;
+//: param custom { "default": true }
 uniform bool uUseCustomAOTex;
 
 struct ShaderOutputs {
@@ -230,13 +243,19 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         outputs.wear += patternWear * baseCurv;
         outputs.wear *= uWearAmt * 6.0 + 1.0;
 
-        #if (FINISH_STYLE == CU || FINISH_STYLE == GS)
+        #if (FINISH_STYLE == HY || FINISH_STYLE == AM || FINISH_STYLE == CU || FINISH_STYLE == GS)
             vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
             outputs.wear += smoothstep(0.5, 0.6, patternColor.a) * smoothstep(1.0, 0.9, patternColor.a);
 
             float cuttable = 1.0;
+            #if (FINISH_STYLE == HY || FINISH_STYLE == AM)
+                cuttable = 1.0 - clamp(masks.g + masks.b, 0.0, 1.0);
+            #endif
 
-            #if FINISH_STYLE == GS
+            #if FINISH_STYLE == AM
+                patternColor.a = clamp(patternColor.a * 2.0, 0.0, 1.0);
+                float matMetal = 1.0;
+            #elif FINISH_STYLE == GS
                 outputs.wear *= max(1.0 - cuttable, smoothstep(0.0, 0.5, patternColor.a));
                 patternColor.a = mix(patternColor.a, clamp(patternColor.a * 2.0, 0.0, 1.0), masks.r);
                 float patternMetal = masks.r;
@@ -251,10 +270,25 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         float patternMetal = 1.0;
     #endif
 
+    #if (FINISH_STYLE == HY || FINISH_STYLE == SP)
+        vec3 spread = vec3(0.06 * uWearAmt);
+        spread.y *= 2.0;
+        spread.z *= 3.0;
+
+        vec3 patternEdges = vec3(1.0);
+        patternEdges.x = smoothstep(0.58, 0.56 - spread.x, outputs.wear);
+        patternEdges.y = smoothstep(0.56 - spread.x, 0.54 - spread.y, outputs.wear);
+        patternEdges.z = smoothstep(0.54 - spread.y, 0.52 - spread.z, outputs.wear);
+    #endif
+
     #if (FINISH_STYLE != AQ && FINISH_STYLE != GS)
         outputs.wear = smoothstep(0.58, 0.68, outputs.wear);
     #elif FINISH_STYLE == GS
         outputs.wear = mix(smoothstep(0.58, 0.68, outputs.wear), outputs.wear, masks.r);
+    #endif
+
+    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
+        float patternEdge = smoothstep(0.0, 0.01, outputs.wear);
     #endif
 
     #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
@@ -265,16 +299,59 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // Paint Color  --------------------------------------------------- //
 
+    // Solid Color
+    #if FINISH_STYLE == SO
+        outputs.color = mix(outputs.color, uCol1, masks.r);
+        outputs.color = mix(outputs.color, uCol2, masks.g);
+        outputs.color = mix(outputs.color, uCol3, masks.b);
+    #endif
+
+    // Hydrographic / Anodized Multicolored
+    #if FINISH_STYLE == HY || FINISH_STYLE == AM
+        outputs.color = mix(mix(mix(uCol0, uCol1, patternColor.r), uCol2, patternColor.g), uCol3, patternColor.b);
+        outputs.color = mix(outputs.color, uCol2, masks.g);
+        outputs.color = mix(outputs.color, uCol3, masks.b);
+    #endif
+
+    // Spraypaint / Anodized Airbrushed
+    #if (FINISH_STYLE == SP || FINISH_STYLE == AA)
+        vec3 texX = texture(uPatternColor.tex, transform(inputs.position.yz, patternScale, uTexTransform)).rgb;
+        vec3 texY = texture(uPatternColor.tex, transform(inputs.position.xz, patternScale, uTexTransform)).rgb;
+        vec3 texZ = texture(uPatternColor.tex, transform(inputs.position.yx, patternScale, uTexTransform)).rgb;
+
+        vec3 normal = normalize(inputs.normal * 2.0 - 1.0);
+        float yBlend = abs(dot(normal.xyz, vec3(0.0, 1.0, 0.0)));
+        float zBlend = abs(dot(normal.xyz, vec3(0.0, 0.0, 1.0)));
+
+        vec3 patternMask = mix(mix(texX, texY, pow(yBlend, 7)), texZ, pow(zBlend, 7));
+
+        #if FINISH_STYLE == SP
+            patternMask.xyz *= patternEdges.xyz;
+        #endif
+
+        outputs.color = mix(mix(mix(uCol0, uCol1, patternMask.r), uCol2, patternMask.g), uCol3, patternMask.b);
+    #endif
+
+    // Anodized
+    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
+        #if FINISH_STYLE == AN
+            outputs.color = uCol0;
+        #endif
+        outputs.color = mix(outputs.color, vec3(0.05), patternEdge);
+        grungeColor.rgb = mix(grungeColor.rgb, vec3(1.0), patternEdge);
+        outputs.wear = clamp(1.0 + outputs.wear - masks.r, 0.0, 1.0);
+    #endif
+    
     #if FINISH_STYLE == CU
         outputs.color = patternColor.rgb;
     #endif
-
-    #if FINISH_STYLE == AQ
-        vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
-    #endif
-
+    
     // Antiqued / Gunsmith
     #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
+        #if FINISH_STYLE == AQ
+            vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
+        #endif
+
         float patinaBlend = patternWear * baseAO * baseCurv * baseCurv;
         patinaBlend = smoothstep(0.1, 0.2, patinaBlend * uWearAmt);
 
@@ -311,7 +388,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // dirt
     float dirtMask = grungeColor.a;
-    #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
+    #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA || FINISH_STYLE == AQ || FINISH_STYLE == GS)
         #if FINISH_STYLE == AQ
             dirtMask *= mix(grimeBlend * (1.0 - patinaBlend * uWearAmt), 1.0, patinaBlend);
         #elif FINISH_STYLE == GS

@@ -49,7 +49,7 @@ SPDialog {
             "uUsePearlMask":          { control: usePearlescentMask,     prop: "checked"      },
             "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
             "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
-            "uPaintRoughness":        { control: paintRoughness,         prop: "value"        },
+            "uPaintRough":        { control: paintRoughness,         prop: "value"        },
             "uCol0":                  { control: null,                   prop: "arrayColor"   },
             "uCol1":                  { control: null,                   prop: "arrayColor"   },
             "uCol2":                  { control: null,                   prop: "arrayColor"   },
@@ -632,6 +632,12 @@ SPDialog {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     map: {
+                                        "so": "Solid Color",
+                                        "hy": "Hydrographic",
+                                        "sp": "Spray Paint",
+                                        "an": "Anodized",
+                                        "am": "Anodized Multicolored",
+                                        "aa": "Anodized Airbrushed",
                                         "cu": "Custom Paint Job",
                                         "aq": "Patina",
                                         "gs": "Gunsmith"

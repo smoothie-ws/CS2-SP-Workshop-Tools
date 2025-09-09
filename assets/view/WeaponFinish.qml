@@ -33,7 +33,7 @@ QtObject {
                     control[prop + "Changed"].connect(() => 
                         Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${control[prop]}"`)
                     );
-                else if (["range", "ranges", "arrayColor", "transform"].includes(prop))
+                else if (["range", "ranges", "array", "arrayColor", "transform"].includes(prop))
                     control[prop + "Changed"].connect(() => 
                         Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${control[prop]}]`)
                     );
@@ -59,7 +59,7 @@ QtObject {
                 const value = component.control[component.prop];
                 if (["filePath", "url"].includes(component.prop))
                     Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${value}"`);
-                else if (["range", "ranges", "arrayColor", "transform"].includes(component.prop))
+                else if (["range", "ranges", "array", "arrayColor", "transform"].includes(component.prop))
                     Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${value}]`);
                 else
                     Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${value}`);

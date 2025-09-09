@@ -7,9 +7,15 @@ from .painter import Log, Path, Macro, Plugin, Resource, ProjectSettings
 class WeaponFinish:
 	SHELF = "your_assets"
 	FINISH_STYLES = {
-		"cu" : { "index": 0, "uuid": "3a1bc8f6-c01a-4b9f-99c5-848f5d82bff0" }, # Custom Paint Job
-		"aq" : { "index": 1, "uuid": "fc1c3533-8c19-4e12-804d-8913e8f8f8dc" }, # Patina
-		"gs" : { "index": 2, "uuid": "5d2348a8-98cb-4f70-9445-6df4a5af77ad" }  # Gunsmith
+		"so" : { "index": 0, "uuid": "9b92692d-4c88-4db2-9b4e-0f7c5f663f0d" }, # Solid Color
+		"hy" : { "index": 1, "uuid": "e5c73031-b09c-4696-92c0-37a3253ef0ec" }, # Hydrographic
+		"sp" : { "index": 2, "uuid": "f48e98cf-0ffb-4da4-8a64-0f1b29b52c0a" }, # Spray-Paint
+		"an" : { "index": 3, "uuid": "bfb92f18-ec91-4d69-a172-a93e7c78d202" }, # Anodized
+		"am" : { "index": 4, "uuid": "b34cf297-4cd6-4c08-86c8-79df8590c3cf" }, # Anodized Multicolored
+		"aa" : { "index": 5, "uuid": "c5874ae6-d198-4723-a2f3-cbd57b2c2e25" }, # Anodized Airbrushed
+		"cu" : { "index": 6, "uuid": "3a1bc8f6-c01a-4b9f-99c5-848f5d82bff0" }, # Custom Paint Job
+		"aq" : { "index": 7, "uuid": "fc1c3533-8c19-4e12-804d-8913e8f8f8dc" }, # Patina
+		"gs" : { "index": 8, "uuid": "5d2348a8-98cb-4f70-9445-6df4a5af77ad" }  # Gunsmith
 	}
  
 	@staticmethod
@@ -201,6 +207,12 @@ class WeaponFinish:
 			parts = value.split("_")
 			if len(parts) == 2:
 				weapon_finish["style"] = {
+					"SolidColor": "so",
+					"HydroGraphic": "hy",
+					"SprayPaint": "sp",
+					"Anodized": "an",
+					"AnodizedMulticolor": "am",
+					"AnodizedAirbrushed": "aa",
 					"CustomPaintJob": "cu",
 					"Patina": "aq",
 					"Gunsmith": "gs"
@@ -253,7 +265,7 @@ class WeaponFinish:
 			"g_bUsePearlescenceMask": "uUsePearlMask",
 			"g_bUseRoughness": "uUseCustomRough",
 			"g_flPearlescentScale": "uPearlScale",
-			"g_tPaintRoughness": "uPaintRoughness",
+			"g_tPaintRoughness": "uPaintRough",
 			"g_vColor0": (0, set_col),
 			"g_vColor1": (1, set_col),
 			"g_vColor2": (2, set_col),
@@ -291,7 +303,13 @@ class WeaponFinish:
 		if econitem != "":
 			# fetch weapon finish parameters
 			finish_name = Path.filename(econitem)
-			finish_style = {
+			finish_style = {					
+            	"so": "SolidColor",
+				"hy": "HydroGraphic",
+				"sp": "SprayPaint",
+				"an": "Anodized",
+				"am": "AnodizedMulticolor",
+				"aa": "AnodizedAirbrushed",
 				"cu": "CustomPaintJob",
 				"aq": "Patina",
 				"gs": "Gunsmith"
@@ -334,7 +352,7 @@ class WeaponFinish:
 				color2=colors[2],
 				color3=colors[3],
 				pearl_scale=weapon_finish.get("uPearlScale", 0.0),
-				rough=weapon_finish.get("uPaintRoughness", 0.6),
+				rough=weapon_finish.get("uPaintRough", 0.6),
 				custom_pearl_mask=get_bool("uUsePearlMask"),
 				custom_rough_tex=get_bool("uUseCustomRough"),
 				custom_normal_map=get_bool("uUseCustomNormal"),
