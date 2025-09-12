@@ -83,12 +83,18 @@ uniform float uPaintRough;
 //: param custom { "default": 0.0 }
 uniform float uPearlScale;
 #if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP)
+//: param custom { "default": false }
+uniform bool uUseRoughByColor;
 //: param custom { "default": [0.6, 0.6, 0.6, 0.6] }
 uniform vec4 uPaintRoughNum;
 //: param custom { "default": [0.0, 0.0, 0.0, 0.0] }
 uniform vec4 uPaintMetalNum;
 //: param custom { "default": [0.0, 0.0, 0.0, 0.0] }
 uniform vec4 uPaintDurabilityNum;
+#if (FINISH_STYLE == SP)
+//: param custom { "default": [0.5, 0.5] }
+uniform vec2 uSprayBlend;
+#endif
 #endif
 
 #if FINISH_STYLE != CU
@@ -220,7 +226,18 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // pattern textures
     float patternScale = uIgnoreWeaponSizeScale ? 1.0 : uBaseScale;
     uv = transform(uv, patternScale, uTexTransform);
-    float patternRough = uUseCustomRough ? texture(uPatternRough.tex, uv).r : uPaintRough;
+    vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
+
+    float patternRough;
+    if (uUseCustomRough)
+        patternRough = texture(uPatternRough.tex, uv).r;
+    #if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP)
+        else if (uUseRoughByColor)
+            patternRough = uPaintRoughNum[0];
+    #else
+        else
+            patternRough = uPaintRough;
+    #endif
 
     // normal
     if (uUseCustomNormal)
@@ -235,16 +252,95 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     if (uUsePearlMask)
         outputs.pearlFactor *= texture(uPatternPearl.tex, uv).r;
 
+    // Solid Color
+    #if FINISH_STYLE == SO
+        // color
+        outputs.color = mix(outputs.color, uCol1, masks.r);
+        outputs.color = mix(outputs.color, uCol2, masks.g);
+        outputs.color = mix(outputs.color, uCol3, masks.b);
+        // durability
+        float paintDurability = mix(uPaintDurabilityNum[0], uPaintDurabilityNum[1], masks.r);
+        paintDurability = mix(paintDurability, uPaintDurabilityNum[2], masks.g);
+        paintDurability = mix(paintDurability, uPaintDurabilityNum[3], masks.b);
+        // metalness
+        float patternMetal = mix(uPaintMetalNum[0], uPaintMetalNum[1], masks.r);
+        patternMetal = mix(patternMetal, uPaintMetalNum[2], masks.g);
+        patternMetal = mix(patternMetal, uPaintMetalNum[3], masks.b);
+        // roughness
+        if (uUseRoughByColor) {
+            patternRough = mix(patternRough, uPaintRoughNum[1], masks.r);
+            patternRough = mix(patternRough, uPaintRoughNum[2], masks.g);
+            patternRough = mix(patternRough, uPaintRoughNum[3], masks.b);
+        }
+    #endif
+
+    // Hydrographic / Anodized Multicolored
+    #if FINISH_STYLE == HY || FINISH_STYLE == AM
+        // color
+        outputs.color = mix(mix(mix(uCol0, uCol1, patternColor.r), uCol2, patternColor.g), uCol3, patternColor.b);
+        outputs.color = mix(outputs.color, uCol2, masks.g);
+        outputs.color = mix(outputs.color, uCol3, masks.b);
+        #if FINISH_STYLE == HY
+            // durability
+            float paintDurability = mix(mix(mix(uPaintDurabilityNum[0], uPaintDurabilityNum[1], patternColor.r), uPaintDurabilityNum[2], patternColor.g), uPaintDurabilityNum[3], patternColor.b);
+            paintDurability = mix(paintDurability, uPaintDurabilityNum[2], masks.g);
+            paintDurability = mix(paintDurability, uPaintDurabilityNum[3], masks.b);
+            // metalness
+            float patternMetal = mix(mix(mix(uPaintMetalNum[0], uPaintMetalNum[1], patternColor.r), uPaintMetalNum[2], patternColor.g), uPaintMetalNum[3], patternColor.b);
+            patternMetal = mix(patternMetal, uPaintMetalNum[2], masks.g);
+            patternMetal = mix(patternMetal, uPaintMetalNum[3], masks.b);
+            // roughness
+            if (uUseRoughByColor) {
+                patternRough = mix(mix(mix(uPaintRoughNum[0], uPaintRoughNum[1], patternColor.r), uPaintRoughNum[2], patternColor.g), uPaintRoughNum[3], patternColor.b);
+                patternRough = mix(patternRough, uPaintRoughNum[2], masks.g);
+                patternRough = mix(patternRough, uPaintRoughNum[3], masks.b);
+            }
+        #endif
+    #endif
+
+    // Spraypaint / Anodized Airbrushed
+    #if (FINISH_STYLE == SP || FINISH_STYLE == AA)
+        vec3 texX = texture(uPatternColor.tex, transform(inputs.position.yz, patternScale, uTexTransform)).rgb;
+        vec3 texY = texture(uPatternColor.tex, transform(inputs.position.xz, patternScale, uTexTransform)).rgb;
+        vec3 texZ = texture(uPatternColor.tex, transform(inputs.position.yx, patternScale, uTexTransform)).rgb;
+
+        vec3 normal = normalize(inputs.normal * 2.0 - 1.0);
+        float yBlend = abs(dot(normal.xyz, vec3(0.0, 1.0, 0.0)));
+        float zBlend = abs(dot(normal.xyz, vec3(0.0, 0.0, 1.0)));
+        #if FINISH_STYLE == SP
+            yBlend *= uSprayBlend[0];
+            zBlend *= uSprayBlend[1];
+        #endif
+
+        vec3 patternMask = mix(mix(texX, texY, pow(yBlend, 7)), texZ, pow(zBlend, 7));
+
+        #if FINISH_STYLE == SP
+            patternMask.xyz *= patternEdges.xyz;
+            // durability
+            float paintDurability = mix(mix(mix(uPaintDurabilityNum[0], uPaintDurabilityNum[1], patternMask.r), uPaintDurabilityNum[2], patternMask.g), uPaintDurabilityNum[3], patternMask.b);
+            // metalness
+            float patternMetal = mix(mix(mix(uPaintMetalNum[0], uPaintMetalNum[1], patternMask.r), uPaintMetalNum[2], patternMask.g), uPaintMetalNum[3], patternMask.b);
+            // roughness
+            if (uUseRoughByColor)
+                patternRough = mix(mix(mix(uPaintRoughNum[0], uPaintRoughNum[1], patternMask.r), uPaintRoughNum[2], patternMask.g), uPaintRoughNum[3], patternMask.b);
+        #endif
+
+        outputs.color = mix(mix(mix(uCol0, uCol1, patternMask.r), uCol2, patternMask.g), uCol3, patternMask.b);
+    #endif
+
     // Paint Wear ----------------------------------------------------- //
 
     outputs.wear = baseCavity.a;
 
-    #if FINISH_STYLE != AQ 
+    #if FINISH_STYLE != AQ
+        #if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP)
+            patternWear -= paintDurability;
+        #endif
+
         outputs.wear += patternWear * baseCurv;
         outputs.wear *= uWearAmt * 6.0 + 1.0;
 
         #if (FINISH_STYLE == HY || FINISH_STYLE == AM || FINISH_STYLE == CU || FINISH_STYLE == GS)
-            vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
             outputs.wear += smoothstep(0.5, 0.6, patternColor.a) * smoothstep(1.0, 0.9, patternColor.a);
 
             float cuttable = 1.0;
@@ -254,20 +350,26 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
             #if FINISH_STYLE == AM
                 patternColor.a = clamp(patternColor.a * 2.0, 0.0, 1.0);
-                float matMetal = 1.0;
+                float patternMetal = 1.0;
             #elif FINISH_STYLE == GS
                 outputs.wear *= max(1.0 - cuttable, smoothstep(0.0, 0.5, patternColor.a));
                 patternColor.a = mix(patternColor.a, clamp(patternColor.a * 2.0, 0.0, 1.0), masks.r);
                 float patternMetal = masks.r;
-            #else
+            #elif FINISH_STYLE != HY
                 outputs.wear *= max(1.0 - cuttable, smoothstep(0.0, 0.5, patternColor.a));
                 float patternMetal = 0.0;
             #endif
-        #else
+        #elif (FINISH_STYLE != SO && FINISH_STYLE != SP)
             float patternMetal = 0.0;
         #endif
     #else
         float patternMetal = 1.0;
+    #endif
+
+    #if (FINISH_STYLE != AQ && FINISH_STYLE != GS)
+        outputs.wear = smoothstep(0.58, 0.68, outputs.wear);
+    #elif FINISH_STYLE == GS
+        outputs.wear = mix(smoothstep(0.58, 0.68, outputs.wear), outputs.wear, masks.r);
     #endif
 
     #if (FINISH_STYLE == HY || FINISH_STYLE == SP)
@@ -281,12 +383,6 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         patternEdges.z = smoothstep(0.54 - spread.y, 0.52 - spread.z, outputs.wear);
     #endif
 
-    #if (FINISH_STYLE != AQ && FINISH_STYLE != GS)
-        outputs.wear = smoothstep(0.58, 0.68, outputs.wear);
-    #elif FINISH_STYLE == GS
-        outputs.wear = mix(smoothstep(0.58, 0.68, outputs.wear), outputs.wear, masks.r);
-    #endif
-
     #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
         float patternEdge = smoothstep(0.0, 0.01, outputs.wear);
     #endif
@@ -296,41 +392,6 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     #endif
 
     grungeColor = mix(vec4(1.0), grungeColor, (pow((1.0 - baseCurv), 4.0) * 0.25 + 0.75 * uWearAmt));
-
-    // Paint Color  --------------------------------------------------- //
-
-    // Solid Color
-    #if FINISH_STYLE == SO
-        outputs.color = mix(outputs.color, uCol1, masks.r);
-        outputs.color = mix(outputs.color, uCol2, masks.g);
-        outputs.color = mix(outputs.color, uCol3, masks.b);
-    #endif
-
-    // Hydrographic / Anodized Multicolored
-    #if FINISH_STYLE == HY || FINISH_STYLE == AM
-        outputs.color = mix(mix(mix(uCol0, uCol1, patternColor.r), uCol2, patternColor.g), uCol3, patternColor.b);
-        outputs.color = mix(outputs.color, uCol2, masks.g);
-        outputs.color = mix(outputs.color, uCol3, masks.b);
-    #endif
-
-    // Spraypaint / Anodized Airbrushed
-    #if (FINISH_STYLE == SP || FINISH_STYLE == AA)
-        vec3 texX = texture(uPatternColor.tex, transform(inputs.position.yz, patternScale, uTexTransform)).rgb;
-        vec3 texY = texture(uPatternColor.tex, transform(inputs.position.xz, patternScale, uTexTransform)).rgb;
-        vec3 texZ = texture(uPatternColor.tex, transform(inputs.position.yx, patternScale, uTexTransform)).rgb;
-
-        vec3 normal = normalize(inputs.normal * 2.0 - 1.0);
-        float yBlend = abs(dot(normal.xyz, vec3(0.0, 1.0, 0.0)));
-        float zBlend = abs(dot(normal.xyz, vec3(0.0, 0.0, 1.0)));
-
-        vec3 patternMask = mix(mix(texX, texY, pow(yBlend, 7)), texZ, pow(zBlend, 7));
-
-        #if FINISH_STYLE == SP
-            patternMask.xyz *= patternEdges.xyz;
-        #endif
-
-        outputs.color = mix(mix(mix(uCol0, uCol1, patternMask.r), uCol2, patternMask.g), uCol3, patternMask.b);
-    #endif
 
     // Anodized
     #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
@@ -348,10 +409,6 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     
     // Antiqued / Gunsmith
     #if (FINISH_STYLE == AQ || FINISH_STYLE == GS)
-        #if FINISH_STYLE == AQ
-            vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
-        #endif
-
         float patinaBlend = patternWear * baseAO * baseCurv * baseCurv;
         patinaBlend = smoothstep(0.1, 0.2, patinaBlend * uWearAmt);
 

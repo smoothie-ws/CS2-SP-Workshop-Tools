@@ -94,7 +94,7 @@ Rectangle {
             "uWearTransform":         { control: wearTransform,          prop: "transform"    },
             "uGrungeTransform":       { control: grungeTransform,        prop: "transform"    },
             "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
-            // "uPatternTex":            { control: patternTex,             prop: "url"          },
+            "uUseRoughByColor":       { control: useRoughByCol,          prop: "checked"      },
             "uUseCustomRough":        { control: useRoughTex,            prop: "checked"      },
             "uUsePearlMask":          { control: usePearlMask,           prop: "checked"      },
             "uUseCustomNormal":       { control: useNormalMap,           prop: "checked"      },
@@ -347,7 +347,7 @@ Rectangle {
                             1: "Wear",
                             2: "Albedo", 
                             3: "Roughness",
-                            4: "Pearl factor"
+                            4: "Pearlescence"
                         }
                     }
                 }
@@ -632,7 +632,7 @@ Rectangle {
 
                         onCurrentKeyChanged: {
                             const w = weapons[currentKey];
-                            let b = w.length / 36 * Math.sqrt(w.uv_scale);
+                            let b = Math.sqrt(w.uv_scale);
                             baseScale = b;
                         }
                     }
@@ -754,6 +754,7 @@ Rectangle {
 
                         SPButton {
                             id: useColMask
+                            visible: ["so", "hy", "sp", "an", "am", "aa"].includes(styleBox.currentKey)
                             checkable: true
                             text: "Use Paint-By-Number Mask"
                             tooltip.text: `Whether to ${text.toLowerCase()}`
@@ -813,10 +814,10 @@ Rectangle {
 
                         MultiSlider {
                             id: sprayBlend
+                            visible: styleBox.currentKey == "sp"
                             model: ["X", "Y"]
                             paramId: "uSprayBlend"
                             paramName: "Spray Blend"
-                            visible: styleBox.currentKey == "sp"
                             width: parent.width
                         }
 
@@ -877,8 +878,8 @@ Rectangle {
                         }
 
                         MultiSlider {
-                            visible: useRoughByCol.visible && useRoughByCol.checked
                             id: paintRoughNum
+                            visible: useRoughByCol.visible && useRoughByCol.checked
                             model: ["X", "Y", "Z", "W"]
                             paramId: "uPaintRough"
                             paramName: "Paint Roughness"
@@ -905,8 +906,8 @@ Rectangle {
                         }
 
                         MultiSlider {
-                            visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
                             id: paintMetalNum
+                            visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
                             model: ["X", "Y", "Z", "W"]
                             paramId: "uPaintMetal"
                             paramName: "Paint Metalness"
@@ -964,6 +965,7 @@ Rectangle {
 
                         MultiSlider {
                             id: paintDurabilityNum
+                            visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
                             model: ["X", "Y", "Z", "W"]
                             paramId: "uPaintDurability"
                             paramName: "Paint Durability"
