@@ -759,6 +759,13 @@ Rectangle {
                             text: "Use Paint-By-Number Mask"
                             tooltip.text: `Whether to ${text.toLowerCase()}`
                             Layout.fillWidth: true
+
+                            SPLock {
+                                Component.onCompleted: {
+                                    useColMask.checkedChanged.connect(() => update(() => useMatMasks.checked = useColMask.checked));
+                                    useMatMasks.checkedChanged.connect(() => update(() => useColMask.checked = useColMask.checked));
+                                }
+                            }
                         }
 
                         Repeater {
@@ -769,18 +776,19 @@ Rectangle {
                                 ], 
                                 [
                                     { text: "Patina Tint", tooltip: "Tint of the newly applied patina" }, 
-                                    { text: "Red Channel", tooltip: "Color to store in the Red Channel of the texture" }
+                                    { text: "Red Mask", tooltip: "Color to store in the Red Channel of the texture" }
                                 ], 
                                 [
                                     { text: "Patina Wear", tooltip: "Tint of the aged patina" }, 
-                                    { text: "Green Channel", tooltip: "Color to store in the Green Channel of the texture" }
+                                    { text: "Green Mask", tooltip: "Color to store in the Green Channel of the texture" }
                                 ], 
                                 [
                                     { text: "Grime", tooltip: "Color of the grime, oil accretion, or oxide that accumulates in cavities" }, 
-                                    { text: "Blue Channel", tooltip: "Color to store in the Blue Channel of the texture" }
+                                    { text: "Blue Mask", tooltip: "Color to store in the Blue Channel of the texture" }
                                 ]
                             ]
                             delegate: SPParameter {
+                                visible: styleBox.currentKey != "an" || index == 0
                                 Layout.fillWidth: true
 
                                 property alias scopeWidth: colorPickerWidget.scopeWidth
@@ -887,7 +895,7 @@ Rectangle {
                         }
                         
                         SPParameter {
-                            visible: !useRoughTex.checked
+                            visible: useRoughTex.visible && !useRoughTex.checked
                             SPSlider {
                                 id: paintRough
                                 text: "Paint Roughness"
@@ -897,9 +905,12 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("uPaintRough")
                         }
 
+                        SPSeparator { Layout.fillWidth: true }
+
                         SPButton {
                             id: useMatMasks
                             checkable: true
+                            visible: !useColMask.visible
                             text: "Use Material Mask"
                             tooltip.text: `Whether to ${text.toLowerCase()}`
                             Layout.fillWidth: true

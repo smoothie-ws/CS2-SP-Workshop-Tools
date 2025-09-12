@@ -198,6 +198,12 @@ vec2 transform(vec2 uv, float scale, vec4 T) {
 void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     vec2 uv = inputs.tex_coord;
 
+    // colors
+    vec3 col0 = sRGB2linear(uCol0);
+    vec3 col1 = sRGB2linear(uCol1);
+    vec3 col2 = sRGB2linear(uCol2);
+    vec3 col3 = sRGB2linear(uCol3);
+
     // base textures
     vec4 baseColor = sRGB2linear(texture(uBaseColor, uv));
     vec4 baseCavity = sRGB2linear(texture(uBaseCavity, uv));
@@ -213,7 +219,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
             masks = texture(uPatternMasks.tex, uv).rgb;
         else
             masks = baseMasks;
-        outputs.color = uCol0;
+        outputs.color = col0;
     #else
         vec3 masks = baseMasks;
         masks.r = 0.0;
@@ -228,15 +234,12 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     uv = transform(uv, patternScale, uTexTransform);
     vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
 
-    float patternRough;
+    float patternRough = uPaintRough;
     if (uUseCustomRough)
         patternRough = texture(uPatternRough.tex, uv).r;
     #if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP)
         else if (uUseRoughByColor)
             patternRough = uPaintRoughNum[0];
-    #else
-        else
-            patternRough = uPaintRough;
     #endif
 
     // normal
@@ -255,9 +258,9 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // Solid Color
     #if FINISH_STYLE == SO
         // color
-        outputs.color = mix(outputs.color, uCol1, masks.r);
-        outputs.color = mix(outputs.color, uCol2, masks.g);
-        outputs.color = mix(outputs.color, uCol3, masks.b);
+        outputs.color = mix(outputs.color, col1, masks.r);
+        outputs.color = mix(outputs.color, col2, masks.g);
+        outputs.color = mix(outputs.color, col3, masks.b);
         // durability
         float paintDurability = mix(uPaintDurabilityNum[0], uPaintDurabilityNum[1], masks.r);
         paintDurability = mix(paintDurability, uPaintDurabilityNum[2], masks.g);
@@ -277,9 +280,9 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // Hydrographic / Anodized Multicolored
     #if FINISH_STYLE == HY || FINISH_STYLE == AM
         // color
-        outputs.color = mix(mix(mix(uCol0, uCol1, patternColor.r), uCol2, patternColor.g), uCol3, patternColor.b);
-        outputs.color = mix(outputs.color, uCol2, masks.g);
-        outputs.color = mix(outputs.color, uCol3, masks.b);
+        outputs.color = mix(mix(mix(col0, col1, patternColor.r), col2, patternColor.g), col3, patternColor.b);
+        outputs.color = mix(outputs.color, col2, masks.g);
+        outputs.color = mix(outputs.color, col3, masks.b);
         #if FINISH_STYLE == HY
             // durability
             float paintDurability = mix(mix(mix(uPaintDurabilityNum[0], uPaintDurabilityNum[1], patternColor.r), uPaintDurabilityNum[2], patternColor.g), uPaintDurabilityNum[3], patternColor.b);
@@ -325,7 +328,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
                 patternRough = mix(mix(mix(uPaintRoughNum[0], uPaintRoughNum[1], patternMask.r), uPaintRoughNum[2], patternMask.g), uPaintRoughNum[3], patternMask.b);
         #endif
 
-        outputs.color = mix(mix(mix(uCol0, uCol1, patternMask.r), uCol2, patternMask.g), uCol3, patternMask.b);
+        outputs.color = mix(mix(mix(col0, col1, patternMask.r), col2, patternMask.g), col3, patternMask.b);
     #endif
 
     // Paint Wear ----------------------------------------------------- //
@@ -334,7 +337,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     #if FINISH_STYLE != AQ
         #if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP)
-            patternWear -= paintDurability;
+            patternWear *= 1.0 - paintDurability;
         #endif
 
         outputs.wear += patternWear * baseCurv;
@@ -396,7 +399,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     // Anodized
     #if (FINISH_STYLE == AN || FINISH_STYLE == AM || FINISH_STYLE == AA)
         #if FINISH_STYLE == AN
-            outputs.color = uCol0;
+            outputs.color = col0;
         #endif
         outputs.color = mix(outputs.color, vec3(0.05), patternEdge);
         grungeColor.rgb = mix(grungeColor.rgb, vec3(1.0), patternEdge);
@@ -416,11 +419,11 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
         grimeBlend = smoothstep(0.0, 0.15, grimeBlend + 0.08);
 
         float patternLum = dot(patternColor.rgb, vec3(0.3, 0.59, 0.11));
-        vec3 scratchesCol = uCol0 * patternLum;
+        vec3 scratchesCol = col0 * patternLum;
 
-        patternLum = dot(patternColor.rgb * uCol1, vec3(0.3, 0.59, 0.11));
-        vec3 patinaCol = mix(uCol1, uCol2 + patternLum, uWearAmt);
-        vec3 grimeCol = mix(uCol1, uCol3 + patternLum, pow(uWearAmt, 0.5));
+        patternLum = dot(patternColor.rgb * col1, vec3(0.3, 0.59, 0.11));
+        vec3 patinaCol = mix(col1, col2 + patternLum, uWearAmt);
+        vec3 grimeCol = mix(col1, col3 + patternLum, pow(uWearAmt, 0.5));
         patinaCol = mix(grimeCol, patinaCol, grimeBlend) * patternColor.rgb;
 
         patinaCol = mix(patinaCol, scratchesCol, patinaBlend);

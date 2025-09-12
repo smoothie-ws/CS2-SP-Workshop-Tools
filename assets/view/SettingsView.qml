@@ -28,6 +28,45 @@ SPDialog {
         }
     }
 
+    component MultiSlider: ColumnLayout {
+        id: multi
+        
+        required property string paramName
+        
+        property alias model: rep.model
+        property alias array: lock.array
+        
+        SPLock {
+            id: lock
+            property var array: []
+        }
+
+        Component.onCompleted: arrayChanged.connect(() => lock.update(() => {
+            for (var i = 0; i < rep.model.length; i++)
+                rep.itemAt(i).value = array[i];
+        }))
+        
+        Repeater {
+            id: rep
+            model: []
+            delegate: SPSlider {
+                text: `${multi.paramName} ${modelData}`
+                from: 0.0
+                to: 1.0
+                Layout.fillWidth: true
+
+                onValueChanged: lock.update(() => {
+                    var arr = lock.array;
+                    arr[index] = value;
+                    lock.array = arr;
+                })
+            }
+            
+            onItemAdded: (i, item) => array.splice(i, 0, 0.0)
+            onItemRemoved: (i, item) => array.remove(i)
+        }
+    }
+    
     QtObject {
         id: internal
         
@@ -46,17 +85,21 @@ SPDialog {
             "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
             "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
             "wearRange":              { control: wearRange,              prop: "range"        },
-            "uUsePearlMask":          { control: usePearlescentMask,     prop: "checked"      },
-            "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
-            "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
-            "uPaintRough":        { control: paintRoughness,         prop: "value"        },
+            "uPearlScale":            { control: pearlScale,             prop: "value"        },
+            "uUsePearlMask":          { control: usePearlMask,           prop: "checked"      },
+            "uUseRoughByColor":       { control: useRoughByCol,          prop: "checked"      },
+            "uUseCustomRough":        { control: useRoughTex,            prop: "checked"      },
+            "uUseCustomNormal":       { control: useNormalMap,           prop: "checked"      },
+            "uUseCustomMasks":        { control: useMatMasks,            prop: "checked"      },
+            "uUseCustomAOTex":        { control: useAOTex,               prop: "checked"      },
+            "uPaintRough":            { control: paintRoughness,         prop: "value"        },
+            "uPaintRoughNum":         { control: paintRoughNum,          prop: "array"        },
+            "uPaintMetalNum":         { control: paintMetalNum,          prop: "array"        },
+            "uPaintDurabilityNum":    { control: paintDurabilityNum,     prop: "array"        },
             "uCol0":                  { control: null,                   prop: "arrayColor"   },
             "uCol1":                  { control: null,                   prop: "arrayColor"   },
             "uCol2":                  { control: null,                   prop: "arrayColor"   },
             "uCol3":                  { control: null,                   prop: "arrayColor"   },
-            "uUseCustomNormal":       { control: null,                   prop: "checked"      },
-            "uUseCustomMasks":        { control: null,                   prop: "checked"      },
-            "uUseCustomAOTex":        { control: null,                   prop: "checked"      }
         }
 
         onCs2PathChanged: cs2PathIsValid = cs2Path == "" ? true : Plugin.valCs2Path(cs2Path)
@@ -661,6 +704,40 @@ SPDialog {
                             }
 
                             SPLabeled {
+                                text: "Color"
+                                label.font.bold: true
+                                Layout.fillWidth: true
+                                Layout.topMargin: 20
+                                Layout.bottomMargin: 10
+                                SPSeparator { Layout.fillWidth: true }
+                            }
+
+                            SPButton {
+                                id: useColMask
+                                checkable: true
+                                text: "Use Paint-By-Number Mask"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useMatMasks.checked != checked) useMatMasks.checked = checked
+                            }
+
+                            Repeater {
+                                model: 4
+                                delegate: SPLabeled {
+                                    text: `Color${index}`
+                                    Layout.fillWidth: true
+
+                                    property alias arrayColor: colorPicker.arrayColor
+
+                                    SPColorButton { 
+                                        id: colorPicker
+                                        Layout.fillWidth: true
+                                    }
+                                }
+                                onItemAdded: (i, item) => internal.weaponFinish[`uCol${i}`].control = item
+                            }
+                            
+                            SPLabeled {
                                 text: "Texture Placement"
                                 label.font.bold: true
                                 Layout.fillWidth: true
@@ -692,9 +769,9 @@ SPDialog {
                                 to: 1
                                 pickValue: false
                             }
-
+                                
                             SPLabeled {
-                                text: "Color"
+                                text: "Materials"
                                 label.font.bold: true
                                 Layout.fillWidth: true
                                 Layout.topMargin: 20
@@ -702,22 +779,79 @@ SPDialog {
                                 SPSeparator { Layout.fillWidth: true }
                             }
 
-                            Repeater {
-                                model: 4
-                                delegate: SPLabeled {
-                                    text: `Color${index}`
-                                    Layout.fillWidth: true
-
-                                    property alias arrayColor: colorPicker.arrayColor
-
-                                    SPColorButton { 
-                                        id: colorPicker
-                                        Layout.fillWidth: true
-                                    }
-                                }
-                                onItemAdded: (i, item) => internal.weaponFinish[`uCol${i}`].control = item
+                            SPButton {
+                                id: useRoughTex
+                                checkable: true
+                                text: "Use Roughness Texture"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useRoughByCol.checked && checked) useRoughByCol.checked = false
                             }
-                            
+
+                            SPButton {
+                                id: useRoughByCol
+                                checkable: true
+                                text: "Use Roughness By Color"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useRoughTex.checked && checked) useRoughTex.checked = false
+                            }
+
+                            SPSlider {
+                                id: paintRoughness
+                                text: "Paint Roughness"
+                                from: 0
+                                to: 1
+                            }
+
+                            MultiSlider {
+                                id: paintRoughNum
+                                model: ["X", "Y", "Z", "W"]
+                                paramName: "Paint Roughness"
+                                Layout.fillWidth: true
+                            }
+
+                            SPButton {
+                                id: useMatMasks
+                                checkable: true
+                                text: "Use Material Mask"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useColMask.checked != checked) useColMask.checked = checked
+                            }
+
+                            MultiSlider {
+                                id: paintMetalNum
+                                model: ["X", "Y", "Z", "W"]
+                                paramName: "Paint Metalness"
+                                Layout.fillWidth: true
+                            }
+
+                            SPLabeled {
+                                text: "Normals"
+                                label.font.bold: true
+                                Layout.fillWidth: true
+                                Layout.topMargin: 20
+                                Layout.bottomMargin: 10
+                                SPSeparator { Layout.fillWidth: true }
+                            }
+
+                            SPButton {
+                                id: useNormalMap
+                                checkable: true
+                                text: "Use Normal Map"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                            }
+
+                            SPButton {
+                                id: useAOTex
+                                checkable: true
+                                text: "Use Ambient Occlusion"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                            }
+
                             SPLabeled {
                                 text: "Effects"
                                 label.font.bold: true
@@ -726,6 +860,36 @@ SPDialog {
                                 Layout.bottomMargin: 10
                                 SPSeparator { Layout.fillWidth: true }
                             }
+                            
+                            SPButton {
+                                id: usePearlMask
+                                text: "Use Pearlescent Mask"
+                                Layout.fillWidth: true
+                                checkable: true
+                            }
+
+                            SPSlider {
+                                id: pearlScale
+                                text: "Pearlescent Scale"
+                                from: -6
+                                to: 6
+                            }
+
+                            SPLabeled {
+                                text: "Wear and Grunge"
+                                label.font.bold: true
+                                Layout.fillWidth: true
+                                Layout.topMargin: 20
+                                Layout.bottomMargin: 10
+                                SPSeparator { Layout.fillWidth: true }
+                            }
+                            
+                            MultiSlider {
+                                id: paintDurabilityNum
+                                model: ["X", "Y", "Z", "W"]
+                                paramName: "Paint Durability"
+                                Layout.fillWidth: true
+                            }
 
                             SPRangeSlider {
                                 id: wearRange
@@ -733,58 +897,6 @@ SPDialog {
                                 minValue: 0.0
                                 maxValue: 1.0
                                 pickValue: false
-                            }
-
-                            SPButton {
-                                id: usePearlescentMask
-                                text: "Custom Pearlescent Mask"
-                                Layout.fillWidth: true
-                                checkable: true
-                            }
-
-                            SPSlider {
-                                id: pearlescentScale
-                                text: "Pearlescent Scale"
-                                from: -6
-                                to: 6
-                            }
-
-                            SPButton {
-                                id: useRoughnessTexture
-                                text: "Custom Roughness Texture"
-                                Layout.fillWidth: true
-                                checkable: true
-                            }
-                                
-                            SPSlider {
-                                id: paintRoughness
-                                text: "Paint Roughness"
-                                from: 0
-                                to: 1
-                            }
-
-                            SPLabeled {
-                                text: "Advanced"
-                                label.font.bold: true
-                                Layout.fillWidth: true
-                                Layout.topMargin: 20
-                                Layout.bottomMargin: 10
-                                SPSeparator { Layout.fillWidth: true }
-                            }
-
-                            Repeater {
-                                model: [
-                                    { id: "uUseCustomNormal", text: "Custom Normal Map" },
-                                    { id: "uUseCustomMasks", text: "Custom Material Mask" },
-                                    { id: "uUseCustomAOTex", text: "Custom Ambient Occlusion" }
-                                ]
-                                delegate: SPButton {
-                                    checkable: true
-                                    text: modelData.text
-                                    tooltip.text: `Whether to use ${modelData.text.toLowerCase()} or the weapon default one`
-                                    Layout.fillWidth: true
-                                }
-                                onItemAdded: (i, item) => internal.weaponFinish[model[i].id].control = item
                             }
                         }
                     }

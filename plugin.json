@@ -207,10 +207,32 @@
                 0,
                 1
             ],
-            "uUsePearlMask": true,
             "uPearlScale": 0,
-            "uUseCustomRough": true,
+            "uUsePearlMask": true,
+            "uUseRoughByColor": false,
+            "uUseCustomRough": false,
+            "uUseCustomNormal": true,
+            "uUseCustomMasks": true,
+            "uUseCustomAOTex": true,
             "uPaintRough": 0.6,
+            "uPaintRoughNum": [
+                0.6,
+                0.6,
+                0.6,
+                0.6
+            ],
+            "uPaintMetalNum": [
+                0,
+                0,
+                0,
+                0
+            ],
+            "uPaintDurabilityNum": [
+                0,
+                0,
+                0,
+                0
+            ],
             "uCol0": [
                 1,
                 1,
@@ -230,31 +252,6 @@
                 1,
                 1,
                 1
-            ],
-            "uUseCustomNormal": true,
-            "uUseCustomMasks": true,
-            "uUseCustomAOTex": true,
-            "uSprayBlend": [
-                1.0,
-                0.0
-            ],
-            "uPaintRoughNum": [
-                0.5,
-                0.5,
-                0.5,
-                0.5
-            ],
-            "uPaintMetalNum": [
-                0.0,
-                0.0,
-                0.0,
-                0.0
-            ],
-            "uPaintDurabilityNum": [
-                0.0,
-                0.0,
-                0.0,
-                0.0
             ]
         },
         "check_for_updates": false
