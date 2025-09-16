@@ -34,6 +34,20 @@ uniform vec4 uPBRRanges; // packed values: [non-metallic min:max, metallic min:m
 
 //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
 uniform vec4 uTexTransform; // packed values: [scale, translateX, translateY, rotation]
+#if EXTERN_MODE
+//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+uniform sampler2D uPatternColor;
+//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
+uniform sampler2D uPatternRough;
+//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
+uniform sampler2D uPatternMasks;
+//: param custom { "default": "", "default_color": [0.0, 0.0, 0.0] }
+uniform sampler2D uPatternPearl;
+//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
+uniform sampler2D uPatternNormal;
+//: param custom { "default": "", "default_color": [1.0, 1.0, 1.0] }
+uniform sampler2D uPatternAO;
+#else
 //: param auto channel_basecolor
 uniform SamplerSparse uPatternColor;
 //: param auto channel_roughness
@@ -44,6 +58,7 @@ uniform SamplerSparse uPatternMasks;
 uniform SamplerSparse uPatternAlpha;
 //: param auto channel_user2
 uniform SamplerSparse uPatternPearl;
+#endif
 
 // Weapon Base Textures ------------------------------------------- //
 
@@ -58,7 +73,7 @@ uniform sampler2D uBaseRough;
 //: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
 uniform sampler2D uBaseMasks;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
-uniform sampler2D uBaseSurface;
+uniform sampler2D uBaseNormal;
 //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
 uniform sampler2D uBaseCavity;
 
@@ -195,28 +210,37 @@ vec2 transform(vec2 uv, float scale, vec4 T) {
     return uv + o;
 }
 
+vec4 tex2D(sampler2D tex, vec2 uv) {
+    return texture(tex, uv);
+}
+
+vec4 tex2D(SamplerSparse tex, vec2 uv) {
+    return texture(tex.tex, uv);
+}
+
 void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     vec2 uv = inputs.tex_coord;
 
     // colors
+    #if FINISH_STYLE != CU
     vec3 col0 = sRGB2linear(uCol0);
     vec3 col1 = sRGB2linear(uCol1);
     vec3 col2 = sRGB2linear(uCol2);
     vec3 col3 = sRGB2linear(uCol3);
+    #endif
 
     // base textures
-    vec4 baseColor = sRGB2linear(texture(uBaseColor, uv));
-    vec4 baseCavity = sRGB2linear(texture(uBaseCavity, uv));
-    vec3 baseMasks = texture(uBaseMasks, uv).rgb;
-    vec3 baseNormal = texture(uBaseSurface, uv).rgb;
-    float baseRough = texture(uBaseRough, uv).r;
+    vec4 baseColor = sRGB2linear(tex2D(uBaseColor, uv));
+    vec4 baseCavity = sRGB2linear(tex2D(uBaseCavity, uv));
+    vec3 baseMasks = tex2D(uBaseMasks, uv).rgb;
+    float baseRough = tex2D(uBaseRough, uv).r;
     float baseCurv = baseCavity.r;
     float baseAO = baseCavity.g;
 
     #if FINISH_STYLE != CU
         vec3 masks;
         if (uUseCustomMasks)
-            masks = texture(uPatternMasks.tex, uv).rgb;
+            masks = tex2D(uPatternMasks, uv).rgb;
         else
             masks = baseMasks;
         outputs.color = col0;
@@ -226,34 +250,42 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     #endif
 
     // grunge textures
-    float patternWear = texture(uWearTex, transform(uv, uBaseScale, uWearTransform)).r;
-    vec4 grungeColor = texture(uGrungeTex, transform(uv, uBaseScale, uGrungeTransform));
+    float patternWear = tex2D(uWearTex, transform(uv, uBaseScale, uWearTransform)).r;
+    vec4 grungeColor = tex2D(uGrungeTex, transform(uv, uBaseScale, uGrungeTransform));
     
     // pattern textures
     float patternScale = uIgnoreWeaponSizeScale ? 1.0 : uBaseScale;
     uv = transform(uv, patternScale, uTexTransform);
-    vec4 patternColor = vec4(texture(uPatternColor.tex, uv).rgb, texture(uPatternAlpha.tex, uv).r);
+    #if EXTERN_MODE
+        vec4 patternColor = tex2D(uPatternColor, uv);
+    #else
+        vec4 patternColor = vec4(tex2D(uPatternColor, uv).rgb, tex2D(uPatternAlpha, uv).r);
+    #endif
 
     float patternRough = uPaintRough;
     if (uUseCustomRough)
-        patternRough = texture(uPatternRough.tex, uv).r;
+        patternRough = tex2D(uPatternRough, uv).r;
     #if (FINISH_STYLE == SO || FINISH_STYLE == HY || FINISH_STYLE == SP)
         else if (uUseRoughByColor)
             patternRough = uPaintRoughNum[0];
     #endif
 
     // normal
-    if (uUseCustomNormal)
-        outputs.vectors = computeLocalFrame(inputs);
-    else {
-        baseNormal.yz = vec2(baseNormal.z, 1.0 - baseNormal.y); 
-        inputs.normal = normalize(baseNormal * 2.0 - 1.0);
-        outputs.vectors = computeLocalFrame(inputs, inputs.normal, 0.0);
+    if (!uUseCustomNormal) {
+        vec3 baseNormal = tex2D(uBaseNormal, uv).rgb * 2.0 - 1.0;
+        inputs.normal = tangentSpaceToWorldSpace(normalize(baseNormal), inputs);
     }
-
+    #if EXTERN_MODE
+    else {
+        vec3 patternNormal = tex2D(uPatternNormal, uv).rgb * 2.0 - 1.0;
+        inputs.normal = tangentSpaceToWorldSpace(normalize(patternNormal), inputs);
+    }
+    #endif
+    outputs.vectors = computeLocalFrame(inputs);
+    
     outputs.pearlFactor = uPearlScale;
     if (uUsePearlMask)
-        outputs.pearlFactor *= texture(uPatternPearl.tex, uv).r;
+        outputs.pearlFactor *= tex2D(uPatternPearl, uv).r;
 
     // Solid Color
     #if FINISH_STYLE == SO
@@ -303,9 +335,9 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
 
     // Spraypaint / Anodized Airbrushed
     #if (FINISH_STYLE == SP || FINISH_STYLE == AA)
-        vec3 texX = texture(uPatternColor.tex, transform(inputs.position.yz, patternScale, uTexTransform)).rgb;
-        vec3 texY = texture(uPatternColor.tex, transform(inputs.position.xz, patternScale, uTexTransform)).rgb;
-        vec3 texZ = texture(uPatternColor.tex, transform(inputs.position.yx, patternScale, uTexTransform)).rgb;
+        vec3 texX = tex2D(uPatternColor, transform(inputs.position.yz, patternScale, uTexTransform)).rgb;
+        vec3 texY = tex2D(uPatternColor, transform(inputs.position.xz, patternScale, uTexTransform)).rgb;
+        vec3 texZ = tex2D(uPatternColor, transform(inputs.position.yx, patternScale, uTexTransform)).rgb;
 
         vec3 normal = normalize(inputs.normal * 2.0 - 1.0);
         float yBlend = abs(dot(normal.xyz, vec3(0.0, 1.0, 0.0)));
@@ -473,7 +505,13 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     #endif
 
     // occlusion
-    outputs.orm.r = uUseCustomAOTex ? getAO(inputs.sparse_coord, true) : baseAO;
+    outputs.orm.r = uUseCustomAOTex ? 
+    #if EXTERN_MODE
+        tex2D(uPatternAO, uv).r
+    #else
+        getAO(inputs.sparse_coord, true) 
+    #endif
+    : baseAO;
     // roughness
     outputs.orm.g = mix(patternRough + (1.0 - dirt) * dirtMult * uWearAmt, baseRough, outputs.wear);
     // metallic
@@ -530,10 +568,10 @@ void shade(V2F inputs) {
         }
     } else {
         outputs.vectors = computeLocalFrame(inputs);
-        outputs.color = textureSparse(uPatternColor, inputs.sparse_coord).rgb;
-        outputs.orm.r = getAO(inputs.sparse_coord, true);
-        outputs.orm.g = textureSparse(uPatternRough, inputs.sparse_coord).r;
-        outputs.orm.b = textureSparse(uPatternMasks, inputs.sparse_coord).r;
+        outputs.color = tex2D(uPatternColor, inputs.tex_coord).rgb;
+        outputs.orm.r = getAO(inputs.tex_coord, true);
+        outputs.orm.g = tex2D(uPatternRough, inputs.tex_coord).r;
+        outputs.orm.b = tex2D(uPatternMasks, inputs.tex_coord).r;
         shadePBR(outputs);
     }
 }

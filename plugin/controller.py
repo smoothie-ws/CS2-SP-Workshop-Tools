@@ -55,15 +55,15 @@ class MainView(QmlView):
     def updateWeapon(self, weapon: str):
         return json.dumps(WeaponFinish.update_weapon(weapon))
 
-    @QtCore.Slot(str)
-    def updateStyle(self, style: str):
+    @QtCore.Slot(str, bool)
+    def updateStyle(self, style: str, extern_mode: bool):
         def change(res: bool, msg: str):
             if res:
                 Log.warning(msg) 
                 self.styleReady.emit()
             else:
                 Log.error(msg)
-        WeaponFinish.update_style(style, change)
+        WeaponFinish.update_style(style, extern_mode, change)
 
     @QtCore.Slot(str)
     def updateEconPath(self, path: str):

@@ -149,7 +149,7 @@ class WeaponFinish:
 			proceed(None)
 
 	@staticmethod
-	def update_style(fs: str, callback):
+	def update_style(fs: str, extern_mode: bool, callback):
 		if WeaponFinish.is_open():
 			# shader files
 			shelf = sp.resource.Shelf(WeaponFinish.SHELF)
@@ -161,7 +161,10 @@ class WeaponFinish:
 				name = f'cs2_{fs}'
 				path = Path.join(shader_dir, f'{name}.glsl')
 				style = WeaponFinish.FINISH_STYLES[fs]
-				Path.write(path, Macro.process(shader_source, {"FINISH_STYLE": style["index"]}))
+				Path.write(path, Macro.process(shader_source, {
+        			"FINISH_STYLE": style["index"],
+					"EXTERN_MODE": extern_mode
+           		}))
 				
     			# import shader
 				shader_resource = shelf.import_resource(path, Resource.Usage.SHADER, name, "CS2", style["uuid"])
@@ -185,7 +188,7 @@ class WeaponFinish:
 		if WeaponFinish.is_open():
 			WeaponFinish.set("weapon", weapon)
 			path = Path.asset("textures", "models", weapon)
-			for param in ["uBaseColor", "uBaseRough", "uBaseSurface", "uBaseMasks", "uBaseCavity"]:
+			for param in ["uBaseColor", "uBaseRough", "uBaseNormal", "uBaseMasks", "uBaseCavity"]:
 				tex_path = Path.join(path, f'{weapon}_{param[5:].lower()}.png')
 				if Path.exists(tex_path):
 					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE, group="CS2").identifier().url()

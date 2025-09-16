@@ -58,7 +58,11 @@ Rectangle {
         weaponFinish.connect();
         styleBox.currentKeyChanged.connect(() => {
             if (root.projectKind == 2) 
-                Plugin.updateStyle(styleBox.currentKey);
+                Plugin.updateStyle(styleBox.currentKey, externMode.checked);
+        });
+        externMode.checkedChanged.connect(() => {
+            if (root.projectKind == 2) 
+                Plugin.updateStyle(styleBox.currentKey, externMode.checked);
         });
         weaponBox.currentKeyChanged.connect(() => {
             if (root.projectKind == 2) 
@@ -72,11 +76,11 @@ Rectangle {
         id: weaponFinish
 
         parameters: {
+            "externMode":             { control: externMode,             prop: "checked"      },
+            "style":                  { control: styleBox,               prop: "currentKey"   },
+            "weapon":                 { control: weaponBox,              prop: "currentKey"   },
             "econitem":               { control: econitem,               prop: "filePath"     },
             "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
-            "style":                  { control: styleBox,               prop: "currentKey"   },
-            "uDebugChannel":          { control: debugChannel,           prop: "currentKey"   },
-            "weapon":                 { control: weaponBox,              prop: "currentKey"   },
             "wearRange":              { control: wearRange,              prop: "range"        },
             "texScale":               { control: texScale,               prop: "value"        },
             "texRotationRange":       { control: texRotation,            prop: "range"        },
@@ -87,6 +91,7 @@ Rectangle {
             // shader parameters
             "uLivePreview":           { control: enableLivePreview,      prop: "checked"      },
             "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
+            "uDebugChannel":          { control: debugChannel,           prop: "currentKey"   },
             "uPBRRanges":             { control: pbrRanges,              prop: "ranges"       },
             "uWearAmt":               { control: wearAmount,             prop: "value"        },
             "uBaseScale":             { control: weaponBox,              prop: "baseScale"    },
@@ -100,6 +105,12 @@ Rectangle {
             "uUseCustomNormal":       { control: useNormalMap,           prop: "checked"      },
             "uUseCustomMasks":        { control: useMatMasks,            prop: "checked"      },
             "uUseCustomAOTex":        { control: useAOTex,               prop: "checked"      },
+            "uPatternColor":          { control: patternTex,             prop: "url"          },
+            "uPatternRough":          { control: useRoughTex,            prop: "url"          },
+            "uPatternPearl":          { control: usePearlMask,           prop: "url"          },
+            "uPatternNormal":         { control: useNormalMap,           prop: "url"          },
+            "uPatternMasks":          { control: useMatMasks,            prop: "url"          },
+            "uPatternAO":             { control: useAOTex,               prop: "url"          },
             "uSprayBlend":            { control: sprayBlend,             prop: "array"        },
             "uPaintRough":            { control: paintRough,             prop: "value"        },
             "uPearlScale":            { control: pearlScale,             prop: "value"        },
@@ -109,7 +120,7 @@ Rectangle {
             // dynamically generated components
             "uBaseColor":             { control: null,                   prop: "url"          },
             "uBaseRough":             { control: null,                   prop: "url"          },
-            "uBaseSurface":           { control: null,                   prop: "url"          },
+            "uBaseNormal":            { control: null,                   prop: "url"          },
             "uBaseMasks":             { control: null,                   prop: "url"          },
             "uBaseCavity":            { control: null,                   prop: "url"          },
             "uWearTex":               { control: null,                   prop: "url"          },
@@ -118,6 +129,34 @@ Rectangle {
             "uCol1":                  { control: null,                   prop: "arrayColor"   },
             "uCol2":                  { control: null,                   prop: "arrayColor"   },
             "uCol3":                  { control: null,                   prop: "arrayColor"   }
+        }
+    }
+
+    component TextureFetcher: ColumnLayout {
+        id: fetcher
+
+        required property string text
+
+        property alias checked: toggler.checked
+        property alias url: picker.url
+
+        SPButton {
+            id: toggler
+            checkable: true
+            text: `Use ${fetcher.text}`
+            tooltip.text: `Whether to ${text.toLowerCase()}`
+            Layout.fillWidth: true
+        }
+        
+        SPLabeled {
+            text: fetcher.text
+            visible: fetcher.checked && externMode.checked
+
+            SPResourcePicker {
+                id: picker
+                Layout.fillWidth: true
+                filters: AlgResourcePicker.TEXTURE
+            }
         }
     }
 
@@ -352,6 +391,14 @@ Rectangle {
                     }
                 }
 
+                SPButton {
+                    id: externMode
+                    checkable: true
+                    text: "External Mode"
+                    tooltip.text: "Use external pattern textures instead of project channels"
+                    Layout.fillWidth: true
+                }
+
                 SPGroup {
                     id: pbrRanges
                     text: "PBR Ranges"
@@ -426,6 +473,15 @@ Rectangle {
                             if (!item || item.url === "")
                                 return false;
                         }
+                        if (externMode.checked) {
+                            if (patternTex.url === "" || patternTex.url === null)
+                                return false;
+                            for (const p of ["Rough", "Pearl", "Normal", "Masks", "AO"]) {
+                                const c = weaponFinish.parameters[`uPattern${p}`].control;
+                                if (c.checked && (c.url === "" || c.url === null))
+                                    return false;
+                            }
+                        }
                         return true;
                     }
 
@@ -439,7 +495,7 @@ Rectangle {
                             { param: "uBaseColor",        text: "Base Color"        },
                             { param: "uBaseRough",        text: "Roughness"         },
                             { param: "uBaseMasks",        text: "Masks"             },
-                            { param: "uBaseSurface",      text: "Surface"           },
+                            { param: "uBaseNormal",       text: "Normal"            },
                             { param: "uBaseCavity",       text: "Cavity"            }
                         ]
 
@@ -712,14 +768,26 @@ Rectangle {
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                 ColumnLayout {
-                    enabled: enableLivePreview.checked
-                    opacity: enabled ? 1.0 : 0.5
                     width: weaponFinishSettings.width - 20
                     spacing: 10
 
                     SPGroup {
                         Layout.fillWidth: true
                         text: "Common"
+
+                        SPLabeled {
+                            id: patternTex
+                            visible: ["hy", "sp", "am", "aa", "cu", "aq", "gs"].includes(styleBox.currentKey) && externMode.checked
+                            text: ["hy", "sp", "am", "aa"].includes(styleBox.currentKey) ? "Pattern Mask" : "Albedo Texture"
+
+                            property alias url: patternTexPicker.url
+
+                            SPResourcePicker {
+                                id: patternTexPicker
+                                Layout.fillWidth: true
+                                filters: AlgResourcePicker.TEXTURE
+                            }
+                        }
 
                         SPParameter {
                             SPSlider {
@@ -752,12 +820,10 @@ Rectangle {
 
                         property real labelScopeWidth: 0.0
 
-                        SPButton {
+                        TextureFetcher {
                             id: useColMask
+                            text: "Paint-By-Number Mask"
                             visible: ["so", "hy", "sp", "an", "am", "aa"].includes(styleBox.currentKey)
-                            checkable: true
-                            text: "Use Paint-By-Number Mask"
-                            tooltip.text: `Whether to ${text.toLowerCase()}`
                             Layout.fillWidth: true
 
                             SPLock {
@@ -867,12 +933,10 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Materials"
 
-                        SPButton {
+                        TextureFetcher {
                             id: useRoughTex
+                            text: "Roughness Texture"
                             visible: !useRoughByCol.visible || (useRoughByCol.visible && !useRoughByCol.checked)
-                            checkable: true
-                            text: "Use Roughness Texture"
-                            tooltip.text: `Whether to ${text.toLowerCase()}`
                             Layout.fillWidth: true
                         }
 
@@ -907,12 +971,10 @@ Rectangle {
 
                         SPSeparator { Layout.fillWidth: true }
 
-                        SPButton {
+                        TextureFetcher {
                             id: useMatMasks
-                            checkable: true
+                            text: "Material Mask"
                             visible: !useColMask.visible
-                            text: "Use Material Mask"
-                            tooltip.text: `Whether to ${text.toLowerCase()}`
                             Layout.fillWidth: true
                         }
 
@@ -930,19 +992,15 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Normals"
 
-                        SPButton {
+                        TextureFetcher {
                             id: useNormalMap
-                            checkable: true
-                            text: "Use Normal Map"
-                            tooltip.text: `Whether to ${text.toLowerCase()}`
+                            text: "Normal Map"
                             Layout.fillWidth: true
                         }
 
-                        SPButton {
+                        TextureFetcher {
                             id: useAOTex
-                            checkable: true
-                            text: "Use Ambient Occlusion"
-                            tooltip.text: `Whether to ${text.toLowerCase()}`
+                            text: "Ambient Occlusion"
                             Layout.fillWidth: true
                         }
                     }
@@ -951,11 +1009,9 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Effects"
 
-                        SPButton {
+                        TextureFetcher {
                             id: usePearlMask
-                            checkable: true
-                            text: "Use Pearlescence Mask"
-                            tooltip.text: `Whether to ${text.toLowerCase()}`
+                            text: "Pearlescence Mask"
                             Layout.fillWidth: true
                         }
 

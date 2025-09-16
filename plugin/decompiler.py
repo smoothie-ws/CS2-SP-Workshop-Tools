@@ -11,7 +11,7 @@ class Decompiler:
     @staticmethod
     def check_weapon_textures(weapon:str) -> bool:
         weapon_path = Path.asset("textures", "models", weapon)
-        for tex in ["color", "cavity", "masks", "rough", "surface"]:
+        for tex in ["color", "cavity", "masks", "rough", "normal"]:
             if not Path.exists(Path.join(weapon_path, f'{weapon}_{tex}.png')):
                 return False
         return True
@@ -79,7 +79,7 @@ class Decompiler:
             elif "vtex_c" in wf:
                 flag = False
                 for tex in [
-                        "default_color", f'{w}_color', "substrate_color", "masks", "cavity", "rough", "surface"
+                        "default_color", f'{w}_color', "substrate_color", "masks", "cavity", "rough", "normal"
                     ]:
                     if tex in wf:
                         name = f'{w}_{tex.split("_")[-1]}.png'

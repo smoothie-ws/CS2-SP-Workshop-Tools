@@ -49,7 +49,7 @@ QtObject {
     }
 
     function updateWeapon(weapon) {
-        for (const [param, path] of Object.entries(JSON.parse(Plugin.updateWeapon(weapon)))) // 
+        for (const [param, path] of Object.entries(JSON.parse(Plugin.updateWeapon(weapon))))
             parameters[param].control.url = path;
     }
 
