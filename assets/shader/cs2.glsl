@@ -35,6 +35,12 @@ uniform vec4 uPBRRanges; // packed values: [non-metallic min:max, metallic min:m
 //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
 uniform vec4 uTexTransform; // packed values: [scale, translateX, translateY, rotation]
 #if EXTERN_MODE
+//: param auto channel_basecolor
+uniform SamplerSparse uMatColor;
+//: param auto channel_roughness
+uniform SamplerSparse uMatRough;
+//: param auto channel_user0
+uniform SamplerSparse uMatMasks;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D uPatternColor;
 //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
@@ -257,7 +263,7 @@ void applyFinish(V2F inputs, out ShaderOutputs outputs) {
     float patternScale = uIgnoreWeaponSizeScale ? 1.0 : uBaseScale;
     uv = transform(uv, patternScale, uTexTransform);
     #if EXTERN_MODE
-        vec4 patternColor = tex2D(uPatternColor, uv);
+        vec4 patternColor = sRGB2linear(tex2D(uPatternColor, uv));
     #else
         vec4 patternColor = vec4(tex2D(uPatternColor, uv).rgb, tex2D(uPatternAlpha, uv).r);
     #endif
@@ -568,10 +574,16 @@ void shade(V2F inputs) {
         }
     } else {
         outputs.vectors = computeLocalFrame(inputs);
-        outputs.color = tex2D(uPatternColor, inputs.tex_coord).rgb;
         outputs.orm.r = getAO(inputs.tex_coord, true);
-        outputs.orm.g = tex2D(uPatternRough, inputs.tex_coord).r;
-        outputs.orm.b = tex2D(uPatternMasks, inputs.tex_coord).r;
+        #if EXTERN_MODE
+            outputs.color = tex2D(uMatColor, inputs.tex_coord).rgb;
+            outputs.orm.g = tex2D(uMatRough, inputs.tex_coord).r;
+            outputs.orm.b = tex2D(uMatMasks, inputs.tex_coord).r;
+        #else
+            outputs.color = tex2D(uPatternColor, inputs.tex_coord).rgb;
+            outputs.orm.g = tex2D(uPatternRough, inputs.tex_coord).r;
+            outputs.orm.b = tex2D(uPatternMasks, inputs.tex_coord).r;
+        #endif
         shadePBR(outputs);
     }
 }

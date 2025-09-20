@@ -1,4 +1,5 @@
 import json
+import substance_painter as sp
 
 from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings, Updates
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
@@ -88,6 +89,20 @@ class MainView(QmlView):
     @QtCore.Slot(str, result=str)
     def getDefaultWeaponFinishParameter(self, parameter: str) -> str:
         return json.dumps(Plugin.settings.get("weapon_finish", {}).get(parameter))
+
+    @QtCore.Slot(result=str)
+    def getPreviewEnvs(self) -> str:
+        return json.dumps({e: Path.filename(e) for e in Path.listdir(Path.asset("envs"))})
+
+    @QtCore.Slot(str)
+    def setEnv(self, env: str) -> None:
+        if WeaponFinish.is_open():
+            sp.display.set_environment_resource(sp.resource.Shelf(WeaponFinish.SHELF).import_resource(
+                Path.asset("envs", env), 
+                Resource.Usage.ENVIRONMENT, 
+                Path.filename(env), 
+                "CS2"
+            ).identifier())
 
 
 class WeaponFinishInitWindow(QmlDialog):

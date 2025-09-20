@@ -166,16 +166,13 @@ class WeaponFinish:
 					"EXTERN_MODE": extern_mode
            		}))
 				
-    			# import shader
 				shader_resource = shelf.import_resource(path, Resource.Usage.SHADER, name, "CS2", style["uuid"])
-    
-				# set icon
+				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{shader_resource.identifier().url()}")')
+				
+				# icon
 				icon_path = Path.asset("icons", f'{name}.png')
 				if Path.exists(icon_path):
 					shader_resource.set_custom_preview(icon_path)
-				
-				# update instance
-				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{shader_resource.identifier().url()}")')
     
 				callback(True, f'Finish Style was set to `{fs.upper()}`')
 			else:

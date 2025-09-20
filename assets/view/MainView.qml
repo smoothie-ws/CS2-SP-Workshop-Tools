@@ -372,6 +372,14 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
 
+                SPButton {
+                    id: externMode
+                    checkable: true
+                    text: "External Mode"
+                    tooltip.text: "Use external pattern textures instead of project channels"
+                    Layout.fillWidth: true
+                }
+
                 SPLabeled {
                     enabled: enableLivePreview.checked
                     opacity: enabled ? 1.0 : 0.5
@@ -391,12 +399,15 @@ Rectangle {
                     }
                 }
 
-                SPButton {
-                    id: externMode
-                    checkable: true
-                    text: "External Mode"
-                    tooltip.text: "Use external pattern textures instead of project channels"
+                SPLabeled {
+                    text: "Preview Environment"
                     Layout.fillWidth: true
+
+                    SPComboBox {
+                        Layout.fillWidth: true
+                        map: JSON.parse(Plugin.getPreviewEnvs())
+                        onCurrentKeyChanged: Plugin.setEnv(currentKey)
+                    }
                 }
 
                 SPGroup {
