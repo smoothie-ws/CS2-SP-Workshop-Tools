@@ -5,17 +5,16 @@ import substance_painter as sp
 from .painter import Log, Path, Macro, Plugin, Resource, ProjectSettings
 
 class WeaponFinish:
-	SHELF = "your_assets"
 	FINISH_STYLES = {
-		"so" : { "index": 0, "uuid": "9b92692d-4c88-4db2-9b4e-0f7c5f663f0d" }, # Solid Color
-		"hy" : { "index": 1, "uuid": "e5c73031-b09c-4696-92c0-37a3253ef0ec" }, # Hydrographic
-		"sp" : { "index": 2, "uuid": "f48e98cf-0ffb-4da4-8a64-0f1b29b52c0a" }, # Spray-Paint
-		"an" : { "index": 3, "uuid": "bfb92f18-ec91-4d69-a172-a93e7c78d202" }, # Anodized
-		"am" : { "index": 4, "uuid": "b34cf297-4cd6-4c08-86c8-79df8590c3cf" }, # Anodized Multicolored
-		"aa" : { "index": 5, "uuid": "c5874ae6-d198-4723-a2f3-cbd57b2c2e25" }, # Anodized Airbrushed
-		"cu" : { "index": 6, "uuid": "3a1bc8f6-c01a-4b9f-99c5-848f5d82bff0" }, # Custom Paint Job
-		"aq" : { "index": 7, "uuid": "fc1c3533-8c19-4e12-804d-8913e8f8f8dc" }, # Patina
-		"gs" : { "index": 8, "uuid": "5d2348a8-98cb-4f70-9445-6df4a5af77ad" }  # Gunsmith
+		"so" : 0, # Solid Color
+		"hy" : 1, # Hydrographic
+		"sp" : 2, # Spray-Paint
+		"an" : 3, # Anodized
+		"am" : 4, # Anodized Multicolored
+		"aa" : 5, # Anodized Airbrushed
+		"cu" : 6, # Custom Paint Job
+		"aq" : 7, # Patina
+		"gs" : 8  # Gunsmith
 	}
  
 	@staticmethod
@@ -134,7 +133,7 @@ class WeaponFinish:
 			WeaponFinish.export_econ()
    
 			# update shader instance
-			WeaponFinish.update_style(finish_style, 
+			WeaponFinish.update_style(finish_style, False,
 				lambda res, msg: callback(res,
 					f'The project was successfully set up as Weapon Finish ({finish_style.upper()})' 
      				if res else 
@@ -152,21 +151,21 @@ class WeaponFinish:
 	def update_style(fs: str, extern_mode: bool, callback):
 		if WeaponFinish.is_open():
 			# shader files
-			shelf = sp.resource.Shelf(WeaponFinish.SHELF)
-			shader_source = Path.read(Path.asset("shader", "cs2.glsl"))
+			shader_path = Path.asset("shader", "cs2.glsl")
+			shader_source = Path.read(shader_path)
    
 			if len(shader_source) > 0:
 				shader_dir = Path.cleardir(Path.join(Path.plugin, "shaders"))
 	
 				name = f'cs2_{fs}'
 				path = Path.join(shader_dir, f'{name}.glsl')
-				style = WeaponFinish.FINISH_STYLES[fs]
+				index = WeaponFinish.FINISH_STYLES[fs]
 				Path.write(path, Macro.process(shader_source, {
-        			"FINISH_STYLE": style["index"],
+        			"FINISH_STYLE": index,
 					"EXTERN_MODE": extern_mode
-           		}))
+           		}, path=shader_path))
 				
-				shader_resource = shelf.import_resource(path, Resource.Usage.SHADER, name, "CS2", style["uuid"])
+				shader_resource = Resource.import_session_resource(path, Resource.Usage.SHADER, name, "CS2")
 				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{shader_resource.identifier().url()}")')
 				
 				# icon
@@ -178,7 +177,6 @@ class WeaponFinish:
 			else:
 				callback(False, f'Failed to find shader for `{fs.upper()}` finish style')
     
-
 	@staticmethod
 	def update_weapon(weapon: str):
 		resources = {}
@@ -334,6 +332,7 @@ class WeaponFinish:
 			if not Path.exists(textures_folder):
 				Log.info(f'Be careful: path "{textures_folder}" for textures does not exist!')
 			textures_folder = textures_folder.split("workshop_items")[-1]
+			print(textures_folder)
 			if len(textures_folder) > 0 and textures_folder[0] == "/":
 				textures_folder = textures_folder[1:]
 
@@ -366,7 +365,7 @@ class WeaponFinish:
 				pearl_tex_path=f'{textures_folder}/{finish_name}_pearl.tga',
 			)
 			if not Path.write(econitem, econitem_content) > 0:
-				Log.error(f'Failed to sync .econitem file: {str(e)}')
+				Log.error("Failed to export .econitem file")
 
 	@staticmethod
 	def export_textures():

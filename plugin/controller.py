@@ -97,7 +97,7 @@ class MainView(QmlView):
     @QtCore.Slot(str)
     def setEnv(self, env: str) -> None:
         if WeaponFinish.is_open():
-            sp.display.set_environment_resource(sp.resource.Shelf(WeaponFinish.SHELF).import_resource(
+            sp.display.set_environment_resource(Resource.import_session_resource(
                 Path.asset("envs", env), 
                 Resource.Usage.ENVIRONMENT, 
                 Path.filename(env), 

@@ -1,9 +1,13 @@
 import re
 
+from .path import Path
+
 
 class Macro:
     @staticmethod
-    def process(code: str, macros: dict={}, remove_comments: bool = True):
+    def process(code: str, macros: dict = {}, remove_comments: bool = True, path = "", included: list = None):
+        included = [] if not included else included
+
         for macro in macros.keys():
             macros[macro] = str(macros[macro])
         condition_stack = []
@@ -39,6 +43,18 @@ class Macro:
                     line = line.replace(macro, macros[macro])
                 
                 line = line.strip()
+
+                #include
+                if line.startswith("#include"):
+                    match = re.match(r'\s*"([^"]+)"', line[8:])
+                    assert match, "Invalid include directive"
+                    inc = Path.join(Path.to(path), match.group(1))
+                    if not inc in included:
+                        print(inc)
+                        included_lines = Macro.process(Path.read(inc), macros, remove_comments, inc, included)
+                        processed_lines += included_lines.split("\n")
+                        included.append(inc)
+                    continue
 
                 #define
                 if line.startswith("#define"):
