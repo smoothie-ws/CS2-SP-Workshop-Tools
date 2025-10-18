@@ -161,7 +161,7 @@ class WeaponFinish:
 				path = Path.join(shader_dir, f'{name}.glsl')
 				index = WeaponFinish.FINISH_STYLES[fs]
 				Path.write(path, Macro.process(shader_source, {
-        			"FINISH_STYLE": index,
+        			"PAINT_STYLE": index,
 					"EXTERN_MODE": extern_mode
            		}, path=shader_path))
 				
@@ -179,12 +179,19 @@ class WeaponFinish:
     
 	@staticmethod
 	def update_weapon(weapon: str):
+		params = {
+			"g_tColor": "color", 
+			"g_tMetalness": "rough", 
+			"g_tSurface": "normal", 
+			"g_tMasks": "masks", 
+			"g_tAmbientOcclusion": "cavity"
+		}
 		resources = {}
 		if WeaponFinish.is_open():
 			WeaponFinish.set("weapon", weapon)
 			path = Path.asset("textures", "models", weapon)
-			for param in ["uBaseColor", "uBaseRough", "uBaseNormal", "uBaseMasks", "uBaseCavity"]:
-				tex_path = Path.join(path, f'{weapon}_{param[5:].lower()}.png')
+			for param in params.keys():
+				tex_path = Path.join(path, f'{weapon}_{params[param]}.png')
 				if Path.exists(tex_path):
 					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE, group="CS2").identifier().url()
 		return resources
@@ -221,7 +228,7 @@ class WeaponFinish:
 		def set_wear(_: str, value):
 			if len(value) == 3:
 				weapon_finish["wearRange"] = [value[0], value[2]]
-				weapon_finish["uWearAmt"] = value[1]
+				weapon_finish["g_flWearAmount"] = value[1]
 			else:
 				Log.warning("Failed to fetch wear")
    
@@ -244,7 +251,7 @@ class WeaponFinish:
 		
 		def set_col(param: str, value):
 			if len(value) == 3:
-				weapon_finish[f'uCol{param}'] = [v / 255 for v in value]
+				weapon_finish[f'g_vColor{param}'] = [v / 255 for v in value]
 			else:
 				Log.warning(f'Failed to fetch color {param}')
 
@@ -256,14 +263,14 @@ class WeaponFinish:
 			"g_vPatternTexCoordOffset.1": ("Y", set_tex_offset),
 			"g_flPatternTexCoordScale": ("", set_tex_scale),
 			"g_flPatternTexCoordRotation": ("", set_tex_rotation),
-			"g_bIgnoreWeaponSizeScale": "uIgnoreWeaponSizeScale",
-			"g_bOverrideAmbientOcclusion": "uUseCustomAOTex",
-			"g_bOverrideDefaultMasks": "uUseCustomMasks",
-			"g_bUseNormalMap": "uUseCustomNormal",
-			"g_bUsePearlescenceMask": "uUsePearlMask",
-			"g_bUseRoughness": "uUseCustomRough",
-			"g_flPearlescentScale": "uPearlScale",
-			"g_tPaintRoughness": "uPaintRough",
+			"g_bIgnoreWeaponSizeScale": "g_bIgnoreWeaponSizeScale",
+			"g_bOverrideAmbientOcclusion": "g_bOverrideAmbientOcclusion",
+			"g_bOverrideDefaultMasks": "g_bOverrideDefaultMasks",
+			"g_bUseNormalMap": "g_bUseNormalMap",
+			"g_bUsePearlescenceMask": "g_bUsePearlescenceMask",
+			"g_bUseRoughness": "g_bUseRoughness",
+			"g_flPearlescentScale": "g_flPearlescentScale",
+			"g_tPaintRoughness": "g_flPaintRoughness",
 			"g_vColor0": (0, set_col),
 			"g_vColor1": (1, set_col),
 			"g_vColor2": (2, set_col),
@@ -323,7 +330,7 @@ class WeaponFinish:
 
 			# map colors
 			colors = [
-				list(map(uint8, weapon_finish.get(f'uCol{i}', [1.0, 1.0, 1.0])))
+				list(map(uint8, weapon_finish.get(f'g_vColor{i}', [1.0, 1.0, 1.0])))
 				for i in range(4)
 			]
 
@@ -340,23 +347,23 @@ class WeaponFinish:
 				finish_name=finish_name,
 				finish_style=finish_style,
 				weapon=weapon_finish.get("weapon", "ak47"),
-				wear=[wear[0], weapon_finish.get("uWearAmt", 0.5), wear[1]],
+				wear=[wear[0], weapon_finish.get("g_flWearAmount", 0.5), wear[1]],
 				tex_scale=tex_transform[0],
 				tex_offsetx=[tex_offsetx[0], tex_transform[1], tex_offsetx[1]],
 				tex_offsety=[tex_offsety[0], tex_transform[2], tex_offsety[1]],
 				tex_rotation=[tex_rotation[0], tex_transform[3], tex_rotation[1]],
-				ignore_weapon_size_scale=get_bool("uIgnoreWeaponSizeScale"),
+				ignore_weapon_size_scale=get_bool("g_bIgnoreWeaponSizeScale"),
 				color0=colors[0],
 				color1=colors[1],
 				color2=colors[2],
 				color3=colors[3],
-				pearl_scale=weapon_finish.get("uPearlScale", 0.0),
-				rough=weapon_finish.get("uPaintRough", 0.6),
-				custom_pearl_mask=get_bool("uUsePearlMask"),
-				custom_rough_tex=get_bool("uUseCustomRough"),
-				custom_normal_map=get_bool("uUseCustomNormal"),
-				custom_mat_masks=get_bool("uUseCustomMasks"),
-				custom_ao_tex=get_bool("uUseCustomAOTex"),
+				pearl_scale=weapon_finish.get("g_flPearlescentScale", 0.0),
+				rough=weapon_finish.get("g_flPaintRoughness", 0.6),
+				custom_pearl_mask=get_bool("g_bUsePearlescenceMask"),
+				custom_rough_tex=get_bool("g_bUseRoughness"),
+				custom_normal_map=get_bool("g_bUseNormalMap"),
+				custom_mat_masks=get_bool("g_bOverrideDefaultMasks"),
+				custom_ao_tex=get_bool("g_bOverrideAmbientOcclusion"),
 				ao_tex_path=f'{textures_folder}/{finish_name}_ao.tga',
 				normal_tex_path=f'{textures_folder}/{finish_name}_normal.tga',
 				masks_tex_path=f'{textures_folder}/{finish_name}_masks.tga',
@@ -417,7 +424,7 @@ class WeaponFinish:
 			}
 			
 			# Masks
-			if weapon_finish.get("style", "gs") != "cu" and weapon_finish.get("uUseCustomMasks"):
+			if weapon_finish.get("style", "gs") != "cu" and weapon_finish.get("g_bOverrideDefaultMasks"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_masks',
 					"channels" : [
@@ -443,7 +450,7 @@ class WeaponFinish:
 				})
 
 			# Normal
-			if weapon_finish.get("uUseCustomNormal"):
+			if weapon_finish.get("g_bUseNormalMap"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_normal',
 					"channels" : [
@@ -469,7 +476,7 @@ class WeaponFinish:
 				})
 
 			# AO
-			if weapon_finish.get("uUseCustomAOTex"):
+			if weapon_finish.get("g_bOverrideAmbientOcclusion"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_ao',
 					"channels" : [
@@ -483,7 +490,7 @@ class WeaponFinish:
 				})
 
 			# Roughness
-			if weapon_finish.get("uUseCustomRough"):
+			if weapon_finish.get("g_bUseRoughness"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_rough',
 					"channels" : [
@@ -497,7 +504,7 @@ class WeaponFinish:
 				})
 
 			# Pearlescence
-			if weapon_finish.get("uUsePearlMask"):
+			if weapon_finish.get("g_bUsePearlescenceMask"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_pearl',
 					"channels" : [

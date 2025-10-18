@@ -68,8 +68,8 @@ Rectangle {
             if (root.projectKind == 2) 
                 weaponFinish.updateWeapon(weaponBox.currentKey);
         });
-        weaponFinish.parameters["uWearTex"].control.url = Plugin.importTexture(Plugin.asset("textures/wear.png").slice(5));
-        weaponFinish.parameters["uGrungeTex"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.png").slice(5));
+        weaponFinish.parameters["g_tWear"].control.url = Plugin.importTexture(Plugin.asset("textures/wear.png").slice(5));
+        weaponFinish.parameters["g_tGrunge"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.png").slice(5));
     }
 
     WeaponFinish {
@@ -82,7 +82,7 @@ Rectangle {
             "econitem":               { control: econitem,               prop: "filePath"     },
             "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
             "wearRange":              { control: wearRange,              prop: "range"        },
-            "texScale":               { control: texScale,               prop: "value"        },
+            "g_flPatternTexCoordScale":               { control: patternTexCoordScale,               prop: "value"        },
             "texRotationRange":       { control: texRotation,            prop: "range"        },
             "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
             "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
@@ -93,42 +93,43 @@ Rectangle {
             "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
             "uDebugChannel":          { control: debugChannel,           prop: "currentKey"   },
             "uPBRRanges":             { control: pbrRanges,              prop: "ranges"       },
-            "uWearAmt":               { control: wearAmount,             prop: "value"        },
-            "uBaseScale":             { control: weaponBox,              prop: "baseScale"    },
             "uTexTransform":          { control: texTransform,           prop: "transform"    },
             "uWearTransform":         { control: wearTransform,          prop: "transform"    },
             "uGrungeTransform":       { control: grungeTransform,        prop: "transform"    },
-            "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
-            "uUseRoughByColor":       { control: useRoughByCol,          prop: "checked"      },
-            "uUseCustomRough":        { control: useRoughTex,            prop: "checked"      },
-            "uUsePearlMask":          { control: usePearlMask,           prop: "checked"      },
-            "uUseCustomNormal":       { control: useNormalMap,           prop: "checked"      },
-            "uUseCustomMasks":        { control: useMatMasks,            prop: "checked"      },
-            "uUseCustomAOTex":        { control: useAOTex,               prop: "checked"      },
-            "uPatternColor":          { control: patternTex,             prop: "url"          },
-            "uPatternRough":          { control: useRoughTex,            prop: "url"          },
-            "uPatternPearl":          { control: usePearlMask,           prop: "url"          },
-            "uPatternNormal":         { control: useNormalMap,           prop: "url"          },
-            "uPatternMasks":          { control: useMatMasks,            prop: "url"          },
-            "uPatternAO":             { control: useAOTex,               prop: "url"          },
-            "uSprayBlend":            { control: sprayBlend,             prop: "array"        },
-            "uPaintRough":            { control: paintRough,             prop: "value"        },
-            "uPearlScale":            { control: pearlScale,             prop: "value"        },
-            "uPaintRoughNum":         { control: paintRoughNum,          prop: "array"        },
-            "uPaintMetalNum":         { control: paintMetalNum,          prop: "array"        },
-            "uPaintDurabilityNum":    { control: paintDurabilityNum,     prop: "array"        },
+            "g_flWearAmount":         { control: wearAmount,             prop: "value"        },
+            "g_flWeaponLength":       { control: weaponBox,              prop: "weaponLength" },
+            "g_flUvScale":            { control: weaponBox,              prop: "uvScale"      },
+            "g_bIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
+            "g_bRoughnessPerColor":       { control: useRoughByCol,          prop: "checked"      },
+            "g_bUseRoughness":        { control: useRoughTex,            prop: "checked"      },
+            "g_bUsePearlescenceMask":          { control: usePearlMask,           prop: "checked"      },
+            "g_bUseNormalMap":       { control: useNormalMap,           prop: "checked"      },
+            "g_bOverrideDefaultMasks":        { control: useMatMasks,            prop: "checked"      },
+            "g_bOverrideAmbientOcclusion":        { control: useAOTex,               prop: "checked"      },
+            "g_tPattern":          { control: patternTex,             prop: "url"          },
+            "g_tPaintRoughness":          { control: useRoughTex,            prop: "url"          },
+            "g_tPearlescenceMask":          { control: usePearlMask,           prop: "url"          },
+            "g_tPaintNormal":         { control: useNormalMap,           prop: "url"          },
+            "g_tPaintMasks":          { control: useMatMasks,            prop: "url"          },
+            "g_tPaintAO":             { control: useAOTex,               prop: "url"          },
+            "g_vSprayBiasBlend":            { control: sprayBlend,             prop: "array"        },
+            "g_flPaintRoughness":            { control: paintRough,             prop: "value"        },
+            "g_flPearlescentScale":            { control: pearlScale,             prop: "value"        },
+            "g_vPaintRoughness":         { control: paintRoughNum,          prop: "array"        },
+            "g_vPaintMetalness":         { control: paintMetalNum,          prop: "array"        },
+            "g_vPaintDurability":    { control: paintDurabilityNum,     prop: "array"        },
             // dynamically generated components
-            "uBaseColor":             { control: null,                   prop: "url"          },
-            "uBaseRough":             { control: null,                   prop: "url"          },
-            "uBaseNormal":            { control: null,                   prop: "url"          },
-            "uBaseMasks":             { control: null,                   prop: "url"          },
-            "uBaseCavity":            { control: null,                   prop: "url"          },
-            "uWearTex":               { control: null,                   prop: "url"          },
-            "uGrungeTex":             { control: null,                   prop: "url"          },
-            "uCol0":                  { control: null,                   prop: "arrayColor"   },
-            "uCol1":                  { control: null,                   prop: "arrayColor"   },
-            "uCol2":                  { control: null,                   prop: "arrayColor"   },
-            "uCol3":                  { control: null,                   prop: "arrayColor"   }
+            "g_tColor":             { control: null,                   prop: "url"          },
+            "g_tMetalness":             { control: null,                   prop: "url"          },
+            "g_tSurface":            { control: null,                   prop: "url"          },
+            "g_tMasks":             { control: null,                   prop: "url"          },
+            "g_tAmbientOcclusion":            { control: null,                   prop: "url"          },
+            "g_tWear":               { control: null,                   prop: "url"          },
+            "g_tGrunge":             { control: null,                   prop: "url"          },
+            "g_vColor0":                  { control: null,                   prop: "arrayColor"   },
+            "g_vColor1":                  { control: null,                   prop: "arrayColor"   },
+            "g_vColor2":                  { control: null,                   prop: "arrayColor"   },
+            "g_vColor3":                  { control: null,                   prop: "arrayColor"   }
         }
     }
 
@@ -189,7 +190,7 @@ Rectangle {
 
                 SPSlider {
                     id: control
-                    text: `${multi.paramName} ${modelData}`
+                    text: `${multi.paramName} - ${modelData}`
                     from: 0.0
                     to: 1.0
 
@@ -222,7 +223,7 @@ Rectangle {
         property var transform: [1.0, 0.0, 0.0, 0.0]
 
         onTransformChanged: update(() => {
-            texScale.value = transform[0];
+            patternTexCoordScale.value = transform[0];
             texOffsetX.value = transform[1];
             texOffsetY.value = transform[2];
             texRotation.value = transform[3];
@@ -231,7 +232,7 @@ Rectangle {
         function sync() {
             update(() => {
                 transform = [
-                    texScale.value, 
+                    patternTexCoordScale.value, 
                     texOffsetX.value, 
                     texOffsetY.value,
                     texRotation.value
@@ -488,7 +489,7 @@ Rectangle {
                             if (patternTex.url === "" || patternTex.url === null)
                                 return false;
                             for (const p of ["Rough", "Pearl", "Normal", "Masks", "AO"]) {
-                                const c = weaponFinish.parameters[`uPattern${p}`].control;
+                                const c = weaponFinish.parameters[`g_tPaint${p}`].control;
                                 if (c.checked && (c.url === "" || c.url === null))
                                     return false;
                             }
@@ -501,13 +502,13 @@ Rectangle {
                     Repeater {
                         id: textureRepeater
                         model: [
-                            { param: "uWearTex",          text: "Wear"              },
-                            { param: "uGrungeTex",        text: "Grunge"            },
-                            { param: "uBaseColor",        text: "Base Color"        },
-                            { param: "uBaseRough",        text: "Roughness"         },
-                            { param: "uBaseMasks",        text: "Masks"             },
-                            { param: "uBaseNormal",       text: "Normal"            },
-                            { param: "uBaseCavity",       text: "Cavity"            }
+                            { param: "g_tWear",          text: "Wear"              },
+                            { param: "g_tGrunge",        text: "Grunge"            },
+                            { param: "g_tColor",        text: "Base Color"        },
+                            { param: "g_tMetalness",        text: "Roughness"         },
+                            { param: "g_tMasks",        text: "Masks"             },
+                            { param: "g_tSurface",       text: "Normal"            },
+                            { param: "g_tAmbientOcclusion",       text: "Cavity"            }
                         ]
 
                         delegate: SPLabeled {
@@ -545,7 +546,7 @@ Rectangle {
                 onSeedChanged: {
                     const r = new Random.Stream(seed);
                     texTransform.transform = [
-                        texScale.value, 
+                        patternTexCoordScale.value, 
                         r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue),
                         1.0 - r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue),
                         r.randomFloat(texRotation.minValue, texRotation.maxValue)
@@ -695,12 +696,13 @@ Rectangle {
                         }
 
                         property var weapons: JSON.parse(Plugin.getWeapons())
-                        property real baseScale: 1.0
+                        property real weaponLength: 1.0
+                        property real uvScale: 1.0
 
                         onCurrentKeyChanged: {
-                            const w = weapons[currentKey];
-                            let b = Math.sqrt(w.uv_scale);
-                            baseScale = b;
+                            const w = weapons[currentKey]; 
+                            weaponLength = w.length;
+                            uvScale = w.uv_scale;
                         }
                     }
 
@@ -802,13 +804,13 @@ Rectangle {
 
                         SPParameter {
                             SPSlider {
-                                id: texScale
+                                id: patternTexCoordScale
                                 text: "Texture Scale"
                                 from: -10
                                 to: 10
                                 onValueChanged: texTransform.sync()
                             }
-                            onResetRequested: weaponFinish.resetParameter("texScale")
+                            onResetRequested: weaponFinish.resetParameter("g_flPatternTexCoordScale")
                         }
 
                         SPParameter {
@@ -819,7 +821,7 @@ Rectangle {
                                 checkable: true
                                 tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
                             }
-                            onResetRequested: weaponFinish.resetParameter("uIgnoreWeaponSizeScale")
+                            onResetRequested: weaponFinish.resetParameter("g_bIgnoreWeaponSizeScale")
                         }
                     }
 
@@ -882,11 +884,11 @@ Rectangle {
                                     }
                                 }
                                 
-                                onResetRequested: weaponFinish.resetParameter(`uCol${index}`)
+                                onResetRequested: weaponFinish.resetParameter(`g_vColor${index}`)
                             }
 
                             onItemAdded: (i, control) => {
-                                weaponFinish.parameters[`uCol${i}`].control = control;
+                                weaponFinish.parameters[`g_vColor${i}`].control = control;
                                 colorGroup.labelScopeWidth = Math.max(colorGroup.labelScopeWidth, control.scopeWidth);
                                 control.scopeWidth = Qt.binding(() => colorGroup.labelScopeWidth);
                             }
@@ -900,8 +902,8 @@ Rectangle {
                         MultiSlider {
                             id: sprayBlend
                             visible: styleBox.currentKey == "sp"
-                            model: ["X", "Y"]
-                            paramId: "uSprayBlend"
+                            model: ["Back", "Top"]
+                            paramId: "g_vSprayBiasBlend"
                             paramName: "Spray Blend"
                             width: parent.width
                         }
@@ -963,8 +965,8 @@ Rectangle {
                         MultiSlider {
                             id: paintRoughNum
                             visible: useRoughByCol.visible && useRoughByCol.checked
-                            model: ["X", "Y", "Z", "W"]
-                            paramId: "uPaintRough"
+                            model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
+                            paramId: "g_flPaintRoughness"
                             paramName: "Paint Roughness"
                             width: parent.width
                         }
@@ -977,7 +979,7 @@ Rectangle {
                                 from: 0
                                 to: 1
                             }
-                            onResetRequested: weaponFinish.resetParameter("uPaintRough")
+                            onResetRequested: weaponFinish.resetParameter("g_flPaintRoughness")
                         }
 
                         SPSeparator { Layout.fillWidth: true }
@@ -992,7 +994,7 @@ Rectangle {
                         MultiSlider {
                             id: paintMetalNum
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
-                            model: ["X", "Y", "Z", "W"]
+                            model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
                             paramId: "uPaintMetal"
                             paramName: "Paint Metalness"
                             width: parent.width
@@ -1033,7 +1035,7 @@ Rectangle {
                                 from: -6
                                 to: 6
                             }
-                            onResetRequested: weaponFinish.resetParameter("uPearlScale")
+                            onResetRequested: weaponFinish.resetParameter("g_flPearlescentScale")
                         }
                     }
 
@@ -1044,7 +1046,7 @@ Rectangle {
                         MultiSlider {
                             id: paintDurabilityNum
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
-                            model: ["X", "Y", "Z", "W"]
+                            model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
                             paramId: "uPaintDurability"
                             paramName: "Paint Durability"
                             width: parent.width
@@ -1060,7 +1062,7 @@ Rectangle {
                             }
                             onResetRequested: {
                                 weaponFinish.resetParameter("wearRange"); 
-                                weaponFinish.resetParameter("uWearAmt");
+                                weaponFinish.resetParameter("g_flWearAmount");
                             }
                         }
                     }

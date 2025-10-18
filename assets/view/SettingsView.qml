@@ -79,27 +79,27 @@ SPDialog {
             "nmPBRRange":             { control: nmPBRRange,             prop: "range"        },
             "mPBRRange":              { control: mPBRRange,              prop: "range"        },
             "style":                  { control: styleBox,               prop: "currentKey"   },
-            "texScale":               { control: texScale,               prop: "value"        },
+            "g_flPatternTexCoordScale":               { control: g_flPatternTexCoordScale,               prop: "value"        },
             "texRotationRange":       { control: texRotation,            prop: "range"        },
             "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
             "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
-            "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
+            "g_bIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
             "wearRange":              { control: wearRange,              prop: "range"        },
-            "uPearlScale":            { control: pearlScale,             prop: "value"        },
-            "uUsePearlMask":          { control: usePearlMask,           prop: "checked"      },
-            "uUseRoughByColor":       { control: useRoughByCol,          prop: "checked"      },
-            "uUseCustomRough":        { control: useRoughTex,            prop: "checked"      },
-            "uUseCustomNormal":       { control: useNormalMap,           prop: "checked"      },
-            "uUseCustomMasks":        { control: useMatMasks,            prop: "checked"      },
-            "uUseCustomAOTex":        { control: useAOTex,               prop: "checked"      },
-            "uPaintRough":            { control: paintRoughness,         prop: "value"        },
-            "uPaintRoughNum":         { control: paintRoughNum,          prop: "array"        },
-            "uPaintMetalNum":         { control: paintMetalNum,          prop: "array"        },
-            "uPaintDurabilityNum":    { control: paintDurabilityNum,     prop: "array"        },
-            "uCol0":                  { control: null,                   prop: "arrayColor"   },
-            "uCol1":                  { control: null,                   prop: "arrayColor"   },
-            "uCol2":                  { control: null,                   prop: "arrayColor"   },
-            "uCol3":                  { control: null,                   prop: "arrayColor"   },
+            "g_flPearlescentScale":            { control: pearlScale,             prop: "value"        },
+            "g_bUsePearlescenceMask":          { control: usePearlMask,           prop: "checked"      },
+            "g_bRoughnessPerColor":       { control: useRoughByCol,          prop: "checked"      },
+            "g_bUseRoughness":        { control: useRoughTex,            prop: "checked"      },
+            "g_bUseNormalMap":       { control: useNormalMap,           prop: "checked"      },
+            "g_bOverrideDefaultMasks":        { control: useMatMasks,            prop: "checked"      },
+            "g_bOverrideAmbientOcclusion":        { control: useAOTex,               prop: "checked"      },
+            "g_flPaintRoughness":            { control: paintRoughness,         prop: "value"        },
+            "g_vPaintRoughness":         { control: paintRoughNum,          prop: "array"        },
+            "g_vPaintMetalness":         { control: paintMetalNum,          prop: "array"        },
+            "g_vPaintDurability":    { control: paintDurabilityNum,     prop: "array"        },
+            "g_vColor0":                  { control: null,                   prop: "arrayColor"   },
+            "g_vColor1":                  { control: null,                   prop: "arrayColor"   },
+            "g_vColor2":                  { control: null,                   prop: "arrayColor"   },
+            "g_vColor3":                  { control: null,                   prop: "arrayColor"   },
         }
 
         onCs2PathChanged: cs2PathIsValid = cs2Path == "" ? true : Plugin.valCs2Path(cs2Path)
@@ -689,7 +689,7 @@ SPDialog {
                             }
 
                             SPSlider {
-                                id: texScale
+                                id: g_flPatternTexCoordScale
                                 text: "Texture Scale"
                                 from: -10
                                 to: 10
@@ -734,7 +734,7 @@ SPDialog {
                                         Layout.fillWidth: true
                                     }
                                 }
-                                onItemAdded: (i, item) => internal.weaponFinish[`uCol${i}`].control = item
+                                onItemAdded: (i, item) => internal.weaponFinish[`g_vColor${i}`].control = item
                             }
                             
                             SPLabeled {

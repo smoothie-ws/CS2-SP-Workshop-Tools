@@ -1,10 +1,9 @@
 import os
-import time
 import threading
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
-from .painter import Log, Path
+from .painter import Path
 
 
 class Decompiler:    

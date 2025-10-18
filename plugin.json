@@ -189,7 +189,7 @@
                 255
             ],
             "style": "gs",
-            "texScale": 1,
+            "g_flPatternTexCoordScale": 1,
             "texRotationRange": [
                 0,
                 0
@@ -202,58 +202,58 @@
                 0,
                 0
             ],
-            "uIgnoreWeaponSizeScale": true,
+            "g_bIgnoreWeaponSizeScale": true,
             "wearRange": [
                 0,
                 1
             ],
-            "uPearlScale": 0,
-            "uUsePearlMask": true,
-            "uUseRoughByColor": false,
-            "uUseCustomRough": false,
-            "uUseCustomNormal": true,
-            "uUseCustomMasks": true,
-            "uUseCustomAOTex": true,
-            "uPaintRough": 0.6,
-            "uPaintRoughNum": [
+            "g_flPearlescentScale": 0,
+            "g_bUsePearlescenceMask": true,
+            "g_bRoughnessPerColor": false,
+            "g_bUseRoughness": false,
+            "g_bUseNormalMap": true,
+            "g_bOverrideDefaultMasks": true,
+            "g_bOverrideAmbientOcclusion": true,
+            "g_flPaintRoughness": 0.6,
+            "g_vPaintRoughness": [
                 0.6,
                 0.6,
                 0.6,
                 0.6
             ],
-            "uPaintMetalNum": [
+            "g_vPaintMetalness": [
                 0,
                 0,
                 0,
                 0
             ],
-            "uPaintDurabilityNum": [
+            "g_vPaintDurability": [
                 0,
                 0,
                 0,
                 0
             ],
-            "uCol0": [
+            "g_vColor0": [
                 1,
                 1,
                 1
             ],
-            "uCol1": [
+            "g_vColor1": [
                 1,
                 1,
                 1
             ],
-            "uCol2": [
+            "g_vColor2": [
                 1,
                 1,
                 1
             ],
-            "uCol3": [
+            "g_vColor3": [
                 1,
                 1,
                 1
             ]
         },
-        "check_for_updates": false
+        "check_for_updates": true
     }
 }

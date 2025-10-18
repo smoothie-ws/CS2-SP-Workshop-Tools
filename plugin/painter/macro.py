@@ -40,8 +40,10 @@ class Macro:
                 if remove_comments:
                     line = line.split("//")[0]
                 for macro in macros.keys():
-                    line = line.replace(macro, macros[macro])
-                
+                    keys = sorted(macros.keys(), key=len, reverse=True)
+                    pattern = re.compile(r'(?<!\w)(' + '|'.join(map(re.escape, keys)) + r')(?!\w)', flags=re.UNICODE)
+                    line = pattern.sub(lambda m: macros[m.group(1)], line)
+
                 line = line.strip()
 
                 #include
@@ -50,7 +52,6 @@ class Macro:
                     assert match, "Invalid include directive"
                     inc = Path.join(Path.to(path), match.group(1))
                     if not inc in included:
-                        print(inc)
                         included_lines = Macro.process(Path.read(inc), macros, remove_comments, inc, included)
                         processed_lines += included_lines.split("\n")
                         included.append(inc)

@@ -1,64 +1,11 @@
 #include "constants.glsl"
 
-float srgb2linear(float color) {
-    float linseg = color / 12.92;
-    float expseg = pow((color / 1.055) + 0.0521327, 2.4);
+float luminance(vec3 c) { return dot(c, vec3(0.2125, 0.7154, 0.0721)); }
 
-    const float cap = 0.04045;
-    float select = color > cap ? expseg : linseg;
-
-    return select;
-}
-
-vec2 srgb2linear(vec2 color) {
-    const float cap = 0.04045;
-
-    vec2 linseg = color / vec2(12.92);
-    vec2 expseg = pow((color / vec2(1.055)) + vec2(0.0521327), vec2(2.4));
-
-    return vec2(
-        color.r > cap ? expseg.r : linseg.r, 
-        color.g > cap ? expseg.g : linseg.g
-    );
-}
-
-vec3 srgb2linear(vec3 color) {
-    const float cap = 0.04045;
-
-    vec3 linseg = color / vec3(12.92);
-    vec3 expseg = pow((color / vec3(1.055)) + vec3(0.0521327), vec3(2.4));
-
-    return vec3(
-        color.r > cap ? expseg.r : linseg.r, 
-        color.g > cap ? expseg.g : linseg.g, 
-        color.b > cap ? expseg.b : linseg.b
-    );
-}
-
-vec4 srgb2linear(vec4 color) {
-    const float cap = 0.04045;
-
-    vec4 linseg = color / vec4(12.92);
-    vec4 expseg = pow((color / vec4(1.055)) + vec4(0.0521327), vec4(2.4));
-
-    return vec4(
-        color.r > cap ? expseg.r : linseg.r, 
-        color.g > cap ? expseg.g : linseg.g, 
-        color.b > cap ? expseg.b : linseg.b, 
-        color.a > cap ? expseg.a : linseg.a
-    );
-}
-
-vec3 linear2srgb( vec3 vLinearColor ) {
-	vec3 linseg = vLinearColor.rgb * 12.92;
-	vec3 expseg = ( 1.055 * pow( vLinearColor.rgb, vec3 ( 1.0 / 2.4) )) - 0.055;
-
-	return vec3(
-        vLinearColor.r <= 0.0031308 ? linseg.r : expseg.r,
-        vLinearColor.g <= 0.0031308 ? linseg.g : expseg.g,
-        vLinearColor.b <= 0.0031308 ? linseg.b : expseg.b 
-    );
-}
+float saturate(float x) { return clamp(x, 0.0, 1.0); }
+vec2 saturate(vec2 x) { return clamp(x, vec2(0.0), vec2(1.0)); }
+vec3 saturate(vec3 x) { return clamp(x, vec3(0.0), vec3(1.0)); }
+vec4 saturate(vec4 x) { return clamp(x, vec4(0.0), vec4(1.0)); }
 
 vec3 rgb2hsl(vec3 color) {
     float maxC = max(max(color.r, color.g), color.b);

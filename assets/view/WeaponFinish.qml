@@ -26,7 +26,7 @@ QtObject {
     // connect widgets to shader
     function connect() {
         for (const [param, component] of Object.entries(parameters)) 
-            if (param.startsWith("u")) {
+            if (param.startsWith("g_")) {
                 const control = component.control;
                 const prop = component.prop;
                 if (["filePath", "url"].includes(prop))
@@ -55,7 +55,7 @@ QtObject {
 
     function syncShader() {
         for (const [param, component] of Object.entries(parameters)) 
-            if (param.startsWith("u")) {
+            if (param.startsWith("g_")) {
                 const value = component.control[component.prop];
                 if (["filePath", "url"].includes(component.prop))
                     Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${value}"`);
