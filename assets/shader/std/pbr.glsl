@@ -1,4 +1,7 @@
 import lib-pbr.glsl
+import lib-sampler.glsl
+
+#include "constants.glsl"
 
 //: param custom { "default": [50, 245, 106, 255] }
 uniform vec4 uPBRRanges; // packed values: [non-metallic min:max, metallic min:max]

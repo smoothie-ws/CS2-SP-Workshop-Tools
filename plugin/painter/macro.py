@@ -52,9 +52,8 @@ class Macro:
                     assert match, "Invalid include directive"
                     inc = Path.join(Path.to(path), match.group(1))
                     if not inc in included:
-                        included_lines = Macro.process(Path.read(inc), macros, remove_comments, inc, included)
-                        processed_lines += included_lines.split("\n")
                         included.append(inc)
+                        processed_lines += Macro.process(Path.read(inc), macros, remove_comments, inc, included).split("\n")
                     continue
 
                 #define

@@ -193,7 +193,7 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
     
     // ----- PS ----- 
     
-    vec4 fvAoSrc = tex2D(g_tAmbientOcclusion, vBaseUV_PatternUV.xy);
+    vec4 fvAoSrc = sRGB2linear(tex2D(g_tAmbientOcclusion, vBaseUV_PatternUV.xy));
     float flCavityPow = pow(fvAoSrc.x, 1.5);
     float flCavity = flCavityPow * 0.96;
 
@@ -204,7 +204,7 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
 
     #if !AQ
         #if HY || AM || CU || GS
-            vec4 fvPattern = tex2D(g_tPattern, vBaseUV_PatternUV.zw);
+            vec4 fvPattern = sRGB2linear(tex2D(g_tPattern, vBaseUV_PatternUV.zw));
             #if !EXTERN_MODE
                 fvPattern.w = tex2D(g_tPaintAlpha, vBaseUV_PatternUV.zw).x;
             #endif
@@ -592,4 +592,5 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
     cPaint = mix(cPaint, cPaint.xyz * scale, g_flWearAmount);
 
     outputs.color = mix(cPaint, cBase, flPaintMask);
+    outputs.wear = flPaintMask;
 }

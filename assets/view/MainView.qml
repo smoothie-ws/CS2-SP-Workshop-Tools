@@ -6,8 +6,9 @@ import AlgWidgets.Style 2.0
 import Painter 1.0
 import AlgWidgets 2.0
 import "./SPWidgets"
-import "./random.mjs" as Random
 import "./SPWidgets/math.js" as MathUtils
+
+import "./modules/random.mjs" as Random
 
 Rectangle {
     id: root
@@ -46,7 +47,7 @@ Rectangle {
         }
 
         function onStyleReady() {
-            weaponFinish.syncShader();
+            weaponFinish.connect();
         }
 
         function onPluginAboutToClose() {
@@ -55,19 +56,9 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        weaponFinish.connect();
-        styleBox.currentKeyChanged.connect(() => {
-            if (root.projectKind == 2) 
-                Plugin.updateStyle(styleBox.currentKey, externMode.checked);
-        });
-        externMode.checkedChanged.connect(() => {
-            if (root.projectKind == 2) 
-                Plugin.updateStyle(styleBox.currentKey, externMode.checked);
-        });
-        weaponBox.currentKeyChanged.connect(() => {
-            if (root.projectKind == 2) 
-                weaponFinish.updateWeapon(weaponBox.currentKey);
-        });
+        styleBox.currentKeyChanged.connect(() => if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked));
+        externMode.checkedChanged.connect(() => if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked););
+        weaponBox.currentKeyChanged.connect(() => if (root.projectKind == 2) weaponFinish.updateWeapon(weaponBox.currentKey));
         weaponFinish.parameters["g_tWear"].control.url = Plugin.importTexture(Plugin.asset("textures/wear.png").slice(5));
         weaponFinish.parameters["g_tGrunge"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.png").slice(5));
     }
@@ -76,62 +67,71 @@ Rectangle {
         id: weaponFinish
 
         parameters: {
-            "externMode":             { control: externMode,             prop: "checked"      },
-            "style":                  { control: styleBox,               prop: "currentKey"   },
-            "weapon":                 { control: weaponBox,              prop: "currentKey"   },
-            "econitem":               { control: econitem,               prop: "filePath"     },
-            "texturesFolder":         { control: texturesFolder,         prop: "filePath"     },
-            "wearRange":              { control: wearRange,              prop: "range"        },
-            "g_flPatternTexCoordScale":               { control: patternTexCoordScale,               prop: "value"        },
-            "texRotationRange":       { control: texRotation,            prop: "range"        },
-            "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
-            "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
-            "nmPBRRange":             { control: nmPBRRange,             prop: "range"        },
-            "mPBRRange":              { control: mPBRRange,              prop: "range"        },
+            "externMode":                        { control: externMode,           prop: "checked",       slot: null },
+            "style":                             { control: styleBox,             prop: "currentKey",    slot: null },
+            "weapon":                            { control: weaponBox,            prop: "currentKey",    slot: null },
+            "econitem":                          { control: econitem,             prop: "filePath",      slot: null },
+            "texturesFolder":                    { control: texturesFolder,       prop: "filePath",      slot: null },
+            "wearRange":                         { control: wearRange,            prop: "range",         slot: null },
+            "g_flPatternTexCoordScale":          { control: patternTexCoordScale, prop: "value",         slot: null },
+            "texRotationRange":                  { control: texRotation,          prop: "range",         slot: null },
+            "texOffsetXRange":                   { control: texOffsetX,           prop: "range",         slot: null },
+            "texOffsetYRange":                   { control: texOffsetY,           prop: "range",         slot: null },
+            "nmPBRRange":                        { control: nmPBRRange,           prop: "range",         slot: null },
+            "mPBRRange":                         { control: mPBRRange,            prop: "range",         slot: null },
+
             // shader parameters
-            "uLivePreview":           { control: enableLivePreview,      prop: "checked"      },
-            "uPBRValidation":         { control: enablePBRValidation,    prop: "checked"      },
-            "uDebugChannel":          { control: debugChannel,           prop: "currentKey"   },
-            "uPBRRanges":             { control: pbrRanges,              prop: "ranges"       },
-            "uTexTransform":          { control: texTransform,           prop: "transform"    },
-            "uWearTransform":         { control: wearTransform,          prop: "transform"    },
-            "uGrungeTransform":       { control: grungeTransform,        prop: "transform"    },
-            "g_flWearAmount":         { control: wearAmount,             prop: "value"        },
-            "g_flWeaponLength":       { control: weaponBox,              prop: "weaponLength" },
-            "g_flUvScale":            { control: weaponBox,              prop: "uvScale"      },
-            "g_bIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
-            "g_bRoughnessPerColor":       { control: useRoughByCol,          prop: "checked"      },
-            "g_bUseRoughness":        { control: useRoughTex,            prop: "checked"      },
-            "g_bUsePearlescenceMask":          { control: usePearlMask,           prop: "checked"      },
-            "g_bUseNormalMap":       { control: useNormalMap,           prop: "checked"      },
-            "g_bOverrideDefaultMasks":        { control: useMatMasks,            prop: "checked"      },
-            "g_bOverrideAmbientOcclusion":        { control: useAOTex,               prop: "checked"      },
-            "g_tPattern":          { control: patternTex,             prop: "url"          },
-            "g_tPaintRoughness":          { control: useRoughTex,            prop: "url"          },
-            "g_tPearlescenceMask":          { control: usePearlMask,           prop: "url"          },
-            "g_tPaintNormal":         { control: useNormalMap,           prop: "url"          },
-            "g_tPaintMasks":          { control: useMatMasks,            prop: "url"          },
-            "g_tPaintAO":             { control: useAOTex,               prop: "url"          },
-            "g_vSprayBiasBlend":            { control: sprayBlend,             prop: "array"        },
-            "g_flPaintRoughness":            { control: paintRough,             prop: "value"        },
-            "g_flPearlescentScale":            { control: pearlScale,             prop: "value"        },
-            "g_vPaintRoughness":         { control: paintRoughNum,          prop: "array"        },
-            "g_vPaintMetalness":         { control: paintMetalNum,          prop: "array"        },
-            "g_vPaintDurability":    { control: paintDurabilityNum,     prop: "array"        },
+            "g_bLivePreview":                    { control: enableLivePreview,    prop: "checked",       slot: null },
+            "g_bPBRValidation":                  { control: enablePBRValidation,  prop: "checked",       slot: null },
+            "g_bDebugChannel":                   { control: debugChannel,         prop: "currentKey",    slot: null },
+            "uPBRRanges":                        { control: pbrRanges,            prop: "ranges",        slot: null },
+            "g_vPatternTexCoordXform0":          { control: patternTransform,     prop: "matrixForm0",   slot: null },
+            "g_vPatternTexCoordXform1":          { control: patternTransform,     prop: "matrixForm1",   slot: null },
+            "g_vWearTexCoordXform0":             { control: wearTransform,        prop: "matrixForm0",   slot: null },
+            "g_vWearTexCoordXform1":             { control: wearTransform,        prop: "matrixForm1",   slot: null },
+            "g_vGrungeTexCoordXform0":           { control: grungeTransform,      prop: "matrixForm0",   slot: null },
+            "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null },
+            "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null },
+            "g_flWeaponLength":                  { control: weaponBox,            prop: "weaponLength",  slot: null },
+            "g_flUvScale":                       { control: weaponBox,            prop: "uvScale",       slot: null },
+            "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null },
+            "g_bRoughnessPerColor":              { control: useRoughByCol,        prop: "checked",       slot: null },
+            "g_bUseRoughness":                   { control: useRoughTex,          prop: "checked",       slot: null },
+            "g_bUsePearlescenceMask":            { control: usePearlMask,         prop: "checked",       slot: null },
+            "g_bUseNormalMap":                   { control: useNormalMap,         prop: "checked",       slot: null },
+            "g_bOverrideDefaultMasks":           { control: useMatMasks,          prop: "checked",       slot: null },
+            "g_bOverrideAmbientOcclusion":       { control: useAOTex,             prop: "checked",       slot: null },
+            "g_tPattern":                        { control: patternTex,           prop: "url",           slot: null },
+            "g_tPaintRoughness":                 { control: useRoughTex,          prop: "url",           slot: null },
+            "g_tPearlescenceMask":               { control: usePearlMask,         prop: "url",           slot: null },
+            "g_tPaintNormal":                    { control: useNormalMap,         prop: "url",           slot: null },
+            "g_tPaintMasks":                     { control: useMatMasks,          prop: "url",           slot: null },
+            "g_tPaintAO":                        { control: useAOTex,             prop: "url",           slot: null },
+            "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null },
+            "g_flPaintRoughness":                { control: paintRough,           prop: "value",         slot: null },
+            "g_flPearlescentScale":              { control: pearlScale,           prop: "value",         slot: null },
+            "g_vPaintRoughness":                 { control: paintRoughNum,        prop: "array",         slot: null },
+            "g_vPaintMetalness":                 { control: paintMetalNum,        prop: "array",         slot: null },
+            "g_vPaintDurability":                { control: paintDurabilityNum,   prop: "array",         slot: null },
+
             // dynamically generated components
-            "g_tColor":             { control: null,                   prop: "url"          },
-            "g_tMetalness":             { control: null,                   prop: "url"          },
-            "g_tSurface":            { control: null,                   prop: "url"          },
-            "g_tMasks":             { control: null,                   prop: "url"          },
-            "g_tAmbientOcclusion":            { control: null,                   prop: "url"          },
-            "g_tWear":               { control: null,                   prop: "url"          },
-            "g_tGrunge":             { control: null,                   prop: "url"          },
-            "g_vColor0":                  { control: null,                   prop: "arrayColor"   },
-            "g_vColor1":                  { control: null,                   prop: "arrayColor"   },
-            "g_vColor2":                  { control: null,                   prop: "arrayColor"   },
-            "g_vColor3":                  { control: null,                   prop: "arrayColor"   }
+            "g_tColor":                          { control: null,                 prop: "url",           slot: null },
+            "g_tMetalness":                      { control: null,                 prop: "url",           slot: null },
+            "g_tSurface":                        { control: null,                 prop: "url",           slot: null },
+            "g_tMasks":                          { control: null,                 prop: "url",           slot: null },
+            "g_tAmbientOcclusion":               { control: null,                 prop: "url",           slot: null },
+            "g_tWear":                           { control: null,                 prop: "url",           slot: null },
+            "g_tGrunge":                         { control: null,                 prop: "url",           slot: null },
+            "g_vColor0":                         { control: null,                 prop: "arrayColor",    slot: null },
+            "g_vColor1":                         { control: null,                 prop: "arrayColor",    slot: null },
+            "g_vColor2":                         { control: null,                 prop: "arrayColor",    slot: null },
+            "g_vColor3":                         { control: null,                 prop: "arrayColor",    slot: null }
         }
     }
+
+    TransformMatrix { id: patternTransform }
+    TransformMatrix { id: wearTransform }
+    TransformMatrix { id: grungeTransform }
 
     component TextureFetcher: ColumnLayout {
         id: fetcher
@@ -217,40 +217,6 @@ Rectangle {
         }
     }
     
-    SPLock {
-        id: texTransform
-
-        property var transform: [1.0, 0.0, 0.0, 0.0]
-
-        onTransformChanged: update(() => {
-            patternTexCoordScale.value = transform[0];
-            texOffsetX.value = transform[1];
-            texOffsetY.value = transform[2];
-            texRotation.value = transform[3];
-        })
-
-        function sync() {
-            update(() => {
-                transform = [
-                    patternTexCoordScale.value, 
-                    texOffsetX.value, 
-                    texOffsetY.value,
-                    texRotation.value
-                ];
-            });
-        }
-    }
-
-    QtObject {
-        id: wearTransform
-        property var transform: [1.0, 0.0, 0.0, 0.0]
-    }
-
-    QtObject {
-        id: grungeTransform
-        property var transform: [1.0, 0.0, 0.0, 0.0]
-    }
-
     ColumnLayout {
         anchors.fill: root
         anchors.margins: 10
@@ -545,24 +511,20 @@ Rectangle {
 
                 onSeedChanged: {
                     const r = new Random.Stream(seed);
-                    texTransform.transform = [
-                        patternTexCoordScale.value, 
-                        r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue),
-                        1.0 - r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue),
-                        r.randomFloat(texRotation.minValue, texRotation.maxValue)
-                    ];
-                    wearTransform.transform = [
-                        r.randomFloat(1.6, 1.8),
-                        r.randomFloat(0.0, 1.0),
-                        1.0 - r.randomFloat(0.0, 1.0),
-                        r.randomFloat(0.0, 360.0)
-                    ];
-                    grungeTransform.transform = [
-                        r.randomFloat(1.6, 1.8),
-                        r.randomFloat(0.0, 1.0),
-                        1.0 - r.randomFloat(0.0, 1.0),
-                        r.randomFloat(0.0, 360.0)
-                    ];
+
+                    patternTransform.rotation = r.randomFloat(texRotation.minValue, texRotation.maxValue);
+                    patternTransform.translationX = r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue);
+                    patternTransform.translationY = r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue);
+
+                    wearTransform.scale = r.randomFloat(1.6, 1.8);
+                    wearTransform.rotation = r.randomFloat(0.0, 360.0);
+                    wearTransform.translationX = r.randomFloat(0.0, 1.0);
+                    wearTransform.translationY = r.randomFloat(0.0, 1.0);
+
+                    grungeTransform.scale = r.randomFloat(1.6, 1.8);
+                    grungeTransform.rotation = r.randomFloat(0.0, 360.0);
+                    grungeTransform.translationX = r.randomFloat(0.0, 1.0);
+                    grungeTransform.translationY = r.randomFloat(0.0, 1.0);
                 }
 
                 SPLabeled {
@@ -808,7 +770,7 @@ Rectangle {
                                 text: "Texture Scale"
                                 from: -10
                                 to: 10
-                                onValueChanged: texTransform.sync()
+                                onValueChanged: patternTransform.scale = value
                             }
                             onResetRequested: weaponFinish.resetParameter("g_flPatternTexCoordScale")
                         }
@@ -914,7 +876,7 @@ Rectangle {
                                 text: "Texture Rotation"
                                 from: -360
                                 to: 360
-                                onValueChanged: texTransform.sync()
+                                onValueChanged: patternTransform.rotation = value
                             }
                             onResetRequested: weaponFinish.resetParameter("texRotationRange")
                         }
@@ -925,7 +887,7 @@ Rectangle {
                                 text: "Texture Offset X"
                                 from: -1
                                 to: 1
-                                onValueChanged: texTransform.sync()
+                                onValueChanged: patternTransform.translationX = value
                             }
                             onResetRequested: weaponFinish.resetParameter("texOffsetXRange")
                         }
@@ -936,7 +898,7 @@ Rectangle {
                                 text: "Texture Offset Y"
                                 from: -1
                                 to: 1
-                                onValueChanged: texTransform.sync()
+                                onValueChanged: patternTransform.translationY = value
                             }
                             onResetRequested: weaponFinish.resetParameter("texOffsetYRange")
                         }

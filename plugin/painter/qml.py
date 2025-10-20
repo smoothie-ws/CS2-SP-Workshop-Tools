@@ -52,7 +52,8 @@ class QmlView(QtCore.QObject):
     def js(self, code: str):
         try:
             res = sp.js.evaluate(code)
-        except:
+        except Exception as e:
+            # Log.error(str(e))
             res = None
         return json.dumps(res)
     

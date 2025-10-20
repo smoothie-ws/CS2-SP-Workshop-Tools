@@ -339,7 +339,6 @@ class WeaponFinish:
 			if not Path.exists(textures_folder):
 				Log.info(f'Be careful: path "{textures_folder}" for textures does not exist!')
 			textures_folder = textures_folder.split("workshop_items")[-1]
-			print(textures_folder)
 			if len(textures_folder) > 0 and textures_folder[0] == "/":
 				textures_folder = textures_folder[1:]
 

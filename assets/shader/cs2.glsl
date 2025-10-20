@@ -1,8 +1,8 @@
 import lib-normal.glsl
 import lib-vectors.glsl
 
-#include "customweapon.glsl"
 #include "std/pbr.glsl"
+#include "customweapon.glsl"
 
 //: metadata {
 //:  "custom-ui" : "cs2-ui.qml"
@@ -11,11 +11,11 @@ import lib-vectors.glsl
 // General Parameters --------------------------------------------- //
 
 //: param custom { "default": true }
-uniform_specialization bool uLivePreview;
+uniform_specialization bool g_bLivePreview;
 //: param custom { "default": 0 }
-uniform_specialization int uDebugChannel;
+uniform_specialization int g_bDebugChannel;
 //: param custom { "default": false }
-uniform_specialization bool uPBRValidation;
+uniform_specialization bool g_bPBRValidation;
 #if EXTERN_MODE
 //: param auto channel_basecolor
     uniform SamplerSparse g_tMatColor;
@@ -28,27 +28,27 @@ uniform_specialization bool uPBRValidation;
 void shade(V2F inputs) {
     ShaderOutputs outputs;
 
-    if (uLivePreview) {
+    if (g_bLivePreview) {
         composeCustomWeapon(inputs, outputs);
-        if (uPBRValidation)
+        if (g_bPBRValidation)
             validatePBR(outputs);
 
-        // switch (uDebugChannel) {
-        //     case 1:
-        //         emissiveColorOutput(vec3(1.0 - outputs.wear));
-        //         break;
-        //     case 2:
-        //         emissiveColorOutput(outputs.color);
-        //         break;
-        //     case 3:
+        switch (g_bDebugChannel) {
+            case 1:
+                emissiveColorOutput(vec3(1.0 - outputs.wear));
+                break;
+            case 2:
+                emissiveColorOutput(outputs.color);
+                break;
+            case 3:
                 emissiveColorOutput(sRGB2linear(vec3(outputs.orm)));
-        //         break;
-        //     case 4:
-        //         emissiveColorOutput(sRGB2linear(vec3(outputs.pearlFactor / TAU + 0.5)));
-        //         break;
-        //     default:
-        //         shadePBR(outputs);
-        // }
+                break;
+            case 4:
+                emissiveColorOutput(sRGB2linear(vec3(outputs.pearlFactor / TAU + 0.5)));
+                break;
+            default:
+                shadePBR(outputs);
+        }
     } else {
         outputs.vectors = computeLocalFrame(inputs);
         outputs.orm.r = getAO(inputs.tex_coord, true);
