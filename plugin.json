@@ -254,6 +254,7 @@
                 1
             ]
         },
+        "dev_mode": false,
         "check_for_updates": true
     }
 }

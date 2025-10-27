@@ -21,6 +21,7 @@ class MainView(QmlView):
         
     # signals
     cs2PathIsMissing = QtCore.Signal()
+    devModeChanged = QtCore.Signal(bool)
     projectKindChanged = QtCore.Signal(int)
     projectAboutToSave = QtCore.Signal()
     styleReady = QtCore.Signal()
@@ -255,9 +256,12 @@ class SettingsWindow(QmlDialog):
         self.view.setMinimumSize(QtCore.QSize(875, 425))
         
     def on_confirmed(self, data: str) -> None:
+        from . import CS2WT
+        
         for key, value in json.loads(data).items():
             Plugin.settings[key] = value
         Plugin.save()
+        CS2WT.main_view.devModeChanged.emit(Plugin.settings["dev_mode"])
             
     # signals
     decompilationStarted = QtCore.Signal()

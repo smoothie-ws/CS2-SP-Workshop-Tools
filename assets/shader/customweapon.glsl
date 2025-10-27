@@ -80,8 +80,8 @@ uniform float g_flPearlescentScale;
         uniform float g_flPaintMetalness;
     #endif
     #if GS
-//: param custom { "default": 0 }
-        uniform int g_bPearlescentOnMetallicOnly;
+//: param custom { "default": false }
+        uniform bool g_bPearlescentOnMetallicOnly;
     #endif
 #endif
 #if !SO
@@ -478,6 +478,10 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
     #endif
 
     outputs.metalness = vec4(fvMetalness.xyz, g_flPearlescentScale);
+    #if GS
+        if (g_bPearlescentOnMetallicOnly)
+            outputs.metalness.w *= fvMasks.x;
+    #endif
     if (g_bUsePearlescenceMask)
         outputs.metalness.w *= tex2D(g_tPearlescenceMask, vBaseUV_PatternUV.zw).r;
 

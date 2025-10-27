@@ -18,13 +18,14 @@ Rectangle {
     // 1 - regular project
     // 2 - weapon finish
     property int projectKind: 0
+    property bool isDevMode: false
 
     Connections {
         target: Plugin
 
-        function onProjectKindChanged(projectKind) {
-            root.projectKind = projectKind;
-            if (projectKind == 2) {
+        function onProjectKindChanged(kind) {
+            root.projectKind = kind;
+            if (kind == 2) {
                 weaponFinish.loadParams();
                 const c = weaponFinish.parameters["econitem"];
                 if (c !== undefined) {
@@ -40,6 +41,10 @@ Rectangle {
                 }
             }
             finishName.text = "#UNKNOWN";
+        }
+
+        function onDevModeChanged(isDevMode) {
+            root.isDevMode = isDevMode;
         }
 
         function onProjectAboutToSave() {
@@ -92,6 +97,7 @@ Rectangle {
             "g_vGrungeTexCoordXform0":           { control: grungeTransform,      prop: "matrixForm0",   slot: null,  expr: null },
             "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null,  expr: null },
             "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null,  expr: null },
+            "g_fWearSoftness":                   { control: wearSoftness,         prop: "value",         slot: null,  expr: null },
             "g_flWeaponLength":                  { control: weaponBox,            prop: "weaponLength",  slot: null,  expr: null },
             "g_flUvScale":                       { control: weaponBox,            prop: "uvScale",       slot: null,  expr: null },
             "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null,  expr: null },
@@ -108,11 +114,14 @@ Rectangle {
             "g_tPaintAO":                        { control: useAOTex,             prop: "url",           slot: null,  expr: null },
             "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null,  expr: null },
             "g_flPaintRoughness":                { control: paintRough,           prop: "value",         slot: null,  expr: null },
+            "g_flPaintMetalness":                { control: paintMetal,           prop: "value",         slot: null,  expr: null },
             "g_flPearlescentScale":              { control: pearlScale,           prop: "value",         slot: null,  expr: null },
+            "g_bPearlescentOnMetallicOnly":      { control: pearlOnMetallicOnly,  prop: "checked",       slot: null,  expr: null },
             "g_bRoughnessPerColor":              { control: useRoughByCol,        prop: "checked",       slot: null,  expr: null },
             "g_vPaintRoughness":                 { control: paintRoughNum,        prop: "array",         slot: null,  expr: null },
             "g_vPaintMetalness":                 { control: paintMetalNum,        prop: "array",         slot: null,  expr: null },
             "g_vPaintDurability":                { control: paintDurabilityNum,   prop: "array",         slot: null,  expr: x => [1.0 - x[0], 1.0 - x[1], 1.0 - x[2], 1.0 - x[3]] },
+            "g_flColorBrightness":               { control: colorBrightness,      prop: "value",         slot: null,  expr: null }, 
 
             // dynamically generated components
             "g_tColor":                          { control: null,                 prop: "url",           slot: null,  expr: null },
@@ -732,6 +741,14 @@ Rectangle {
                     to: wearRange.maxValue.toFixed(2)
                     onValueChanged: wearRange.value = value
                 }
+
+                SPSlider {
+                    id: wearSoftness
+                    visible: root.isDevMode
+                    text: "Wear Softness"
+                    from: 0.0
+                    to: 1.0
+                }
             }
 
             ScrollView {
@@ -791,9 +808,20 @@ Rectangle {
                         id: colorGroup
                         Layout.fillWidth: true
                         text: "Colors"
-                        visible: styleBox.currentKey != "cu"
+                        visible: styleBox.currentKey != "cu" || root.isDevMode
 
                         property real labelScopeWidth: 0.0
+
+                        SPParameter {
+                            visible: root.isDevMode
+                            SPSlider {
+                                id: colorBrightness
+                                text: "Color Brightness"
+                                from: 1
+                                to: 100
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_flColorBrightness")
+                        }
 
                         TextureFetcher {
                             id: useColMask
@@ -944,6 +972,17 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("g_flPaintRoughness")
                         }
 
+                        SPParameter {
+                            visible: root.isDevMode && ["cu", "gs"].includes(styleBox.currentKey)
+                            SPSlider {
+                                id: paintMetal
+                                text: "Paint Metalness"
+                                from: 0
+                                to: 1
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_flPaintMetalness")
+                        }
+
                         SPSeparator { Layout.fillWidth: true }
 
                         TextureFetcher {
@@ -998,6 +1037,14 @@ Rectangle {
                                 to: 6
                             }
                             onResetRequested: weaponFinish.resetParameter("g_flPearlescentScale")
+                        }
+
+                        SPButton {
+                            id: pearlOnMetallicOnly
+                            visible: root.isDevMode && ["gs"].includes(styleBox.currentKey)
+                            checkable: true
+                            text: "Pearlescent On Metallic Only"
+                            Layout.fillWidth: true
                         }
                     }
 

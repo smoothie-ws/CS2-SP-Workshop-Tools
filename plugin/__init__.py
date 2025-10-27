@@ -27,6 +27,7 @@ class CS2WT(Plugin):
             Path.copy(Path.asset("shader", "ui.qml"), sp_shader_ui_path)
             
         CS2WT.init_ui()
+        CS2WT.main_view.devModeChanged.emit(Plugin.settings.get("dev_mode", False))
     
     @classmethod
     def on_close(cls):

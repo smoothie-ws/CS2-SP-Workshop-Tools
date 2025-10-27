@@ -71,6 +71,7 @@ SPDialog {
         id: internal
         
         property string cs2Path: ""
+        property alias isDevMode: devMode.checked
         property bool cs2PathIsValid: false
         property var weapons: []
         property bool weaponIsValid: false
@@ -161,6 +162,7 @@ SPDialog {
             weapon_finish[param] = component.control[component.prop];
         return {
             cs2_path: internal.cs2PathIsValid ? internal.cs2Path : "",
+            dev_mode: internal.isDevMode,
             weapons: internal.weapons,
             weapon_finish: weapon_finish
         }
@@ -178,6 +180,9 @@ SPDialog {
                 if (component !== undefined)
                     component.control[component.prop] = value;
             }
+        if ("dev_mode" in settings)
+            internal.isDevMode = settings["dev_mode"];
+
         internal.syncWeapons();
     }
 
@@ -591,6 +596,13 @@ SPDialog {
                             }
                         }
                     }
+                }
+
+                SPButton {
+                    id: devMode
+                    text: "Developer Mode"
+                    checkable: true
+                    Layout.fillWidth: true
                 }
             }
 
