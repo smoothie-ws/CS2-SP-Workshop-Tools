@@ -29,7 +29,7 @@ QtObject {
         for (const param of shaderParams) {
             if (!parameters.hasOwnProperty(param)) continue;
 
-            const { prop, control } = parameters[param];
+            const { prop, control, expr } = parameters[param];
             const signalName = prop + 'Changed';
 
             if (parameters[param].slot) {
@@ -37,7 +37,9 @@ QtObject {
                 parameters[param].slot = null;
             }
 
-            const fn = () => Plugin.js(`alg.shaders.parameter(0,"${param}").value = ${JSON.stringify(control[prop])}`);
+            const fn = expr == null ? 
+                () => Plugin.js(`alg.shaders.parameter(0,"${param}").value = ${JSON.stringify(control[prop])}`) : 
+                () => Plugin.js(`alg.shaders.parameter(0,"${param}").value = ${JSON.stringify(expr(control[prop]))}`);
             fn();
             
             if (control[signalName]) {

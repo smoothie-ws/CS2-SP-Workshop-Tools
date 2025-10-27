@@ -35,32 +35,33 @@ void shade(V2F inputs) {
 
         switch (g_bDebugChannel) {
             case 1:
-                emissiveColorOutput(vec3(1.0 - outputs.wear));
+                emissiveColorOutput(vec3(outputs.metalness.z));
                 break;
             case 2:
-                emissiveColorOutput(outputs.color);
+                emissiveColorOutput(outputs.color.rgb);
                 break;
             case 3:
-                emissiveColorOutput(sRGB2linear(vec3(outputs.orm)));
+                emissiveColorOutput(sRGB2linear(vec3(outputs.metalness.xy, 0.0)));
                 break;
             case 4:
-                emissiveColorOutput(sRGB2linear(vec3(outputs.pearlFactor / TAU + 0.5)));
+                emissiveColorOutput(sRGB2linear(vec3(outputs.metalness.w / TAU + 0.5)));
                 break;
             default:
                 shadePBR(outputs);
         }
     } else {
         outputs.vectors = computeLocalFrame(inputs);
-        outputs.orm.r = getAO(inputs.tex_coord, true);
         #if EXTERN_MODE
-            outputs.color = tex2D(g_tMatColor, inputs.tex_coord).rgb;
-            outputs.orm.g = tex2D(g_tMatRough, inputs.tex_coord).r;
-            outputs.orm.b = tex2D(g_tMatMasks, inputs.tex_coord).r;
+            outputs.color.rgb = tex2D(g_tMatColor, inputs.tex_coord).rgb;
+            outputs.metalness.r = tex2D(g_tMatRough, inputs.tex_coord).r;
+            outputs.metalness.g = tex2D(g_tMatMasks, inputs.tex_coord).r;
         #else
-            outputs.color = tex2D(g_tPattern, inputs.tex_coord).rgb;
-            outputs.orm.g = tex2D(g_tPaintRoughness, inputs.tex_coord).r;
-            outputs.orm.b = tex2D(g_tPaintMasks, inputs.tex_coord).r;
+            outputs.color.rgb = tex2D(g_tPattern, inputs.tex_coord).rgb;
+            outputs.metalness.r = tex2D(g_tPaintRoughness, inputs.tex_coord).r;
+            outputs.metalness.g = tex2D(g_tPaintMasks, inputs.tex_coord).r;
         #endif
+        outputs.color.w = getAO(inputs.tex_coord, true);
+        outputs.metalness.ba = vec2(1.0, 0.0);
         shadePBR(outputs);
     }
 }

@@ -56,76 +56,76 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        styleBox.currentKeyChanged.connect(() => if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked));
-        externMode.checkedChanged.connect(() => if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked););
-        weaponBox.currentKeyChanged.connect(() => if (root.projectKind == 2) weaponFinish.updateWeapon(weaponBox.currentKey));
-        weaponFinish.parameters["g_tWear"].control.url = Plugin.importTexture(Plugin.asset("textures/wear.png").slice(5));
-        weaponFinish.parameters["g_tGrunge"].control.url = Plugin.importTexture(Plugin.asset("textures/grunge.png").slice(5));
+        styleBox.currentKeyChanged.connect(() => { if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked); });
+        externMode.checkedChanged.connect(() => { if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked); });
+        weaponBox.currentKeyChanged.connect(() => { if (root.projectKind == 2) weaponFinish.updateWeapon(weaponBox.currentKey); });
+        weaponFinish.parameters["g_tWear"].control.url = Plugin.importTexture(Plugin.asset("textures/paint_wear.png").slice(5));
+        weaponFinish.parameters["g_tGrunge"].control.url = Plugin.importTexture(Plugin.asset("textures/gun_grunge.png").slice(5));
     }
 
     WeaponFinish {
         id: weaponFinish
 
         parameters: {
-            "externMode":                        { control: externMode,           prop: "checked",       slot: null },
-            "style":                             { control: styleBox,             prop: "currentKey",    slot: null },
-            "weapon":                            { control: weaponBox,            prop: "currentKey",    slot: null },
-            "econitem":                          { control: econitem,             prop: "filePath",      slot: null },
-            "texturesFolder":                    { control: texturesFolder,       prop: "filePath",      slot: null },
-            "wearRange":                         { control: wearRange,            prop: "range",         slot: null },
-            "g_flPatternTexCoordScale":          { control: patternTexCoordScale, prop: "value",         slot: null },
-            "texRotationRange":                  { control: texRotation,          prop: "range",         slot: null },
-            "texOffsetXRange":                   { control: texOffsetX,           prop: "range",         slot: null },
-            "texOffsetYRange":                   { control: texOffsetY,           prop: "range",         slot: null },
-            "nmPBRRange":                        { control: nmPBRRange,           prop: "range",         slot: null },
-            "mPBRRange":                         { control: mPBRRange,            prop: "range",         slot: null },
+            "externMode":                        { control: externMode,           prop: "checked",       slot: null,  expr: null },
+            "style":                             { control: styleBox,             prop: "currentKey",    slot: null,  expr: null },
+            "weapon":                            { control: weaponBox,            prop: "currentKey",    slot: null,  expr: null },
+            "econitem":                          { control: econitem,             prop: "filePath",      slot: null,  expr: null },
+            "texturesFolder":                    { control: texturesFolder,       prop: "filePath",      slot: null,  expr: null },
+            "wearRange":                         { control: wearRange,            prop: "range",         slot: null,  expr: null },
+            "g_flPatternTexCoordScale":          { control: patternTexCoordScale, prop: "value",         slot: null,  expr: null },
+            "texRotationRange":                  { control: texRotation,          prop: "range",         slot: null,  expr: null },
+            "texOffsetXRange":                   { control: texOffsetX,           prop: "range",         slot: null,  expr: null },
+            "texOffsetYRange":                   { control: texOffsetY,           prop: "range",         slot: null,  expr: null },
+            "nmPBRRange":                        { control: nmPBRRange,           prop: "range",         slot: null,  expr: null },
+            "mPBRRange":                         { control: mPBRRange,            prop: "range",         slot: null,  expr: null },
 
             // shader parameters
-            "g_bLivePreview":                    { control: enableLivePreview,    prop: "checked",       slot: null },
-            "g_bPBRValidation":                  { control: enablePBRValidation,  prop: "checked",       slot: null },
-            "g_bDebugChannel":                   { control: debugChannel,         prop: "currentKey",    slot: null },
-            "uPBRRanges":                        { control: pbrRanges,            prop: "ranges",        slot: null },
-            "g_vPatternTexCoordXform0":          { control: patternTransform,     prop: "matrixForm0",   slot: null },
-            "g_vPatternTexCoordXform1":          { control: patternTransform,     prop: "matrixForm1",   slot: null },
-            "g_vWearTexCoordXform0":             { control: wearTransform,        prop: "matrixForm0",   slot: null },
-            "g_vWearTexCoordXform1":             { control: wearTransform,        prop: "matrixForm1",   slot: null },
-            "g_vGrungeTexCoordXform0":           { control: grungeTransform,      prop: "matrixForm0",   slot: null },
-            "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null },
-            "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null },
-            "g_flWeaponLength":                  { control: weaponBox,            prop: "weaponLength",  slot: null },
-            "g_flUvScale":                       { control: weaponBox,            prop: "uvScale",       slot: null },
-            "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null },
-            "g_bRoughnessPerColor":              { control: useRoughByCol,        prop: "checked",       slot: null },
-            "g_bUseRoughness":                   { control: useRoughTex,          prop: "checked",       slot: null },
-            "g_bUsePearlescenceMask":            { control: usePearlMask,         prop: "checked",       slot: null },
-            "g_bUseNormalMap":                   { control: useNormalMap,         prop: "checked",       slot: null },
-            "g_bOverrideDefaultMasks":           { control: useMatMasks,          prop: "checked",       slot: null },
-            "g_bOverrideAmbientOcclusion":       { control: useAOTex,             prop: "checked",       slot: null },
-            "g_tPattern":                        { control: patternTex,           prop: "url",           slot: null },
-            "g_tPaintRoughness":                 { control: useRoughTex,          prop: "url",           slot: null },
-            "g_tPearlescenceMask":               { control: usePearlMask,         prop: "url",           slot: null },
-            "g_tPaintNormal":                    { control: useNormalMap,         prop: "url",           slot: null },
-            "g_tPaintMasks":                     { control: useMatMasks,          prop: "url",           slot: null },
-            "g_tPaintAO":                        { control: useAOTex,             prop: "url",           slot: null },
-            "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null },
-            "g_flPaintRoughness":                { control: paintRough,           prop: "value",         slot: null },
-            "g_flPearlescentScale":              { control: pearlScale,           prop: "value",         slot: null },
-            "g_vPaintRoughness":                 { control: paintRoughNum,        prop: "array",         slot: null },
-            "g_vPaintMetalness":                 { control: paintMetalNum,        prop: "array",         slot: null },
-            "g_vPaintDurability":                { control: paintDurabilityNum,   prop: "array",         slot: null },
+            "g_bLivePreview":                    { control: enableLivePreview,    prop: "checked",       slot: null,  expr: null },
+            "g_bPBRValidation":                  { control: enablePBRValidation,  prop: "checked",       slot: null,  expr: null },
+            "g_bDebugChannel":                   { control: debugChannel,         prop: "currentKey",    slot: null,  expr: null },
+            "g_vPBRRanges":                      { control: pbrRanges,            prop: "ranges",        slot: null,  expr: x => [x[0] / 255, x[1] / 255, x[2] / 255, x[3] / 255] },
+            "g_vPatternTexCoordXform0":          { control: patternTransform,     prop: "matrixForm0",   slot: null,  expr: null },
+            "g_vPatternTexCoordXform1":          { control: patternTransform,     prop: "matrixForm1",   slot: null,  expr: null },
+            "g_vWearTexCoordXform0":             { control: wearTransform,        prop: "matrixForm0",   slot: null,  expr: null },
+            "g_vWearTexCoordXform1":             { control: wearTransform,        prop: "matrixForm1",   slot: null,  expr: null },
+            "g_vGrungeTexCoordXform0":           { control: grungeTransform,      prop: "matrixForm0",   slot: null,  expr: null },
+            "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null,  expr: null },
+            "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null,  expr: null },
+            "g_flWeaponLength":                  { control: weaponBox,            prop: "weaponLength",  slot: null,  expr: null },
+            "g_flUvScale":                       { control: weaponBox,            prop: "uvScale",       slot: null,  expr: null },
+            "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null,  expr: null },
+            "g_bOverrideAmbientOcclusion":       { control: useAOTex,             prop: "checked",       slot: null,  expr: null },
+            "g_bOverrideDefaultMasks":           { control: useMatMasks,          prop: "checked",       slot: null,  expr: null },
+            "g_bUseNormalMap":                   { control: useNormalMap,         prop: "checked",       slot: null,  expr: null },
+            "g_bUseRoughness":                   { control: useRoughTex,          prop: "checked",       slot: null,  expr: null },
+            "g_bUsePearlescenceMask":            { control: usePearlMask,         prop: "checked",       slot: null,  expr: null },
+            "g_tPattern":                        { control: patternTex,           prop: "url",           slot: null,  expr: null },
+            "g_tPaintRoughness":                 { control: useRoughTex,          prop: "url",           slot: null,  expr: null },
+            "g_tPearlescenceMask":               { control: usePearlMask,         prop: "url",           slot: null,  expr: null },
+            "g_tPaintNormal":                    { control: useNormalMap,         prop: "url",           slot: null,  expr: null },
+            "g_tPaintMasks":                     { control: useMatMasks,          prop: "url",           slot: null,  expr: null },
+            "g_tPaintAO":                        { control: useAOTex,             prop: "url",           slot: null,  expr: null },
+            "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null,  expr: null },
+            "g_flPaintRoughness":                { control: paintRough,           prop: "value",         slot: null,  expr: null },
+            "g_flPearlescentScale":              { control: pearlScale,           prop: "value",         slot: null,  expr: null },
+            "g_bRoughnessPerColor":              { control: useRoughByCol,        prop: "checked",       slot: null,  expr: null },
+            "g_vPaintRoughness":                 { control: paintRoughNum,        prop: "array",         slot: null,  expr: null },
+            "g_vPaintMetalness":                 { control: paintMetalNum,        prop: "array",         slot: null,  expr: null },
+            "g_vPaintDurability":                { control: paintDurabilityNum,   prop: "array",         slot: null,  expr: x => [1.0 - x[0], 1.0 - x[1], 1.0 - x[2], 1.0 - x[3]] },
 
             // dynamically generated components
-            "g_tColor":                          { control: null,                 prop: "url",           slot: null },
-            "g_tMetalness":                      { control: null,                 prop: "url",           slot: null },
-            "g_tSurface":                        { control: null,                 prop: "url",           slot: null },
-            "g_tMasks":                          { control: null,                 prop: "url",           slot: null },
-            "g_tAmbientOcclusion":               { control: null,                 prop: "url",           slot: null },
-            "g_tWear":                           { control: null,                 prop: "url",           slot: null },
-            "g_tGrunge":                         { control: null,                 prop: "url",           slot: null },
-            "g_vColor0":                         { control: null,                 prop: "arrayColor",    slot: null },
-            "g_vColor1":                         { control: null,                 prop: "arrayColor",    slot: null },
-            "g_vColor2":                         { control: null,                 prop: "arrayColor",    slot: null },
-            "g_vColor3":                         { control: null,                 prop: "arrayColor",    slot: null }
+            "g_tColor":                          { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tMetalness":                      { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tSurface":                        { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tAmbientOcclusion":               { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tMasks":                          { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tWear":                           { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tGrunge":                         { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_vColor0":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
+            "g_vColor1":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
+            "g_vColor2":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
+            "g_vColor3":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] }
         }
     }
 
@@ -928,7 +928,7 @@ Rectangle {
                             id: paintRoughNum
                             visible: useRoughByCol.visible && useRoughByCol.checked
                             model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
-                            paramId: "g_flPaintRoughness"
+                            paramId: "g_vPaintRoughness"
                             paramName: "Paint Roughness"
                             width: parent.width
                         }
@@ -957,7 +957,7 @@ Rectangle {
                             id: paintMetalNum
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
                             model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
-                            paramId: "uPaintMetal"
+                            paramId: "g_vPaintMetalness"
                             paramName: "Paint Metalness"
                             width: parent.width
                         }
@@ -1009,7 +1009,7 @@ Rectangle {
                             id: paintDurabilityNum
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
                             model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
-                            paramId: "uPaintDurability"
+                            paramId: "g_vPaintDurability"
                             paramName: "Paint Durability"
                             width: parent.width
                         }

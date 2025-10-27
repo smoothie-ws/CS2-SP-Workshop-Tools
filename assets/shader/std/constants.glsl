@@ -3,8 +3,6 @@
 
 struct ShaderOutputs {
     LocalVectors vectors;
-    float wear;
-    float pearlFactor;
-    vec3 color;
-    vec3 orm;
+    vec4 color;
+    vec4 metalness;
 };
