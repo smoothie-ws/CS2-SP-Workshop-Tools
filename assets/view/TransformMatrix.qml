@@ -2,15 +2,18 @@ import QtQuick 2.12
 import "./SPWidgets"
 
 SPLock {
-    property real scale
-    property real rotation
-    property real translationX
-    property real translationY
+    property real scale: 1.0
+    property real rotation: 0.0
+    property real translationX: 0.0
+    property real translationY: 0.0
+
+    property real baseScale: 1.0
 
     property var matrixForm0: [1.0, 0.0, 0.0, 0.0]
     property var matrixForm1: [0.0, 1.0, 0.0, 0.0]
 
     onScaleChanged: build()
+    onBaseScaleChanged: build()
     onRotationChanged: build()
     onTranslationXChanged: build()
     onTranslationYChanged: build()
@@ -20,7 +23,7 @@ SPLock {
 
     function build() {
         update(() => {
-            const s = Math.floor((scale + 0.005) * 100) / 100;
+            const s = Math.floor((baseScale * scale + 0.005) * 100) / 100;
             const r = (Math.floor((rotation + 0.005) * 100) / 100 * 3.1415927) / 180;
             const tx = Math.floor((translationX + 0.005) * 100) / 100;
             const ty = Math.floor((translationY + 0.005) * 100) / 100;
@@ -59,7 +62,7 @@ SPLock {
             const m0 = m * cos - m * -sin;
             const m1 = m0 * -sin + m * cos;
 
-            scale = Math.floor((s + 0.005) * 100) / 100;
+            scale = Math.floor((s + 0.005) * 100) / 100 / baseScale;
             rotation = Math.floor(((t * 180) / 3.1415927 + 0.005) * 100) / 100;
             translationX = Math.floor((tx - s * cos * m0 + s * -sin * m1 + 0.5 + 0.005) * 100) / 100;
             translationY = Math.floor((ty - s * sin * m0 + s *  cos * m1 + 0.5 + 0.005) * 100) / 100;

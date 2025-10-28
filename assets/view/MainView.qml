@@ -82,14 +82,11 @@ Rectangle {
             "texRotationRange":                  { control: texRotation,          prop: "range",         slot: null,  expr: null },
             "texOffsetXRange":                   { control: texOffsetX,           prop: "range",         slot: null,  expr: null },
             "texOffsetYRange":                   { control: texOffsetY,           prop: "range",         slot: null,  expr: null },
-            "nmPBRRange":                        { control: nmPBRRange,           prop: "range",         slot: null,  expr: null },
-            "mPBRRange":                         { control: mPBRRange,            prop: "range",         slot: null,  expr: null },
 
             // shader parameters
             "g_bLivePreview":                    { control: enableLivePreview,    prop: "checked",       slot: null,  expr: null },
-            "g_bPBRValidation":                  { control: enablePBRValidation,  prop: "checked",       slot: null,  expr: null },
+            "g_bPBRValidation":                  { control: pbrValidation,        prop: "validating",    slot: null,  expr: null },
             "g_bDebugChannel":                   { control: debugChannel,         prop: "currentKey",    slot: null,  expr: null },
-            "g_vPBRRanges":                      { control: pbrRanges,            prop: "ranges",        slot: null,  expr: x => [x[0] / 255, x[1] / 255, x[2] / 255, x[3] / 255] },
             "g_vPatternTexCoordXform0":          { control: patternTransform,     prop: "matrixForm0",   slot: null,  expr: null },
             "g_vPatternTexCoordXform1":          { control: patternTransform,     prop: "matrixForm1",   slot: null,  expr: null },
             "g_vWearTexCoordXform0":             { control: wearTransform,        prop: "matrixForm0",   slot: null,  expr: null },
@@ -98,8 +95,6 @@ Rectangle {
             "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null,  expr: null },
             "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null,  expr: null },
             "g_fWearSoftness":                   { control: wearSoftness,         prop: "value",         slot: null,  expr: null },
-            "g_flWeaponLength":                  { control: weaponBox,            prop: "weaponLength",  slot: null,  expr: null },
-            "g_flUvScale":                       { control: weaponBox,            prop: "uvScale",       slot: null,  expr: null },
             "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null,  expr: null },
             "g_bOverrideAmbientOcclusion":       { control: useAOTex,             prop: "checked",       slot: null,  expr: null },
             "g_bOverrideDefaultMasks":           { control: useMatMasks,          prop: "checked",       slot: null,  expr: null },
@@ -138,9 +133,9 @@ Rectangle {
         }
     }
 
-    TransformMatrix { id: patternTransform }
-    TransformMatrix { id: wearTransform }
-    TransformMatrix { id: grungeTransform }
+    TransformMatrix { id: patternTransform; baseScale: ignoreWeaponSizeScale.checked ? 1.0 : weaponBox.uvScale }
+    TransformMatrix { id: wearTransform; baseScale: weaponBox.uvScale }
+    TransformMatrix { id: grungeTransform; baseScale: weaponBox.uvScale }
 
     component TextureFetcher: ColumnLayout {
         id: fetcher
@@ -301,7 +296,7 @@ Rectangle {
             }
 
             SPButton {
-                id: enablePBRValidation
+                id: pbrValidation
                 enabled: root.projectKind == 2 && enableLivePreview.checked
                 contentAlignment: Qt.AlignCenter
                 implicitWidth: 25
@@ -312,12 +307,25 @@ Rectangle {
                 tooltip.text: `${checked ? "Disable" : "Enable"} PBR validation of the Weapon Finish (V)`
                 background.color: checked ? "#095aba" : "transparent"
                 background.opacity: hovered ? 1.0 : 0.75
-                
+
+                property bool validating: false
+
                 onClicked: if (enabled) checked = !checked
-                
+                onValidatingChanged: if (!checked) validating = false
+
+                Timer {
+                    id: blinkTimer
+                    interval: 750
+                    running: pbrValidation.checked
+                    repeat: true
+
+                    onRunningChanged: pbrValidation.validating = running
+                    onTriggered: pbrValidation.validating = !pbrValidation.validating
+                }
+
                 Shortcut {
                     sequence: "V"
-                    onActivated: if (enablePBRValidation.enabled) enablePBRValidation.checked = !enablePBRValidation.checked
+                    onActivated: if (pbrValidation.enabled) pbrValidation.checked = !pbrValidation.checked
                 }
             }
         }
@@ -383,67 +391,6 @@ Rectangle {
                         Layout.fillWidth: true
                         map: JSON.parse(Plugin.getPreviewEnvs())
                         onCurrentKeyChanged: Plugin.setEnv(currentKey)
-                    }
-                }
-
-                SPGroup {
-                    id: pbrRanges
-                    text: "PBR Ranges"
-                    Layout.fillWidth: true
-
-                    property bool updating: false
-                    property var ranges: [50, 245, 106, 255]
-
-                    function update(f) {
-                        if (!updating) {
-                            updating = true;
-                            f();
-                            updating = false;
-                        }
-                    }
-
-                    function sync() {
-                        update(() => {
-                            ranges = [
-                                nmPBRRange.minValue, 
-                                nmPBRRange.maxValue,
-                                mPBRRange.minValue, 
-                                mPBRRange.maxValue
-                            ];
-                        });
-                    }
-
-                    onRangesChanged: update(() => {
-                        nmPBRRange.minValue = ranges[0];
-                        nmPBRRange.maxValue = ranges[1];
-                        mPBRRange.minValue = ranges[2];
-                        mPBRRange.maxValue = ranges[3];
-                    })
-
-                    SPParameter {
-                        SPRangeSlider {
-                            id: nmPBRRange
-                            text: "Non-metallic:"
-                            from: 0
-                            to: 255
-                            precision: 0
-                            pickValue: false
-                            onRangeChanged: pbrRanges.sync()
-                        }
-                        onResetRequested: weaponFinish.resetParameter("nmPBRRange")
-                    }
-
-                    SPParameter {
-                        SPRangeSlider {
-                            id: mPBRRange
-                            text: "Metallic:"
-                            from: 0
-                            to: 255
-                            precision: 0
-                            pickValue: false
-                            onRangeChanged: pbrRanges.sync()
-                        }
-                        onResetRequested: weaponFinish.resetParameter("mPBRRange")
                     }
                 }
 
@@ -667,14 +614,9 @@ Rectangle {
                         }
 
                         property var weapons: JSON.parse(Plugin.getWeapons())
-                        property real weaponLength: 1.0
                         property real uvScale: 1.0
 
-                        onCurrentKeyChanged: {
-                            const w = weapons[currentKey]; 
-                            weaponLength = w.length;
-                            uvScale = w.uv_scale;
-                        }
+                        onCurrentKeyChanged: uvScale = weapons[currentKey].uv_scale
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, style.scopeWidth)
@@ -740,14 +682,6 @@ Rectangle {
                     from: wearRange.minValue.toFixed(2)
                     to: wearRange.maxValue.toFixed(2)
                     onValueChanged: wearRange.value = value
-                }
-
-                SPSlider {
-                    id: wearSoftness
-                    visible: root.isDevMode
-                    text: "Wear Softness"
-                    from: 0.0
-                    to: 1.0
                 }
             }
 
@@ -823,18 +757,23 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("g_flColorBrightness")
                         }
 
-                        TextureFetcher {
-                            id: useColMask
-                            text: "Paint-By-Number Mask"
+                        SPParameter {
+                            width: parent.width
                             visible: ["so", "hy", "sp", "an", "am", "aa"].includes(styleBox.currentKey)
-                            Layout.fillWidth: true
 
-                            SPLock {
-                                Component.onCompleted: {
-                                    useColMask.checkedChanged.connect(() => update(() => useMatMasks.checked = useColMask.checked));
-                                    useMatMasks.checkedChanged.connect(() => update(() => useColMask.checked = useColMask.checked));
+                            TextureFetcher {
+                                id: useColMask
+                                text: "Paint-By-Number Mask"
+                                Layout.fillWidth: true
+
+                                SPLock {
+                                    Component.onCompleted: {
+                                        useColMask.checkedChanged.connect(() => update(() => useMatMasks.checked = useColMask.checked));
+                                        useMatMasks.checkedChanged.connect(() => update(() => useColMask.checked = useColMask.checked));
+                                    }
                                 }
                             }
+                            onResetRequested: weaponFinish.resetParameter("g_bOverrideDefaultMasks")
                         }
 
                         Repeater {
@@ -936,20 +875,29 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Materials"
 
-                        TextureFetcher {
-                            id: useRoughTex
-                            text: "Roughness Texture"
+                        SPParameter {
+                            width: parent.width
                             visible: !useRoughByCol.visible || (useRoughByCol.visible && !useRoughByCol.checked)
-                            Layout.fillWidth: true
+                            
+                            TextureFetcher {
+                                id: useRoughTex
+                                text: "Roughness Texture"
+                                Layout.fillWidth: true
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_bUseRoughness")
                         }
 
-                        SPButton {
-                            id: useRoughByCol
+                        SPParameter {
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey) && !useRoughTex.checked
-                            checkable: true
-                            text: "Use Roughness By Color"
-                            tooltip.text: `Whether to ${text.toLowerCase()}`
-                            Layout.fillWidth: true
+
+                            SPButton {
+                                id: useRoughByCol
+                                checkable: true
+                                text: "Use Roughness By Color"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_bRoughnessPerColor")
                         }
 
                         MultiSlider {
@@ -985,11 +933,16 @@ Rectangle {
 
                         SPSeparator { Layout.fillWidth: true }
 
-                        TextureFetcher {
-                            id: useMatMasks
-                            text: "Material Mask"
+                        SPParameter {
+                            width: parent.width
                             visible: !useColMask.visible
-                            Layout.fillWidth: true
+                            
+                            TextureFetcher {
+                                id: useMatMasks
+                                text: "Material Mask"
+                                Layout.fillWidth: true
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_bOverrideDefaultMasks")
                         }
 
                         MultiSlider {
@@ -1006,16 +959,28 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Normals"
 
-                        TextureFetcher {
-                            id: useNormalMap
-                            text: "Normal Map"
-                            Layout.fillWidth: true
+                        SPParameter {
+                            width: parent.width
+                            
+                            TextureFetcher {
+                                id: useNormalMap
+                                text: "Normal Map"
+                                Layout.fillWidth: true
+                            }
+
+                            onResetRequested: weaponFinish.resetParameter("g_bUseNormalMap")
                         }
 
-                        TextureFetcher {
-                            id: useAOTex
-                            text: "Ambient Occlusion"
-                            Layout.fillWidth: true
+                        SPParameter {
+                            width: parent.width
+                            
+                            TextureFetcher {
+                                id: useAOTex
+                                text: "Ambient Occlusion"
+                                Layout.fillWidth: true
+                            }
+
+                            onResetRequested: weaponFinish.resetParameter("g_bOverrideAmbientOcclusion")
                         }
                     }
 
@@ -1023,10 +988,16 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Effects"
 
-                        TextureFetcher {
-                            id: usePearlMask
-                            text: "Pearlescence Mask"
-                            Layout.fillWidth: true
+                        SPParameter {
+                            width: parent.width
+                            
+                            TextureFetcher {
+                                id: usePearlMask
+                                text: "Pearlescence Mask"
+                                Layout.fillWidth: true
+                            }
+
+                            onResetRequested: weaponFinish.resetParameter("g_bUsePearlescenceMask")
                         }
 
                         SPParameter {
@@ -1039,12 +1010,17 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("g_flPearlescentScale")
                         }
 
-                        SPButton {
-                            id: pearlOnMetallicOnly
+                        SPParameter {
                             visible: root.isDevMode && ["gs"].includes(styleBox.currentKey)
-                            checkable: true
-                            text: "Pearlescent On Metallic Only"
-                            Layout.fillWidth: true
+
+                            SPButton {
+                                id: pearlOnMetallicOnly
+                                checkable: true
+                                text: "Pearlescent On Metallic Only"
+                                Layout.fillWidth: true
+                            }
+
+                            onResetRequested: weaponFinish.resetParameter("g_bPearlescentOnMetallicOnly")
                         }
                     }
 
@@ -1061,6 +1037,14 @@ Rectangle {
                             width: parent.width
                         }
 
+                        SPSlider {
+                            id: wearSoftness
+                            visible: root.isDevMode
+                            text: "Wear Softness"
+                            from: 0.0
+                            to: 1.0
+                        }
+                        
                         SPParameter {
                             SPRangeSlider {
                                 id: wearRange

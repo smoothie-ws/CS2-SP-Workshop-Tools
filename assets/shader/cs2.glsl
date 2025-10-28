@@ -26,42 +26,43 @@ uniform_specialization bool g_bPBRValidation;
 #endif
 
 void shade(V2F inputs) {
-    ShaderOutputs outputs;
+    CustomWeaponOutputs O;
 
     if (g_bLivePreview) {
-        composeCustomWeapon(inputs, outputs);
+        composeCustomWeapon(inputs, O);
+        pearl(O);
         if (g_bPBRValidation)
-            validatePBR(outputs);
+            validatePBR(O);
 
         switch (g_bDebugChannel) {
             case 1:
-                emissiveColorOutput(vec3(outputs.metalness.z));
+                emissiveColorOutput(vec3(O.color.a));
                 break;
             case 2:
-                emissiveColorOutput(outputs.color.rgb);
+                emissiveColorOutput(O.color.rgb);
                 break;
             case 3:
-                emissiveColorOutput(sRGB2linear(vec3(outputs.metalness.xy, 0.0)));
+                emissiveColorOutput(sRGB2linear(O.metalness.xyz));
                 break;
             case 4:
-                emissiveColorOutput(sRGB2linear(vec3(outputs.metalness.w / TAU + 0.5)));
+                emissiveColorOutput(vec3(O.pearlFactor + 0.5));
                 break;
             default:
-                shadePBR(outputs);
+                shadePBR(O);
         }
     } else {
-        outputs.vectors = computeLocalFrame(inputs);
+        O.vectors = computeLocalFrame(inputs);
         #if EXTERN_MODE
-            outputs.color.rgb = tex2D(g_tMatColor, inputs.tex_coord).rgb;
-            outputs.metalness.r = tex2D(g_tMatRough, inputs.tex_coord).r;
-            outputs.metalness.g = tex2D(g_tMatMasks, inputs.tex_coord).r;
+            O.color.rgb = tex2D(g_tMatColor, inputs.tex_coord).rgb;
+            O.metalness.x = tex2D(g_tMatRough, inputs.tex_coord).x;
+            O.metalness.y = tex2D(g_tMatMasks, inputs.tex_coord).x;
         #else
-            outputs.color.rgb = tex2D(g_tPattern, inputs.tex_coord).rgb;
-            outputs.metalness.r = tex2D(g_tPaintRoughness, inputs.tex_coord).r;
-            outputs.metalness.g = tex2D(g_tPaintMasks, inputs.tex_coord).r;
+            O.color.rgb = tex2D(g_tPattern, inputs.tex_coord).rgb;
+            O.metalness.x = tex2D(g_tPaintRoughness, inputs.tex_coord).x;
+            O.metalness.y = tex2D(g_tPaintMasks, inputs.tex_coord).x;
         #endif
-        outputs.color.w = getAO(inputs.tex_coord, true);
-        outputs.metalness.ba = vec2(1.0, 0.0);
-        shadePBR(outputs);
+        O.color.a = 1.0;
+        O.metalness.zw = vec2(0.0, getAO(inputs.tex_coord, true));
+        shadePBR(O);
     }
 }

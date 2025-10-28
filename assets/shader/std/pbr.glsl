@@ -3,31 +3,24 @@ import lib-sampler.glsl
 
 #include "constants.glsl"
 
-//: param custom { "default": [50, 245, 106, 255] }
-uniform vec4 g_vPBRRanges; // packed values: [non-metallic min:max, metallic min:max]
-
-void shadePBR(ShaderOutputs outputs) {
+void shadePBR(CustomWeaponOutputs O) {
     float shadow = getShadowFactor();
-    vec3 diffColor = generateDiffuseColor(outputs.color.rgb, outputs.metalness.g);
-    vec3 specColor = generateSpecularColor(0.04, outputs.color.rgb, outputs.metalness.g);
-    float specOcclusion = specularOcclusionCorrection(shadow, outputs.metalness.g, outputs.metalness.r);
+    vec3 diffColor = generateDiffuseColor(O.color.rgb, O.metalness.y);
+    vec3 specColor = generateSpecularColor(0.04, O.color.rgb, O.metalness.y);
+    float specOcclusion = specularOcclusionCorrection(shadow, O.metalness.y, O.metalness.x);
 
     albedoOutput(diffColor);
-    diffuseShadingOutput(outputs.color.a * shadow * envIrradiance(outputs.vectors.normal));
-    specularShadingOutput(specOcclusion * pbrComputeSpecular(outputs.vectors, specColor, outputs.metalness.r));
+    diffuseShadingOutput(O.metalness.w * shadow * envIrradiance(O.vectors.normal));
+    specularShadingOutput(specOcclusion * pbrComputeSpecular(O.vectors, specColor, O.metalness.x));
 }
 
-void validatePBR(out ShaderOutputs outputs) {
-    float g = dot(linear2sRGB(outputs.color.rgb), vec3(0.2126, 0.7152, 0.0722));
+void validatePBR(inout CustomWeaponOutputs O) {
+    float L = dot(O.color.rgb, vec3(0.3, 0.59, 0.11));
+    float b = step(0.90 + 0.08 * O.metalness.y, L);
+    float d = step(L, 0.03 + 0.104 * O.metalness.y);
 
-    vec3 valCol = mix(
-        vec3(step(g_vPBRRanges[1], g), 0.0, step(g, g_vPBRRanges[0])), // non-metallic
-        vec3(step(g_vPBRRanges[3], g), 0.0, step(g, g_vPBRRanges[2])), // metallic
-        step(0.5, outputs.metalness.g)
-    );
+    vec3 valCol = mix(vec3(0.0), mix(vec3(1.0, 0.0, O.metalness.y), vec3(O.metalness.y, 0.0, 1.0), d), b + d);
 
-    valCol = mix(valCol, vec3(0.0), outputs.metalness.z);
-    outputs.color.rgb = clamp(outputs.color.rgb - length(valCol), 0.0, 1.0) + valCol;
-
+    O.color.rgb = mix(O.color.rgb, vec3(0.0, 0.0, 0.0), b + d) + valCol;
     emissiveColorOutput(valCol);
 }

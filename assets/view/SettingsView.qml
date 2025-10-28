@@ -77,30 +77,33 @@ SPDialog {
         property bool weaponIsValid: false
 
         property var weaponFinish: {
-            "nmPBRRange":             { control: nmPBRRange,             prop: "range"        },
-            "mPBRRange":              { control: mPBRRange,              prop: "range"        },
-            "style":                  { control: styleBox,               prop: "currentKey"   },
-            "g_flPatternTexCoordScale":               { control: g_flPatternTexCoordScale,               prop: "value"        },
-            "texRotationRange":       { control: texRotation,            prop: "range"        },
-            "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
-            "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
-            "g_bIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
-            "wearRange":              { control: wearRange,              prop: "range"        },
-            "g_flPearlescentScale":            { control: pearlScale,             prop: "value"        },
-            "g_bUsePearlescenceMask":          { control: usePearlMask,           prop: "checked"      },
-            "g_bRoughnessPerColor":       { control: useRoughByCol,          prop: "checked"      },
-            "g_bUseRoughness":        { control: useRoughTex,            prop: "checked"      },
-            "g_bUseNormalMap":       { control: useNormalMap,           prop: "checked"      },
-            "g_bOverrideDefaultMasks":        { control: useMatMasks,            prop: "checked"      },
-            "g_bOverrideAmbientOcclusion":        { control: useAOTex,               prop: "checked"      },
-            "g_flPaintRoughness":            { control: paintRoughness,         prop: "value"        },
-            "g_vPaintRoughness":         { control: paintRoughNum,          prop: "array"        },
-            "g_vPaintMetalness":         { control: paintMetalNum,          prop: "array"        },
-            "g_vPaintDurability":    { control: paintDurabilityNum,     prop: "array"        },
-            "g_vColor0":                  { control: null,                   prop: "arrayColor"   },
-            "g_vColor1":                  { control: null,                   prop: "arrayColor"   },
-            "g_vColor2":                  { control: null,                   prop: "arrayColor"   },
-            "g_vColor3":                  { control: null,                   prop: "arrayColor"   },
+            "style":                           { control: styleBox,                  prop: "currentKey" },
+            "g_flPatternTexCoordScale":        { control: g_flPatternTexCoordScale,  prop: "value" },
+            "texRotationRange":                { control: texRotation,               prop: "range" },
+            "texOffsetXRange":                 { control: texOffsetX,                prop: "range" },
+            "texOffsetYRange":                 { control: texOffsetY,                prop: "range" },
+            "g_bIgnoreWeaponSizeScale":        { control: ignoreWeaponSizeScale,     prop: "checked" },
+            "wearRange":                       { control: wearRange,                 prop: "range" },
+            "g_fWearSoftness":                 { control: wearSoftness,              prop: "value" },
+            "g_flPearlescentScale":            { control: pearlScale,                prop: "value" },
+            "g_bUsePearlescenceMask":          { control: usePearlMask,              prop: "checked" },
+            "g_bRoughnessPerColor":            { control: useRoughByCol,             prop: "checked" },
+            "g_bUseRoughness":                 { control: useRoughTex,               prop: "checked" },
+            "g_bUseNormalMap":                 { control: useNormalMap,              prop: "checked" },
+            "g_bOverrideDefaultMasks":         { control: useMatMasks,               prop: "checked" },
+            "g_bOverrideAmbientOcclusion":     { control: useAOTex,                  prop: "checked" },
+            "g_flPaintRoughness":              { control: paintRoughness,            prop: "value" },
+            "g_flPaintMetalness":              { control: paintMetal,                prop: "value" },
+            "g_vPaintRoughness":               { control: paintRoughNum,             prop: "array" },
+            "g_vPaintMetalness":               { control: paintMetalNum,             prop: "array" },
+            "g_bPearlescentOnMetallicOnly":    { control: pearlOnMetallicOnly,       prop: "checked" },
+            "g_vPaintDurability":              { control: paintDurabilityNum,        prop: "array" },
+            "g_vSprayBiasBlend":               { control: sprayBlend,                prop: "array" },
+            "g_flColorBrightness":             { control: colorBrightness,           prop: "value" }, 
+            "g_vColor0":                       { control: null,                      prop: "arrayColor" },
+            "g_vColor1":                       { control: null,                      prop: "arrayColor" },
+            "g_vColor2":                       { control: null,                      prop: "arrayColor" },
+            "g_vColor3":                       { control: null,                      prop: "arrayColor" },
         }
 
         onCs2PathChanged: cs2PathIsValid = cs2Path == "" ? true : Plugin.valCs2Path(cs2Path)
@@ -108,7 +111,6 @@ SPDialog {
         function valWeapon() {
             const id = weaponIdInput.text.trim();
             const name = weaponNameInput.text.trim();
-            const length = weaponLengthInput.text.trim();
             const uv_scale = weaponUVScaleInput.text.trim();
             for (const [wid, w] of Object.entries(weapons))
                 if (wid == id || w.name == name) {
@@ -121,12 +123,10 @@ SPDialog {
         function addWeapon() {
             weapons[weaponIdInput.text.trim()] = {
                 name: weaponNameInput.text.trim(),
-                length: weaponLengthInput.value,
                 uv_scale: weaponUVScaleInput.value,
             }
             weaponIdInput.text = "";
             weaponNameInput.text = "";
-            weaponLengthInput.text = "";
             weaponUVScaleInput.text = "";
             weaponIsValid = false;
             syncWeapons();
@@ -424,11 +424,6 @@ SPDialog {
                                 }
 
                                 SPLabeled {
-                                    text: "Length"
-                                    Layout.preferredWidth: 50
-                                }
-                                
-                                SPLabeled {
                                     text: "UV Scale"
                                     Layout.preferredWidth: 50
                                 }
@@ -455,17 +450,6 @@ SPDialog {
                                     id: weaponNameInput
                                     Layout.preferredWidth: 100
                                     tooltip.text: "Weapon Name"
-
-                                    onTextEdited: internal.valWeapon()
-                                }
-
-                                SPTextInput {
-                                    id: weaponLengthInput
-                                    Layout.preferredWidth: 50
-                                    tooltip.text: "Weapon Length"
-                                    validator: SPRegExprValidator { expr: /^-?[0-9]*\.?[0-9]*$/ }
-
-                                    readonly property real value: parseFloat(text)
 
                                     onTextEdited: internal.valWeapon()
                                 }
@@ -539,12 +523,6 @@ SPDialog {
                                                 Text {
                                                     Layout.preferredWidth: 100
                                                     text: modelData.name
-                                                    color: AlgStyle.text.color.normal
-                                                }
-
-                                                Text {
-                                                    Layout.preferredWidth: 50
-                                                    text: modelData.length.toFixed(3)
                                                     color: AlgStyle.text.color.normal
                                                 }
 
@@ -643,33 +621,6 @@ SPDialog {
                             width: weaponFinishBackground.width - 30
 
                             SPLabeled {
-                                text: "PBR Ranges"
-                                label.font.bold: true
-                                Layout.fillWidth: true
-                                Layout.topMargin: 20
-                                Layout.bottomMargin: 10
-                                SPSeparator { Layout.fillWidth: true }
-                            }
-
-                            SPRangeSlider {
-                                id: nmPBRRange
-                                text: "Non-metallic:"
-                                from: 0
-                                to: 255
-                                precision: 0
-                                pickValue: false
-                            }
-
-                            SPRangeSlider {
-                                id: mPBRRange
-                                text: "Metallic:"
-                                from: 0
-                                to: 255
-                                precision: 0
-                                pickValue: false
-                            }
-
-                            SPLabeled {
                                 text: "Common"
                                 label.font.bold: true
                                 Layout.fillWidth: true
@@ -724,6 +675,14 @@ SPDialog {
                                 SPSeparator { Layout.fillWidth: true }
                             }
 
+                            SPSlider {
+                                id: colorBrightness
+                                visible: internal.isDevMode
+                                text: "Color Brightness"
+                                from: 1
+                                to: 100
+                            }
+
                             SPButton {
                                 id: useColMask
                                 checkable: true
@@ -748,7 +707,14 @@ SPDialog {
                                 }
                                 onItemAdded: (i, item) => internal.weaponFinish[`g_vColor${i}`].control = item
                             }
-                            
+
+                            MultiSlider {
+                                id: sprayBlend
+                                model: ["Back", "Top"]
+                                paramName: "Spray Blend"
+                                width: parent.width
+                            }
+
                             SPLabeled {
                                 text: "Texture Placement"
                                 label.font.bold: true
@@ -812,6 +778,14 @@ SPDialog {
                             SPSlider {
                                 id: paintRoughness
                                 text: "Paint Roughness"
+                                from: 0
+                                to: 1
+                            }
+
+                            SPSlider {
+                                id: paintMetal
+                                visible: internal.isDevMode
+                                text: "Paint Metalness"
                                 from: 0
                                 to: 1
                             }
@@ -887,6 +861,14 @@ SPDialog {
                                 to: 6
                             }
 
+                            SPButton {
+                                id: pearlOnMetallicOnly
+                                visible: internal.isDevMode
+                                checkable: true
+                                text: "Pearlescent On Metallic Only"
+                                Layout.fillWidth: true
+                            }
+
                             SPLabeled {
                                 text: "Wear and Grunge"
                                 label.font.bold: true
@@ -903,6 +885,14 @@ SPDialog {
                                 Layout.fillWidth: true
                             }
 
+                            SPSlider {
+                                id: wearSoftness
+                                visible: internal.isDevMode
+                                text: "Wear Softness"
+                                from: 0.0
+                                to: 1.0
+                            }
+                        
                             SPRangeSlider {
                                 id: wearRange
                                 text: "Wear Range"

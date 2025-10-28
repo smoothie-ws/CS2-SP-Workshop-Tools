@@ -22,7 +22,6 @@ Item {
     onUrlChanged: {
         if (url !== "") {
             const info = JSON.parse(Plugin.js(`alg.resources.getResourceInfo("${url}")`));
-            Plugin.info(Plugin.js(`alg.resources.getResourceInfo("${url}")`));
             if (info !== null && isImageFile(info.filePath) && Plugin.pathExists(info.filePath)) {
                 resourceName = info.name;
                 preview.source = `file:///${info.filePath}`;

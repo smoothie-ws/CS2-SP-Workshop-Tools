@@ -55,8 +55,11 @@ vec3 hsl2rgb(vec3 hsl) {
     return vec3(r, g, b);
 }
 
-vec3 hueShift(vec3 col, float factor) {
-    vec3 hsl = rgb2hsl(col);
-    hsl.x = mod(hsl.x + factor / TAU, 1.0);
-    return hsl2rgb(hsl);
+void pearl(inout CustomWeaponOutputs O) {
+    O.pearlFactor *= 1.0 - max(0.0, dot(O.vectors.normal, O.vectors.eye));
+    O.pearlFactor /= TAU;
+
+    vec3 hsl = rgb2hsl(O.color.rgb);
+    hsl.x = mod(hsl.x + O.pearlFactor, 1.0);
+    O.color.rgb = mix(O.color.rgb, hsl2rgb(hsl), O.color.a);
 }

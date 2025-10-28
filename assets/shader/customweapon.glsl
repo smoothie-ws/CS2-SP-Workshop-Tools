@@ -13,6 +13,9 @@ import lib-sampler.glsl
 #define AQ PAINT_STYLE == 7 // Patina
 #define GS PAINT_STYLE == 8 // Gunsmith
 
+//: param auto camera_view_matrix_it
+uniform mat4 V_it;
+
 //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
 uniform vec4 g_vPatternTexCoordXform0;
 //: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
@@ -191,20 +194,27 @@ uniform sampler2D g_tGrunge;
 #endif
 const vec3 g_vMetallicPaintAlbedoLevels = vec3(0.080, 1.32193264, 1.00);
 
-void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
+void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
     // ----- VS ----- 
 
-    vec4 vBaseUV_PatternUV = vec4(inputs.tex_coord, 
-        dot(inputs.tex_coord, g_vPatternTexCoordXform0.xy) + g_vPatternTexCoordXform0.w, 
-        dot(inputs.tex_coord, g_vPatternTexCoordXform1.xy) + g_vPatternTexCoordXform1.w
-    );
-    vec4 vWearUV_GrungeUV = vec4(
-        dot(inputs.tex_coord, g_vWearTexCoordXform0.xy) + g_vWearTexCoordXform0.w, 
-        dot(inputs.tex_coord, g_vWearTexCoordXform1.xy) + g_vWearTexCoordXform1.w, 
-        dot(inputs.tex_coord, g_vGrungeTexCoordXform0.xy) + g_vGrungeTexCoordXform0.w, 
-        dot(inputs.tex_coord, g_vGrungeTexCoordXform1.xy) + g_vGrungeTexCoordXform1.w
-    );
-    
+    vec2 uv = inputs.tex_coord;
+    vec2 uvYup = vec2(uv.x, 1.0 - uv.y);
+
+    vec2 p  = vec2(dot(uvYup, g_vPatternTexCoordXform0.xy) + g_vPatternTexCoordXform0.w,
+                    dot(uvYup, g_vPatternTexCoordXform1.xy) + g_vPatternTexCoordXform1.w);
+    p.y  = 1.0 - p.y;
+
+    vec2 w = vec2(dot(uvYup, g_vWearTexCoordXform0.xy) + g_vWearTexCoordXform0.w,
+                    dot(uvYup, g_vWearTexCoordXform1.xy) + g_vWearTexCoordXform1.w);
+    w.y = 1.0 - w.y;
+
+    vec2 g  = vec2(dot(uvYup, g_vGrungeTexCoordXform0.xy) + g_vGrungeTexCoordXform0.w,
+                    dot(uvYup, g_vGrungeTexCoordXform1.xy) + g_vGrungeTexCoordXform1.w);
+    g.y  = 1.0 - g.y;
+
+    vec4 vBaseUV_PatternUV = vec4(uv, p);
+    vec4 vWearUV_GrungeUV  = vec4(w, g);
+
     // ----- PS ----- 
     
     vec4 fvAoSrc = sRGB2linear(tex2D(g_tAmbientOcclusion, vBaseUV_PatternUV.xy));
@@ -224,18 +234,18 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
             #endif
             float flPatternAlpha = smoothstep(0.5, 0.6, fvPattern.a) * smoothstep(1.0, 0.9, fvPattern.a);
         #elif SP || AA
-            inputs.position *= 2.0;
+            vec3 fvPos = inputs.position * 2.0;
             if (bSpraypaintHalftone != 0)
-                inputs.position.z *= -1.0;
+                fvPos.z *= -1.0;
 
             vec4 fvSurface = tex2D(g_tSurface, vBaseUV_PatternUV.xy);
             vec4 fvNormalSrc = g_vSprayBiasBlend.x != 0 ? linear2sRGB(fvSurface) : fvSurface;
             vec3 fvNormal = normalize(fvNormalSrc.xyz * 2.0 - 1.0);
             vec2 sprayBlend = g_vSprayBiasBlend.yz * pow(abs(fvNormal.yz), vec2(7.0));
 
-            BoxSample fvTex = boxSample(g_tPattern, inputs.position.xyz, g_vPatternTexCoordXform0, g_vPatternTexCoordXform1);
+            BoxSample fvTex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXform0, g_vPatternTexCoordXform1);
             #if !EXTERN_MODE
-                BoxSample fvAlphaTex = boxSample(g_tPaintAlpha, inputs.position.xyz, g_vPatternTexCoordXform0, g_vPatternTexCoordXform1);
+                BoxSample fvAlphaTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXform0, g_vPatternTexCoordXform1);
                 fvTex.tX.w = fvAlphaTex.tX.x;
                 fvTex.tY.w = fvAlphaTex.tY.x;
                 fvTex.tZ.w = fvAlphaTex.tZ.x;
@@ -244,19 +254,19 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
             
             vec4 fvPattern;
             if (bSpraypaintHalftone != 0) {
-                BoxSample fvATex = boxSample(g_tPattern, inputs.position.xyz, g_vPatternTexCoordXformHalftoneA0, g_vPatternTexCoordXformHalftoneA1);
-                BoxSample fvBTex = boxSample(g_tPattern, inputs.position.xyz, g_vPatternTexCoordXformHalftoneB0, g_vPatternTexCoordXformHalftoneB1);
-                BoxSample fvCTex = boxSample(g_tPattern, inputs.position.xyz, g_vPatternTexCoordXformHalftoneC0, g_vPatternTexCoordXformHalftoneC1);
+                BoxSample fvATex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXformHalftoneA0, g_vPatternTexCoordXformHalftoneA1);
+                BoxSample fvBTex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXformHalftoneB0, g_vPatternTexCoordXformHalftoneB1);
+                BoxSample fvCTex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXformHalftoneC0, g_vPatternTexCoordXformHalftoneC1);
                 #if !EXTERN_MODE
-                    BoxSample fvAlphaATex = boxSample(g_tPaintAlpha, inputs.position.xyz, g_vPatternTexCoordXformHalftoneA0, g_vPatternTexCoordXformHalftoneA1);
+                    BoxSample fvAlphaATex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneA0, g_vPatternTexCoordXformHalftoneA1);
                     fvATex.tX.w = fvAlphaATex.tX.x;
                     fvATex.tY.w = fvAlphaATex.tY.x;
                     fvATex.tZ.w = fvAlphaATex.tZ.x;
-                    BoxSample fvAlphaBTex = boxSample(g_tPaintAlpha, inputs.position.xyz, g_vPatternTexCoordXformHalftoneB0, g_vPatternTexCoordXformHalftoneB1);
+                    BoxSample fvAlphaBTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneB0, g_vPatternTexCoordXformHalftoneB1);
                     fvBTex.tX.w = fvAlphaBTex.tX.x;
                     fvBTex.tY.w = fvAlphaBTex.tY.x;
                     fvBTex.tZ.w = fvAlphaBTex.tZ.x;
-                    BoxSample fvAlphaCTex = boxSample(g_tPaintAlpha, inputs.position.xyz, g_vPatternTexCoordXformHalftoneC0, g_vPatternTexCoordXformHalftoneC1);
+                    BoxSample fvAlphaCTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneC0, g_vPatternTexCoordXformHalftoneC1);
                     fvCTex.tX.w = fvAlphaCTex.tX.x;
                     fvCTex.tY.w = fvAlphaCTex.tY.x;
                     fvCTex.tZ.w = fvAlphaCTex.tZ.x;
@@ -356,6 +366,9 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
             #endif
             flPaintWear *= fvMasks.x;
         #endif
+        
+        float flInvPaintBlend = 1.0 - flPaintBlend;
+
     #else
         vec4 fvPattern = tex2D(g_tPattern, vBaseUV_PatternUV.zw);
         #if !EXTERN_MODE
@@ -391,68 +404,65 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
     
     // ----- ROUGHNESS -----
 
-    vec4 fvMetalness = tex2D(g_tMetalness, vBaseUV_PatternUV.xy);
-    float flRoughness = g_bUseRoughness ? tex2D(g_tPaintRoughness, vBaseUV_PatternUV.zw).r : g_flPaintRoughness;
+    O.metalness = tex2D(g_tMetalness, vBaseUV_PatternUV.xy);
+    float gflRoughness = g_bUseRoughness ? tex2D(g_tPaintRoughness, vBaseUV_PatternUV.zw).r : g_flPaintRoughness;
 
     #if SO || HY || SP
-        if (g_bRoughnessPerColor)
-            flRoughness = mixSOHYSP(g_vPaintRoughness
+        float flRoughness = g_bRoughnessPerColor ? 
+            mixSOHYSP(g_vPaintRoughness
                 #if !SP
                     , fvMasks.xyz
                 #endif
                 #if !SO
                     , fvPaintEdges
                 #endif
-            );
+            ) : gflRoughness;
 
-        fvMetalness = mix(
+        O.metalness = mix(
             vec4(min(
                 1.0, flRoughness + ((1.0 - cGrunge.w) * g_flWearAmount * g_flWearAmount * 0.5)
             ), flMetalness, 0.0, 1.0), 
-            fvMetalness, 
+            O.metalness, 
             vec4(flPaintBlend)
         );
         #if SO || SP
-            fvMetalness.z = 1.0 - flPaintBlend;
+            O.metalness.z = flInvPaintBlend;
         #endif
 
     #elif AN || AM || AA
-        fvMetalness.z = 1.0 - flPaintBlend;
+        O.metalness.z = flInvPaintBlend;
 
         float flGrungeLum = luminance(cGrunge.xyz);
         float grungeBoost = (1.0 - flGrungeLum) * 0.2;
 
-        float t;
+        #if AM
+            float flRoughness = 1.0 - min(1.0, fvPattern.a * 2.0);
+            flRoughness = mix(((flRoughness * flRoughness) * 0.85) + 0.15, gflRoughness, float(fvPattern.a >= 0.5));
+        #else
+            float flRoughness = gflRoughness;
+        #endif
         #if AM || AA
-            #if AM
-                float _24500 = 1.0 - min(1.0, fvPattern.a * 2.0);
-                t = mix(((_24500 * _24500) * 0.85) + 0.15, flRoughness, float(fvPattern.a >= 0.5));
-            #else
-                t = flRoughness;
-            #endif
-            t = mix(t, flRoughness, max(max(fvMasks.y, fvMasks.z), flPaintBlend));
+            flRoughness = mix(flRoughness, gflRoughness, max(max(fvMasks.y, fvMasks.z), flPaintBlend));
         #endif
 
-        float roughBase = mix(t, 0.35, flPaintWear);
-        float roughCandidate = min(1.0, roughBase + grungeBoost);
-        float blendT = max(0.0, fvMetalness.z);
+        flRoughness = min(1.0, mix(gflRoughness, 0.35, flPaintWear) + grungeBoost);
 
-        fvMetalness.x = mix(fvMetalness.x, roughCandidate, blendT);
-        fvMetalness.y = mix(fvMasks.x, fvMetalness.y, flPaintBlend);
+        O.metalness.x = mix(O.metalness.x, flRoughness, max(0.0, O.metalness.z));
+        O.metalness.y = mix(fvMasks.x, O.metalness.y, flPaintBlend);
 
     #elif CU
         float wearTerm = (1.0 - cGrunge.w) * g_flWearAmount;
-        fvMetalness.x = mix(min(1.0, flRoughness + wearTerm * g_flWearAmount * 0.5), fvMetalness.x, flPaintBlend);
-        fvMetalness.y = mix(g_flPaintMetalness, fvMetalness.y, flPaintBlend);
-        fvMetalness.z = 1.0 - flPaintBlend;
+        O.metalness.x = mix(min(1.0, gflRoughness + wearTerm * g_flWearAmount * 0.5), O.metalness.x, flPaintBlend);
+        O.metalness.y = mix(g_flPaintMetalness, O.metalness.y, flPaintBlend);
+        O.metalness.z = flInvPaintBlend;
     
     #elif AQ || GS
-        #if GS
-            float flInvPaintBlend = 1.0 - flPaintBlend;
-            float _24500 = 1.0 - min(1.0, fvPattern.w * 2.0);
-
-            flRoughness = mix(_24500 * _24500 * 0.85 + 0.15, g_flPaintRoughness, float(fvPattern.w >= 0.5));
-            flRoughness = mix(g_flPaintRoughness, flRoughness, fvMasks.x);
+        #if AQ
+            float flRoughness = gflRoughness;
+        #else
+            float flRoughness = 1.0 - min(1.0, fvPattern.w * 2.0);
+            flRoughness = mix(flRoughness * flRoughness * 0.85 + 0.15, gflRoughness, float(fvPattern.w >= 0.5));
+            flRoughness = mix(gflRoughness, flRoughness, fvMasks.x);
         #endif
 
         float flGrungeLum = luminance(cGrunge.xyz);
@@ -467,23 +477,24 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
         flMetalness = mix(mix(1.0, pow(flOilRubBlend * cGrunge.w * flGrungeLum, 0.5), g_flWearAmount), 1.0, flPatinaBlend);
         
         #if AQ
-            fvMetalness.x = mix(fvMetalness.x, flRoughness, step(fvAoSrc.w, 0.996) * fvMasks.x);
-            fvMetalness.y = mix(fvMetalness.y, flMetalness, fvMasks.x);
-            fvMetalness.z = 1.0 - fvAoSrc.w;
+            O.metalness.x = mix(O.metalness.x, flRoughness, step(fvAoSrc.w, 0.996) * fvMasks.x);
+            O.metalness.y = mix(O.metalness.y, flMetalness, fvMasks.x);
+            O.metalness.z = 1.0 - fvAoSrc.w;
         #elif GS
-            fvMetalness.x = mix(fvMetalness.x, flRoughness, float(max(int(bIsMetallic), int(max(0.0, flInvPaintBlend)))));
-            fvMetalness.y = mix(mix(g_flPaintMetalness, fvMetalness.y, flPaintBlend), flMetalness, fvMasks.x);
-            fvMetalness.z = flInvPaintBlend;
+            O.metalness.x = mix(O.metalness.x, flRoughness, float(max(int(bIsMetallic), int(max(0.0, flInvPaintBlend)))));
+            O.metalness.y = mix(mix(g_flPaintMetalness, O.metalness.y, flPaintBlend), flMetalness, fvMasks.x);
+            O.metalness.z = flInvPaintBlend;
         #endif
     #endif
 
-    outputs.metalness = vec4(fvMetalness.xyz, g_flPearlescentScale);
     #if GS
         if (g_bPearlescentOnMetallicOnly)
-            outputs.metalness.w *= fvMasks.x;
+            O.metalness.z *= fvMasks.x;
     #endif
     if (g_bUsePearlescenceMask)
-        outputs.metalness.w *= tex2D(g_tPearlescenceMask, vBaseUV_PatternUV.zw).r;
+        O.metalness.z *= tex2D(g_tPearlescenceMask, vBaseUV_PatternUV.zw).r;
+
+    O.pearlFactor = g_flPearlescentScale * O.metalness.z;
 
     // ----- COLOR -----
 
@@ -584,7 +595,11 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
     vec3 painted = (cPaintN * target) / vec3(max(nMax, 1e-6));
     cPaint = mix(cPaint, painted, g_flWearAmount);
 
+    O.color = vec4(mix(cPaint, cBase, flPaintBlend), 1.0 - flPaintBlend);
+
     // ----- NORMAL -----
+
+    O.metalness.w = g_bOverrideAmbientOcclusion ? getAO(inputs.sparse_coord) : flAo;
 
     if (!g_bUseNormalMap) {
         vec3 n = tex2D(g_tSurface, vBaseUV_PatternUV.xy).rgb * 2.0 - 1.0;
@@ -596,14 +611,5 @@ void composeCustomWeapon(V2F inputs, out ShaderOutputs outputs) {
         inputs.normal = tangentSpaceToWorldSpace(normalize(n), inputs);
     }
     #endif
-    outputs.vectors = computeLocalFrame(inputs);
-    outputs.color.a = g_bOverrideAmbientOcclusion ? getAO(inputs.sparse_coord) : flAo;
-
-    // ----- EFFECTS -----
-
-    outputs.metalness.z = 1.0 - flPaintBlend;
-    outputs.metalness.w *= 1.0 - max(0.0, dot(outputs.vectors.normal, outputs.vectors.eye));
-    cPaint = mix(hueShift(cPaint, outputs.metalness.w), cBase, flPaintBlend);
-
-    outputs.color.rgb = mix(cPaint, cBase, flPaintBlend);
+    O.vectors = computeLocalFrame(inputs);
 }
