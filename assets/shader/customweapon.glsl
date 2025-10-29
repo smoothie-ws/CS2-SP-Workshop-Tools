@@ -13,9 +13,6 @@ import lib-sampler.glsl
 #define AQ PAINT_STYLE == 7 // Patina
 #define GS PAINT_STYLE == 8 // Gunsmith
 
-//: param auto camera_view_matrix_it
-uniform mat4 V_it;
-
 //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
 uniform vec4 g_vPatternTexCoordXform0;
 //: param custom { "default": [0.0, 1.0, 0.0, 0.0] }

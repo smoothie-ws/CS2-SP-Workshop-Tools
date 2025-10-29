@@ -71,7 +71,6 @@ SPDialog {
         id: internal
         
         property string cs2Path: ""
-        property alias isDevMode: devMode.checked
         property bool cs2PathIsValid: false
         property var weapons: []
         property bool weaponIsValid: false
@@ -84,7 +83,6 @@ SPDialog {
             "texOffsetYRange":                 { control: texOffsetY,                prop: "range" },
             "g_bIgnoreWeaponSizeScale":        { control: ignoreWeaponSizeScale,     prop: "checked" },
             "wearRange":                       { control: wearRange,                 prop: "range" },
-            "g_fWearSoftness":                 { control: wearSoftness,              prop: "value" },
             "g_flPearlescentScale":            { control: pearlScale,                prop: "value" },
             "g_bUsePearlescenceMask":          { control: usePearlMask,              prop: "checked" },
             "g_bRoughnessPerColor":            { control: useRoughByCol,             prop: "checked" },
@@ -93,13 +91,10 @@ SPDialog {
             "g_bOverrideDefaultMasks":         { control: useMatMasks,               prop: "checked" },
             "g_bOverrideAmbientOcclusion":     { control: useAOTex,                  prop: "checked" },
             "g_flPaintRoughness":              { control: paintRoughness,            prop: "value" },
-            "g_flPaintMetalness":              { control: paintMetal,                prop: "value" },
             "g_vPaintRoughness":               { control: paintRoughNum,             prop: "array" },
             "g_vPaintMetalness":               { control: paintMetalNum,             prop: "array" },
-            "g_bPearlescentOnMetallicOnly":    { control: pearlOnMetallicOnly,       prop: "checked" },
             "g_vPaintDurability":              { control: paintDurabilityNum,        prop: "array" },
             "g_vSprayBiasBlend":               { control: sprayBlend,                prop: "array" },
-            "g_flColorBrightness":             { control: colorBrightness,           prop: "value" }, 
             "g_vColor0":                       { control: null,                      prop: "arrayColor" },
             "g_vColor1":                       { control: null,                      prop: "arrayColor" },
             "g_vColor2":                       { control: null,                      prop: "arrayColor" },
@@ -162,7 +157,6 @@ SPDialog {
             weapon_finish[param] = component.control[component.prop];
         return {
             cs2_path: internal.cs2PathIsValid ? internal.cs2Path : "",
-            dev_mode: internal.isDevMode,
             weapons: internal.weapons,
             weapon_finish: weapon_finish
         }
@@ -180,9 +174,6 @@ SPDialog {
                 if (component !== undefined)
                     component.control[component.prop] = value;
             }
-        if ("dev_mode" in settings)
-            internal.isDevMode = settings["dev_mode"];
-
         internal.syncWeapons();
     }
 
@@ -575,13 +566,6 @@ SPDialog {
                         }
                     }
                 }
-
-                SPButton {
-                    id: devMode
-                    text: "Developer Mode"
-                    checkable: true
-                    Layout.fillWidth: true
-                }
             }
 
             SPSeparator {
@@ -673,14 +657,6 @@ SPDialog {
                                 Layout.topMargin: 20
                                 Layout.bottomMargin: 10
                                 SPSeparator { Layout.fillWidth: true }
-                            }
-
-                            SPSlider {
-                                id: colorBrightness
-                                visible: internal.isDevMode
-                                text: "Color Brightness"
-                                from: 1
-                                to: 100
                             }
 
                             SPButton {
@@ -782,14 +758,6 @@ SPDialog {
                                 to: 1
                             }
 
-                            SPSlider {
-                                id: paintMetal
-                                visible: internal.isDevMode
-                                text: "Paint Metalness"
-                                from: 0
-                                to: 1
-                            }
-
                             MultiSlider {
                                 id: paintRoughNum
                                 model: ["X", "Y", "Z", "W"]
@@ -861,14 +829,6 @@ SPDialog {
                                 to: 6
                             }
 
-                            SPButton {
-                                id: pearlOnMetallicOnly
-                                visible: internal.isDevMode
-                                checkable: true
-                                text: "Pearlescent On Metallic Only"
-                                Layout.fillWidth: true
-                            }
-
                             SPLabeled {
                                 text: "Wear and Grunge"
                                 label.font.bold: true
@@ -885,14 +845,6 @@ SPDialog {
                                 Layout.fillWidth: true
                             }
 
-                            SPSlider {
-                                id: wearSoftness
-                                visible: internal.isDevMode
-                                text: "Wear Softness"
-                                from: 0.0
-                                to: 1.0
-                            }
-                        
                             SPRangeSlider {
                                 id: wearRange
                                 text: "Wear Range"

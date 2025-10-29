@@ -18,7 +18,6 @@ Rectangle {
     // 1 - regular project
     // 2 - weapon finish
     property int projectKind: 0
-    property bool isDevMode: false
 
     Connections {
         target: Plugin
@@ -43,16 +42,13 @@ Rectangle {
             finishName.text = "#UNKNOWN";
         }
 
-        function onDevModeChanged(isDevMode) {
-            root.isDevMode = isDevMode;
-        }
-
         function onProjectAboutToSave() {
             weaponFinish.syncEcon();
         }
 
         function onStyleReady() {
             weaponFinish.connect();
+            Plugin.info(JSON.stringify(Plugin.js("alg.shaders.groups(0)")));
         }
 
         function onPluginAboutToClose() {
@@ -61,8 +57,9 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        styleBox.currentKeyChanged.connect(() => { if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked); });
-        externMode.checkedChanged.connect(() => { if (root.projectKind == 2) Plugin.updateStyle(styleBox.currentKey, externMode.checked); });
+        styleBox.currentKeyChanged.connect(() => weaponFinish.updateStyle());
+        externMode.checkedChanged.connect(() => weaponFinish.updateStyle());
+
         weaponBox.currentKeyChanged.connect(() => { if (root.projectKind == 2) weaponFinish.updateWeapon(weaponBox.currentKey); });
         weaponFinish.parameters["g_tWear"].control.url = Plugin.importTexture(Plugin.asset("textures/paint_wear.png").slice(5));
         weaponFinish.parameters["g_tGrunge"].control.url = Plugin.importTexture(Plugin.asset("textures/gun_grunge.png").slice(5));
@@ -94,7 +91,6 @@ Rectangle {
             "g_vGrungeTexCoordXform0":           { control: grungeTransform,      prop: "matrixForm0",   slot: null,  expr: null },
             "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null,  expr: null },
             "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null,  expr: null },
-            "g_fWearSoftness":                   { control: wearSoftness,         prop: "value",         slot: null,  expr: null },
             "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null,  expr: null },
             "g_bOverrideAmbientOcclusion":       { control: useAOTex,             prop: "checked",       slot: null,  expr: null },
             "g_bOverrideDefaultMasks":           { control: useMatMasks,          prop: "checked",       slot: null,  expr: null },
@@ -109,14 +105,11 @@ Rectangle {
             "g_tPaintAO":                        { control: useAOTex,             prop: "url",           slot: null,  expr: null },
             "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null,  expr: null },
             "g_flPaintRoughness":                { control: paintRough,           prop: "value",         slot: null,  expr: null },
-            "g_flPaintMetalness":                { control: paintMetal,           prop: "value",         slot: null,  expr: null },
             "g_flPearlescentScale":              { control: pearlScale,           prop: "value",         slot: null,  expr: null },
-            "g_bPearlescentOnMetallicOnly":      { control: pearlOnMetallicOnly,  prop: "checked",       slot: null,  expr: null },
             "g_bRoughnessPerColor":              { control: useRoughByCol,        prop: "checked",       slot: null,  expr: null },
             "g_vPaintRoughness":                 { control: paintRoughNum,        prop: "array",         slot: null,  expr: null },
             "g_vPaintMetalness":                 { control: paintMetalNum,        prop: "array",         slot: null,  expr: null },
             "g_vPaintDurability":                { control: paintDurabilityNum,   prop: "array",         slot: null,  expr: x => [1.0 - x[0], 1.0 - x[1], 1.0 - x[2], 1.0 - x[3]] },
-            "g_flColorBrightness":               { control: colorBrightness,      prop: "value",         slot: null,  expr: null }, 
 
             // dynamically generated components
             "g_tColor":                          { control: null,                 prop: "url",           slot: null,  expr: null },
@@ -130,6 +123,14 @@ Rectangle {
             "g_vColor1":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
             "g_vColor2":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
             "g_vColor3":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] }
+        }
+
+        function updateStyle() {
+            if (root.projectKind == 2) 
+                Plugin.updateStyle(
+                    styleBox.currentKey, 
+                    externMode.checked
+                );
         }
     }
 
@@ -624,7 +625,7 @@ Rectangle {
 
                 SPLabeled {
                     id: style
-                    text: "Finish Style"
+                    text: "Paint Style"
                     Layout.fillWidth: true
 
                     SPComboBox {
@@ -742,20 +743,9 @@ Rectangle {
                         id: colorGroup
                         Layout.fillWidth: true
                         text: "Colors"
-                        visible: styleBox.currentKey != "cu" || root.isDevMode
+                        visible: styleBox.currentKey != "cu"
 
                         property real labelScopeWidth: 0.0
-
-                        SPParameter {
-                            visible: root.isDevMode
-                            SPSlider {
-                                id: colorBrightness
-                                text: "Color Brightness"
-                                from: 1
-                                to: 100
-                            }
-                            onResetRequested: weaponFinish.resetParameter("g_flColorBrightness")
-                        }
 
                         SPParameter {
                             width: parent.width
@@ -920,17 +910,6 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("g_flPaintRoughness")
                         }
 
-                        SPParameter {
-                            visible: root.isDevMode && ["cu", "gs"].includes(styleBox.currentKey)
-                            SPSlider {
-                                id: paintMetal
-                                text: "Paint Metalness"
-                                from: 0
-                                to: 1
-                            }
-                            onResetRequested: weaponFinish.resetParameter("g_flPaintMetalness")
-                        }
-
                         SPSeparator { Layout.fillWidth: true }
 
                         SPParameter {
@@ -1009,19 +988,6 @@ Rectangle {
                             }
                             onResetRequested: weaponFinish.resetParameter("g_flPearlescentScale")
                         }
-
-                        SPParameter {
-                            visible: root.isDevMode && ["gs"].includes(styleBox.currentKey)
-
-                            SPButton {
-                                id: pearlOnMetallicOnly
-                                checkable: true
-                                text: "Pearlescent On Metallic Only"
-                                Layout.fillWidth: true
-                            }
-
-                            onResetRequested: weaponFinish.resetParameter("g_bPearlescentOnMetallicOnly")
-                        }
                     }
 
                     SPGroup {
@@ -1037,14 +1003,6 @@ Rectangle {
                             width: parent.width
                         }
 
-                        SPSlider {
-                            id: wearSoftness
-                            visible: root.isDevMode
-                            text: "Wear Softness"
-                            from: 0.0
-                            to: 1.0
-                        }
-                        
                         SPParameter {
                             SPRangeSlider {
                                 id: wearRange

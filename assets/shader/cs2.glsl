@@ -42,7 +42,7 @@ void shade(V2F inputs) {
                 emissiveColorOutput(O.color.rgb);
                 break;
             case 3:
-                emissiveColorOutput(sRGB2linear(O.metalness.xyz));
+                emissiveColorOutput(O.metalness.xyz);
                 break;
             case 4:
                 emissiveColorOutput(vec3(O.pearlFactor + 0.5));
