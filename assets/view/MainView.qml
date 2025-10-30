@@ -135,8 +135,8 @@ Rectangle {
     }
 
     TransformMatrix { id: patternTransform; baseScale: ignoreWeaponSizeScale.checked ? 1.0 : weaponBox.uvScale }
-    TransformMatrix { id: wearTransform; baseScale: weaponBox.uvScale }
-    TransformMatrix { id: grungeTransform; baseScale: weaponBox.uvScale }
+    TransformMatrix { id: wearTransform; baseScale: patternTransform.baseScale }
+    TransformMatrix { id: grungeTransform; baseScale: patternTransform.baseScale }
 
     component TextureFetcher: ColumnLayout {
         id: fetcher
@@ -559,10 +559,15 @@ Rectangle {
                         icon.source: Plugin.asset("icons/export.png")
                         icon.width: 15
                         icon.height: 15
-                        tooltip.text: "Export Weapon Finish textures"
+                        tooltip.text: "Export Weapon Finish textures (Ctrl+E)"
                         background.color: hovered ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(0, 0, 0, 0.25)
 
                         onClicked: Plugin.exportWeaponFinishTextures()
+
+                        Shortcut {
+                            sequence: "Ctrl+E"
+                            onActivated: if (parent.enabled) Plugin.exportWeaponFinishTextures()
+                        }
                     }
                     
                     Text {

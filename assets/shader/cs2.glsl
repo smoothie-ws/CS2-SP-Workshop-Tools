@@ -31,6 +31,7 @@ void shade(V2F inputs) {
     if (g_bLivePreview) {
         composeCustomWeapon(inputs, O);
         pearl(O);
+        
         if (g_bPBRValidation)
             validatePBR(O);
 
@@ -42,7 +43,7 @@ void shade(V2F inputs) {
                 emissiveColorOutput(O.color.rgb);
                 break;
             case 3:
-                emissiveColorOutput(O.metalness.xyz);
+                emissiveColorOutput(sRGB2linear(O.metalness.xyz));
                 break;
             case 4:
                 emissiveColorOutput(vec3(O.pearlFactor + 0.5));
@@ -51,7 +52,6 @@ void shade(V2F inputs) {
                 shadePBR(O);
         }
     } else {
-        O.vectors = computeLocalFrame(inputs);
         #if EXTERN_MODE
             O.color.rgb = tex2D(g_tMatColor, inputs.tex_coord).rgb;
             O.metalness.x = tex2D(g_tMatRough, inputs.tex_coord).x;
@@ -61,8 +61,9 @@ void shade(V2F inputs) {
             O.metalness.x = tex2D(g_tPaintRoughness, inputs.tex_coord).x;
             O.metalness.y = tex2D(g_tPaintMasks, inputs.tex_coord).x;
         #endif
-        O.color.a = 1.0;
-        O.metalness.zw = vec2(0.0, getAO(inputs.tex_coord, true));
+        O.metalness.w = getAO(inputs.tex_coord, true);
+        O.vectors = computeLocalFrame(inputs);
+
         shadePBR(O);
     }
 }

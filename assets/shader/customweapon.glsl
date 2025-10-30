@@ -454,13 +454,12 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
         O.metalness.z = flInvPaintBlend;
     
     #elif AQ || GS
-        #if AQ
-            float flRoughness = gflRoughness;
-        #else
-            float flRoughness = 1.0 - min(1.0, fvPattern.w * 2.0);
-            flRoughness = mix(flRoughness * flRoughness * 0.85 + 0.15, gflRoughness, float(fvPattern.w >= 0.5));
-            flRoughness = mix(gflRoughness, flRoughness, fvMasks.x);
-        #endif
+        float flRoughness = gflRoughness;
+        // #if GS
+        //     flRoughness = 1.0 - min(1.0, fvPattern.w * 2.0);
+        //     flRoughness = mix(flRoughness * flRoughness * 0.85 + 0.15, gflRoughness, float(fvPattern.w >= 0.5));
+        //     flRoughness = mix(gflRoughness, flRoughness, fvMasks.x);
+        // #endif
 
         float flGrungeLum = luminance(cGrunge.xyz);
         float wearTerm = (1.0 - cGrunge.w) * g_flWearAmount;
