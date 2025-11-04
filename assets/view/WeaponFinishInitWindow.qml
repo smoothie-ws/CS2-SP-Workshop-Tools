@@ -159,7 +159,14 @@ SPDialog {
                 id: weaponBox
                 currentIndex: -1
                 Layout.fillWidth: true
-                map: JSON.parse(Plugin.getWeapons())
+                map: {
+                    const weaponMap = {};
+                    for (const w of Object.keys(weapons))
+                        weaponMap[w] = weapons[w].name;
+                    weaponMap;
+                }
+
+                property var weapons: JSON.parse(Plugin.getWeapons())
             }
         }
         

@@ -5,12 +5,12 @@ class Resource:
     Usage = sp.resource.Usage
     
     @staticmethod
-    def import_session_resource(path: str, usage: Usage, name: str = None, group: str = None):
-        return sp.resource.import_session_resource(path, usage, name, group)
-    
-    @staticmethod
     def import_project_resource(path: str, usage: Usage, name: str = None, group: str = None):
         return sp.resource.import_project_resource(path, usage, name, group)
+    
+    @staticmethod
+    def import_session_resource(path: str, usage: Usage, name: str = None, group: str = None):
+        return sp.resource.import_session_resource(path, usage, name, group)
     
     @staticmethod
     def refresh():

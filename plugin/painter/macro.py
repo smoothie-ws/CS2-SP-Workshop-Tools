@@ -1,9 +1,13 @@
 import re
 
+from .path import Path
+
 
 class Macro:
     @staticmethod
-    def process(code: str, macros: dict={}):
+    def process(code: str, macros: dict = {}, remove_comments: bool = True, path = "", included: list = None):
+        included = [] if not included else included
+
         for macro in macros.keys():
             macros[macro] = str(macros[macro])
         condition_stack = []
@@ -33,10 +37,24 @@ class Macro:
         processed_lines = []
         for line in code.split("\n"):
             if not line.startswith("//:"):
+                if remove_comments:
+                    line = line.split("//")[0]
                 for macro in macros.keys():
-                    line = line.replace(macro, macros[macro])
-                
+                    keys = sorted(macros.keys(), key=len, reverse=True)
+                    pattern = re.compile(r'(?<!\w)(' + '|'.join(map(re.escape, keys)) + r')(?!\w)', flags=re.UNICODE)
+                    line = pattern.sub(lambda m: macros[m.group(1)], line)
+
                 line = line.strip()
+
+                #include
+                if line.startswith("#include"):
+                    match = re.match(r'\s*"([^"]+)"', line[8:])
+                    assert match, "Invalid include directive"
+                    inc = Path.join(Path.to(path), match.group(1))
+                    if not inc in included:
+                        included.append(inc)
+                        processed_lines += Macro.process(Path.read(inc), macros, remove_comments, inc, included).split("\n")
+                    continue
 
                 #define
                 if line.startswith("#define"):
@@ -91,3 +109,4 @@ class Macro:
         assert current_level() == 0, "Missing #endif"
 
         return "\n".join(processed_lines)
+    

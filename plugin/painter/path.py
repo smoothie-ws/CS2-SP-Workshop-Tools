@@ -88,12 +88,12 @@ class Path:
     def show_in_explorer(path: str) -> None:
         path = os.path.normpath(path)
         if os.path.isdir(path):
-            subprocess.Popen(f'explorer,"{path}"')
+            subprocess.Popen(["explorer", path])
         elif os.path.isfile(path):
-            subprocess.Popen(f'explorer /select,"{path}"')
+            subprocess.Popen(["explorer", "/select,", path])
         else:
             Log.error(f'Path {path} is invalid')
-
+            
     @staticmethod
     def read(path: str, default: str = "") -> str:
         try:

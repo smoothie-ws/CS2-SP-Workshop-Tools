@@ -2,21 +2,21 @@ import json
 import math
 import substance_painter as sp
 
-from .painter import Log, Path, Plugin, Resource, ProjectSettings
+from .painter import Log, Path, Macro, Plugin, Resource, ProjectSettings
 
 class WeaponFinish:
-	FINISH_STYLES = [
-		"so", # Solid Color
-		"hy", # Hydrographic
-		"sp", # Spray-Paint
-		"an", # Anodized
-		"am", # Anodized Multicolored
-		"aa", # Anodized Airbrushed
-		"cu", # Custom Paint Job
-		"aq", # Patina
-		"gs"  # Gunsmith
-	]
-
+	FINISH_STYLES = {
+		"so" : 0, # Solid Color
+		"hy" : 1, # Hydrographic
+		"sp" : 2, # Spray-Paint
+		"an" : 3, # Anodized
+		"am" : 4, # Anodized Multicolored
+		"aa" : 5, # Anodized Airbrushed
+		"cu" : 6, # Custom Paint Job
+		"aq" : 7, # Patina
+		"gs" : 8  # Gunsmith
+	}
+ 
 	@staticmethod
 	def current() -> dict:
 		return ProjectSettings.get("weapon_finish")
@@ -109,7 +109,7 @@ class WeaponFinish:
 			if cs2_path is not None and Path.exists(cs2_path):
 
 				# create folder for textures
-				textures_folder = Path.join(cs2_path, "content", "csgo", "weapons", "paints", "workshop", finish_name)
+				textures_folder = Path.join(cs2_path, "content", "csgo_addons", "workshop_items", "weapons", "paints", "workshop", finish_name)
 				if not Path.exists(textures_folder):
 					Path.makedirs(textures_folder)
 					weapon_finish["texturesFolder"] = textures_folder
@@ -133,7 +133,7 @@ class WeaponFinish:
 			WeaponFinish.export_econ()
    
 			# update shader instance
-			WeaponFinish.update_style(finish_style, 
+			WeaponFinish.update_style(finish_style, False,
 				lambda res, msg: callback(res,
 					f'The project was successfully set up as Weapon Finish ({finish_style.upper()})' 
      				if res else 
@@ -141,44 +141,65 @@ class WeaponFinish:
 				)
 			)
 
-		if sp.resource.Shelf("your_assets").is_crawling():
+		if sp.resource.Shelf("session").is_crawling():
 			delayed = True
 			sp.event.DISPATCHER.connect_strong(sp.event.ShelfCrawlingEnded, proceed)
 		else:
 			proceed(None)
 
 	@staticmethod
-	def update_style(finish_style: str, callback):
+	def update_style(fs: str, extern_mode: bool, callback):
 		if WeaponFinish.is_open():
-			def update(resources):
-				if len(resources) > 0:
-					url = resources[0].identifier().url()
-					sp.js.evaluate(f"""
-						if (alg.shaders.instances()[0].url != "{url}")
-							alg.shaders.updateShaderInstance(0, "{url}")
-					""")
-					callback(True, f'Finish Style was set to `{finish_style.upper()}`')
-				else:
-					callback(False, f'Failed to find shader for `{finish_style.upper()}` finish style')
+			# shader files
+			shader_path = Path.asset("shader", "cs2.glsl")
+			shader_source = Path.read(shader_path)
+   
+			if len(shader_source) > 0:
+				shader_dir = Path.cleardir(Path.join(Path.plugin, "shaders"))
+	
+				name = f'cs2_{fs}'
+				path = Path.join(shader_dir, f'{name}.glsl')
+				index = WeaponFinish.FINISH_STYLES[fs]
+				Path.write(path, Macro.process(shader_source, {
+        			"PAINT_STYLE": index,
+					"EXTERN_MODE": extern_mode
+           		}, path=shader_path))
 				
-			Resource.search_resource(update, "your_assets", "shader", f'cs2_{finish_style.lower()}')
-
+				shader_resource = Resource.import_session_resource(path, Resource.Usage.SHADER, name, "CS2")
+				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, "{shader_resource.identifier().url()}")')
+				
+				# icon
+				icon_path = Path.asset("icons", f'{name}.png')
+				if Path.exists(icon_path):
+					shader_resource.set_custom_preview(icon_path)
+    
+				callback(True, f'Finish Style was set to `{fs.upper()}`')
+			else:
+				callback(False, f'Failed to find shader for `{fs.upper()}` finish style')
+    
 	@staticmethod
 	def update_weapon(weapon: str):
+		params = {
+			"g_tColor": "color", 
+			"g_tMetalness": "rough", 
+			"g_tSurface": "normal", 
+			"g_tMasks": "masks", 
+			"g_tAmbientOcclusion": "cavity"
+		}
 		resources = {}
 		if WeaponFinish.is_open():
 			WeaponFinish.set("weapon", weapon)
 			path = Path.asset("textures", "models", weapon)
-			for param in ["uBaseColor", "uBaseRough", "uBaseSurface", "uBaseMasks", "uBaseCavity"]:
-				tex_path = Path.join(path, f'{weapon}_{param[5:].lower()}.png')
+			for param in params.keys():
+				tex_path = Path.join(path, f'{weapon}_{params[param]}.png')
 				if Path.exists(tex_path):
-					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE).identifier().url()
+					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE, group="CS2").identifier().url()
 		return resources
 
 	@staticmethod
 	def import_econ():
 		weapon_finish: dict = WeaponFinish.current()
-		tex_transform = weapon_finish.get("uTexTransform", [0.0, 0.0, 1.0, 0.0])
+		tex_transform = weapon_finish.get("uTexTransform", [1.0, 0.0, 0.0, 0.0])
   
 		def set_weapon(_: str, value):
 			parts = value.split("_")
@@ -207,31 +228,30 @@ class WeaponFinish:
 		def set_wear(_: str, value):
 			if len(value) == 3:
 				weapon_finish["wearRange"] = [value[0], value[2]]
-				weapon_finish["uWearAmt"] = value[1]
+				weapon_finish["g_flWearAmount"] = value[1]
 			else:
 				Log.warning("Failed to fetch wear")
    
+		def set_tex_scale(_: str, value):
+			tex_transform[0] = value
+		
 		def set_tex_offset(param: str, value):
 			if len(value) == 3:
 				weapon_finish[f'texOffset{param}Range'] = [value[0], value[2]]
-				tex_transform[0 if param == "X" else 1] = value[1]
+				tex_transform[1 if param == "X" else 2] = value[1]
 			else:
 				Log.warning(f'Failed to fetch texture {param} offset')
-		
-		def set_tex_scale(_: str, value):
-			tex_transform[2] = value
 		
 		def set_tex_rotation(_: str, value):
 			if len(value) == 3:
 				weapon_finish["texRotationRange"] = [value[0], value[2]]
-				# degrees to radians
-				tex_transform[3] = value[0] * math.pi / 180
+				tex_transform[3] = value[0]
 			else:
 				Log.warning("Failed to fetch texture rotation")
 		
 		def set_col(param: str, value):
 			if len(value) == 3:
-				weapon_finish[f'uCol{param}'] = [v / 255 for v in value]
+				weapon_finish[f'g_vColor{param}'] = [v / 255 for v in value]
 			else:
 				Log.warning(f'Failed to fetch color {param}')
 
@@ -243,14 +263,14 @@ class WeaponFinish:
 			"g_vPatternTexCoordOffset.1": ("Y", set_tex_offset),
 			"g_flPatternTexCoordScale": ("", set_tex_scale),
 			"g_flPatternTexCoordRotation": ("", set_tex_rotation),
-			"g_bIgnoreWeaponSizeScale": "uIgnoreWeaponSizeScale",
-			"g_bOverrideAmbientOcclusion": "uUseCustomAOTex",
-			"g_bOverrideDefaultMasks": "uUseCustomMasks",
-			"g_bUseNormalMap": "uUseCustomNormal",
-			"g_bUsePearlescenceMask": "uUsePearlMask",
-			"g_bUseRoughness": "uUseCustomRough",
-			"g_flPearlescentScale": "uPearlScale",
-			"g_tPaintRoughness": "uPaintRoughness",
+			"g_bIgnoreWeaponSizeScale": "g_bIgnoreWeaponSizeScale",
+			"g_bOverrideAmbientOcclusion": "g_bOverrideAmbientOcclusion",
+			"g_bOverrideDefaultMasks": "g_bOverrideDefaultMasks",
+			"g_bUseNormalMap": "g_bUseNormalMap",
+			"g_bUsePearlescenceMask": "g_bUsePearlescenceMask",
+			"g_bUseRoughness": "g_bUseRoughness",
+			"g_flPearlescentScale": "g_flPearlescentScale",
+			"g_tPaintRoughness": "g_flPaintRoughness",
 			"g_vColor0": (0, set_col),
 			"g_vColor1": (1, set_col),
 			"g_vColor2": (2, set_col),
@@ -288,8 +308,8 @@ class WeaponFinish:
 		if econitem != "":
 			# fetch weapon finish parameters
 			finish_name = Path.filename(econitem)
-			finish_style = {
-				"so": "SolidColor",
+			finish_style = {					
+            	"so": "SolidColor",
 				"hy": "HydroGraphic",
 				"sp": "SprayPaint",
 				"an": "Anodized",
@@ -303,17 +323,14 @@ class WeaponFinish:
 			wear = weapon_finish.get("wearRange", [0.0, 1.0])
 
 			# packed values: [offsetX, offsetY, scale, rotation]
-			tex_transform = weapon_finish.get("uTexTransform", [0.0, 0.0, 1.0, 0.0])
-			# radians to degrees
-			tex_transform[3] *= 180 / math.pi
-
+			tex_transform = weapon_finish.get("uTexTransform", [1.0, 0.0, 0.0, 0.0])
 			tex_offsetx = weapon_finish.get("texOffsetXRange", [-1.0, 1.0])
 			tex_offsety = weapon_finish.get("texOffsetYRange", [-1.0, 1.0])
 			tex_rotation = weapon_finish.get("texRotationRange", [-360.0, 360.0])
 
 			# map colors
 			colors = [
-				list(map(uint8, weapon_finish.get(f'uCol{i}', [1.0, 1.0, 1.0])))
+				list(map(uint8, weapon_finish.get(f'g_vColor{i}', [1.0, 1.0, 1.0])))
 				for i in range(4)
 			]
 
@@ -321,7 +338,7 @@ class WeaponFinish:
 			textures_folder = weapon_finish.get("texturesFolder", "")
 			if not Path.exists(textures_folder):
 				Log.info(f'Be careful: path "{textures_folder}" for textures does not exist!')
-			textures_folder = textures_folder.split("csgo")[-1]
+			textures_folder = textures_folder.split("workshop_items")[-1]
 			if len(textures_folder) > 0 and textures_folder[0] == "/":
 				textures_folder = textures_folder[1:]
 
@@ -329,23 +346,23 @@ class WeaponFinish:
 				finish_name=finish_name,
 				finish_style=finish_style,
 				weapon=weapon_finish.get("weapon", "ak47"),
-				wear=[wear[0], weapon_finish.get("uWearAmt", 0.5), wear[1]],
-				tex_offsetx=[tex_offsetx[0], tex_transform[0], tex_offsetx[1]],
-				tex_offsety=[tex_offsety[0], tex_transform[1], tex_offsety[1]],
-				tex_scale=tex_transform[2],
+				wear=[wear[0], weapon_finish.get("g_flWearAmount", 0.5), wear[1]],
+				tex_scale=tex_transform[0],
+				tex_offsetx=[tex_offsetx[0], tex_transform[1], tex_offsetx[1]],
+				tex_offsety=[tex_offsety[0], tex_transform[2], tex_offsety[1]],
 				tex_rotation=[tex_rotation[0], tex_transform[3], tex_rotation[1]],
-				ignore_weapon_size_scale=get_bool("uIgnoreWeaponSizeScale"),
+				ignore_weapon_size_scale=get_bool("g_bIgnoreWeaponSizeScale"),
 				color0=colors[0],
 				color1=colors[1],
 				color2=colors[2],
 				color3=colors[3],
-				pearl_scale=weapon_finish.get("uPearlScale", 0.0),
-				rough=weapon_finish.get("uPaintRoughness", 0.6),
-				custom_pearl_mask=get_bool("uUsePearlMask"),
-				custom_rough_tex=get_bool("uUseCustomRough"),
-				custom_normal_map=get_bool("uUseCustomNormal"),
-				custom_mat_masks=get_bool("uUseCustomMasks"),
-				custom_ao_tex=get_bool("uUseCustomAOTex"),
+				pearl_scale=weapon_finish.get("g_flPearlescentScale", 0.0),
+				rough=weapon_finish.get("g_flPaintRoughness", 0.6),
+				custom_pearl_mask=get_bool("g_bUsePearlescenceMask"),
+				custom_rough_tex=get_bool("g_bUseRoughness"),
+				custom_normal_map=get_bool("g_bUseNormalMap"),
+				custom_mat_masks=get_bool("g_bOverrideDefaultMasks"),
+				custom_ao_tex=get_bool("g_bOverrideAmbientOcclusion"),
 				ao_tex_path=f'{textures_folder}/{finish_name}_ao.tga',
 				normal_tex_path=f'{textures_folder}/{finish_name}_normal.tga',
 				masks_tex_path=f'{textures_folder}/{finish_name}_masks.tga',
@@ -354,7 +371,7 @@ class WeaponFinish:
 				pearl_tex_path=f'{textures_folder}/{finish_name}_pearl.tga',
 			)
 			if not Path.write(econitem, econitem_content) > 0:
-				Log.error(f'Failed to sync .econitem file: {str(e)}')
+				Log.error("Failed to export .econitem file")
 
 	@staticmethod
 	def export_textures():
@@ -406,7 +423,7 @@ class WeaponFinish:
 			}
 			
 			# Masks
-			if weapon_finish.get("style", "gs") != "cu" and weapon_finish.get("uUseCustomMasks"):
+			if weapon_finish.get("style", "gs") != "cu" and weapon_finish.get("g_bOverrideDefaultMasks"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_masks',
 					"channels" : [
@@ -432,7 +449,7 @@ class WeaponFinish:
 				})
 
 			# Normal
-			if weapon_finish.get("uUseCustomNormal"):
+			if weapon_finish.get("g_bUseNormalMap"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_normal',
 					"channels" : [
@@ -458,7 +475,7 @@ class WeaponFinish:
 				})
 
 			# AO
-			if weapon_finish.get("uUseCustomAOTex"):
+			if weapon_finish.get("g_bOverrideAmbientOcclusion"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_ao',
 					"channels" : [
@@ -472,7 +489,7 @@ class WeaponFinish:
 				})
 
 			# Roughness
-			if weapon_finish.get("uUseCustomRough"):
+			if weapon_finish.get("g_bUseRoughness"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_rough',
 					"channels" : [
@@ -486,7 +503,7 @@ class WeaponFinish:
 				})
 
 			# Pearlescence
-			if weapon_finish.get("uUsePearlMask"):
+			if weapon_finish.get("g_bUsePearlescenceMask"):
 				export_preset["maps"].append({
 					"fileName" : f'{finish_name}_pearl',
 					"channels" : [

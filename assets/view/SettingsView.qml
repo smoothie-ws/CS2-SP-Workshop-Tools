@@ -28,6 +28,45 @@ SPDialog {
         }
     }
 
+    component MultiSlider: ColumnLayout {
+        id: multi
+        
+        required property string paramName
+        
+        property alias model: rep.model
+        property alias array: lock.array
+        
+        SPLock {
+            id: lock
+            property var array: []
+        }
+
+        Component.onCompleted: arrayChanged.connect(() => lock.update(() => {
+            for (var i = 0; i < rep.model.length; i++)
+                rep.itemAt(i).value = array[i];
+        }))
+        
+        Repeater {
+            id: rep
+            model: []
+            delegate: SPSlider {
+                text: `${multi.paramName} ${modelData}`
+                from: 0.0
+                to: 1.0
+                Layout.fillWidth: true
+
+                onValueChanged: lock.update(() => {
+                    var arr = lock.array;
+                    arr[index] = value;
+                    lock.array = arr;
+                })
+            }
+            
+            onItemAdded: (i, item) => array.splice(i, 0, 0.0)
+            onItemRemoved: (i, item) => array.remove(i)
+        }
+    }
+    
     QtObject {
         id: internal
         
@@ -37,24 +76,29 @@ SPDialog {
         property bool weaponIsValid: false
 
         property var weaponFinish: {
-            "style":                  { control: styleBox,               prop: "currentKey"   },
-            "texScale":               { control: texScale,               prop: "value"        },
-            "texRotationRange":       { control: texRotation,            prop: "range"        },
-            "texOffsetXRange":        { control: texOffsetX,             prop: "range"        },
-            "texOffsetYRange":        { control: texOffsetY,             prop: "range"        },
-            "uIgnoreWeaponSizeScale": { control: ignoreWeaponSizeScale,  prop: "checked"      },
-            "wearRange":              { control: wearRange,              prop: "range"        },
-            "uUsePearlMask":          { control: usePearlescentMask,     prop: "checked"      },
-            "uPearlScale":            { control: pearlescentScale,       prop: "value"        },
-            "uUseCustomRough":        { control: useRoughnessTexture,    prop: "checked"      },
-            "uPaintRoughness":        { control: paintRoughness,         prop: "value"        },
-            "uCol0":                  { control: null,                   prop: "arrayColor"   },
-            "uCol1":                  { control: null,                   prop: "arrayColor"   },
-            "uCol2":                  { control: null,                   prop: "arrayColor"   },
-            "uCol3":                  { control: null,                   prop: "arrayColor"   },
-            "uUseCustomNormal":       { control: null,                   prop: "checked"      },
-            "uUseCustomMasks":        { control: null,                   prop: "checked"      },
-            "uUseCustomAOTex":        { control: null,                   prop: "checked"      }
+            "style":                           { control: styleBox,                  prop: "currentKey" },
+            "g_flPatternTexCoordScale":        { control: g_flPatternTexCoordScale,  prop: "value" },
+            "texRotationRange":                { control: texRotation,               prop: "range" },
+            "texOffsetXRange":                 { control: texOffsetX,                prop: "range" },
+            "texOffsetYRange":                 { control: texOffsetY,                prop: "range" },
+            "g_bIgnoreWeaponSizeScale":        { control: ignoreWeaponSizeScale,     prop: "checked" },
+            "wearRange":                       { control: wearRange,                 prop: "range" },
+            "g_flPearlescentScale":            { control: pearlScale,                prop: "value" },
+            "g_bUsePearlescenceMask":          { control: usePearlMask,              prop: "checked" },
+            "g_bRoughnessPerColor":            { control: useRoughByCol,             prop: "checked" },
+            "g_bUseRoughness":                 { control: useRoughTex,               prop: "checked" },
+            "g_bUseNormalMap":                 { control: useNormalMap,              prop: "checked" },
+            "g_bOverrideDefaultMasks":         { control: useMatMasks,               prop: "checked" },
+            "g_bOverrideAmbientOcclusion":     { control: useAOTex,                  prop: "checked" },
+            "g_flPaintRoughness":              { control: paintRoughness,            prop: "value" },
+            "g_vPaintRoughness":               { control: paintRoughNum,             prop: "array" },
+            "g_vPaintMetalness":               { control: paintMetalNum,             prop: "array" },
+            "g_vPaintDurability":              { control: paintDurabilityNum,        prop: "array" },
+            "g_vSprayBiasBlend":               { control: sprayBlend,                prop: "array" },
+            "g_vColor0":                       { control: null,                      prop: "arrayColor" },
+            "g_vColor1":                       { control: null,                      prop: "arrayColor" },
+            "g_vColor2":                       { control: null,                      prop: "arrayColor" },
+            "g_vColor3":                       { control: null,                      prop: "arrayColor" },
         }
 
         onCs2PathChanged: cs2PathIsValid = cs2Path == "" ? true : Plugin.valCs2Path(cs2Path)
@@ -62,85 +106,75 @@ SPDialog {
         function valWeapon() {
             const id = weaponIdInput.text.trim();
             const name = weaponNameInput.text.trim();
-            let exists = false;
-            for (const weapon of weapons)
-                if (weapon.value == id || weapon.text == name) {
-                    exists = true;
-                    break;
+            const uv_scale = weaponUVScaleInput.text.trim();
+            for (const [wid, w] of Object.entries(weapons))
+                if (wid == id || w.name == name) {
+                    weaponIsValid = false;
+                    return;
                 }
-            weaponIsValid = id != "" && name != "" && !exists;
+            weaponIsValid = id != "" && name != "" && length != "" && uv_scale != "";
         }
 
         function addWeapon() {
-            weapons.push({
-                value: weaponIdInput.text.trim(),
-                text: weaponNameInput.text.trim()
-            });
+            weapons[weaponIdInput.text.trim()] = {
+                name: weaponNameInput.text.trim(),
+                uv_scale: weaponUVScaleInput.value,
+            }
             weaponIdInput.text = "";
             weaponNameInput.text = "";
+            weaponUVScaleInput.text = "";
             weaponIsValid = false;
             syncWeapons();
         }
 
         function remWeapon(weapon) {
-            for (let i = 0; i < weapons.length; ++i) {
-                const w = weapons[i];
-                if (w.value == weapon) {
-                    weapons.splice(i, 1);
-                    syncWeapons();
-                    return;
-                }
-            }
+            delete weapons[weapon];
+            syncWeapons();
         }
 
         function syncWeapons() {
             weaponsWidgets.widgets = [];
-            weaponsRepater.model = weapons;
+
+            const weaponModel = [];
+            for (const [wid, w] of Object.entries(weapons))
+                weaponModel.push({
+                    id: wid,
+                    name: w.name,
+                    length: w.length,
+                    uv_scale: w.uv_scale
+                });
+            weaponsRepater.model = weaponModel;
         }
 
         function startDecompilation() {
-            const m = [];
-            for (const weapon of weapons)
-                m.push(weapon.value);
-            Plugin.startDecompilation(cs2Path, m);
+            Plugin.startDecompilation(cs2Path, Object.keys(weapons));
         }
     }
     
     function getData() {
-        const weapons = {};
-        for (const weapon of internal.weapons)
-            weapons[weapon.value] = weapon.text;
         const weapon_finish = {};
         for (const [param, component] of Object.entries(internal.weaponFinish))
             weapon_finish[param] = component.control[component.prop];
         return {
             cs2_path: internal.cs2PathIsValid ? internal.cs2Path : "",
-            weapons: weapons,
+            weapons: internal.weapons,
             weapon_finish: weapon_finish
         }
     }
 
     onOpened: {
-        try {
-            const settings = JSON.parse(Plugin.getPluginSettings());
-            if ("cs2_path" in settings)
-                internal.cs2Path = settings["cs2_path"];
-            if ("weapons" in settings) {
-                const m = [];
-                for (const [value, text] of Object.entries(settings["weapons"]))
-                    m.push({value: value, text: text});
-                internal.weapons = m;
+        const settings = JSON.parse(Plugin.getPluginSettings());
+        if ("cs2_path" in settings)
+            internal.cs2Path = settings["cs2_path"];
+        if ("weapons" in settings) 
+            internal.weapons = settings["weapons"];
+        if ("weapon_finish" in settings)
+            for (const [param, value] of Object.entries(settings["weapon_finish"])) {
+                const component = internal.weaponFinish[param];
+                if (component !== undefined)
+                    component.control[component.prop] = value;
             }
-            if ("weapon_finish" in settings)
-                for (const [param, value] of Object.entries(settings["weapon_finish"])) {
-                    const component = internal.weaponFinish[param];
-                    if (component !== undefined)
-                        component.control[component.prop] = value;
-                }
-            internal.syncWeapons();
-        } catch (e) {
-            Plugin.error(`Failed to open Plugin Settings: ${e.toString()}`);
-        }
+        internal.syncWeapons();
     }
 
     SPPopup {
@@ -337,15 +371,17 @@ SPDialog {
                         }
 
                         SPButton {
-                            text: "Refresh"
+                            tooltip.text: "Refresh"
+                            implicitWidth: 25
+                            implicitHeight: implicitWidth
+                            contentAlignment: Qt.AlignCenter
                             #if QT_VERSION >= 6
                             icon.source: "./icons/cycle.png"
                             #else
                             icon.source: "./SPWidgets/icons/cycle.png"
                             #endif
-                            icon.width: 15
-                            icon.height: 15
-                            tooltip.text: "Refresh"
+                            icon.width: implicitWidth * 0.5
+                            icon.height: implicitHeight * 0.5
 
                             onClicked: weaponsWidgets.refresh()
                         }
@@ -364,30 +400,60 @@ SPDialog {
                             RowLayout {
                                 spacing: 10
                                 height: 50
+                                opacity: 0.5
+                                Layout.leftMargin: 5
                                 Layout.fillWidth: true
                                 
                                 SPLabeled {
-                                    text: "ID:"
-
-                                    SPTextInput {
-                                        id: weaponIdInput
-                                        Layout.preferredWidth: 75
-                                        tooltip.text: "Weapon Identifier"
-
-                                        onTextEdited: internal.valWeapon()
-                                    }
+                                    text: "ID"
+                                    Layout.preferredWidth: 75
                                 }
                                 
                                 SPLabeled {
-                                    text: "Name:"
+                                    text: "Name"
+                                    Layout.preferredWidth: 100
+                                }
 
-                                    SPTextInput {
-                                        id: weaponNameInput
-                                        Layout.preferredWidth: 100
-                                        tooltip.text: "Weapon Name"
+                                SPLabeled {
+                                    text: "UV Scale"
+                                    Layout.preferredWidth: 50
+                                }
 
-                                        onTextEdited: internal.valWeapon()
-                                    }
+                                Item { Layout.fillWidth: true }
+                            }
+
+                            SPSeparator { Layout.fillWidth: true }
+
+                            RowLayout {
+                                spacing: 10
+                                height: 50
+                                Layout.fillWidth: true
+                                
+                                SPTextInput {
+                                    id: weaponIdInput
+                                    Layout.preferredWidth: 75
+                                    tooltip.text: "Weapon Identifier"
+
+                                    onTextEdited: internal.valWeapon()
+                                }
+
+                                SPTextInput {
+                                    id: weaponNameInput
+                                    Layout.preferredWidth: 100
+                                    tooltip.text: "Weapon Name"
+
+                                    onTextEdited: internal.valWeapon()
+                                }
+
+                                SPTextInput {
+                                    id: weaponUVScaleInput
+                                    Layout.preferredWidth: 50
+                                    tooltip.text: "Weapon UV Scale"
+                                    validator: SPRegExprValidator { expr: /^-?[0-9]*\.?[0-9]*$/ }
+
+                                    readonly property real value: parseFloat(text)
+                                    
+                                    onTextEdited: internal.valWeapon()
                                 }
 
                                 Item { Layout.fillWidth: true }
@@ -405,6 +471,7 @@ SPDialog {
 
                             ScrollView {
                                 clip: true
+                                Layout.leftMargin: 5
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
 
@@ -423,46 +490,40 @@ SPDialog {
                                     
                                     Repeater {
                                         id: weaponsRepater
-
                                         delegate: Item {
                                             id: weapon
                                             Layout.fillWidth: true
                                             height: 25
-
-                                            readonly property string weaponId: modelData.value
-                                            readonly property string weaponName: modelData.text
                                             
                                             property bool missingTextures: true
 
                                             function refresh() {
-                                                missingTextures = !Plugin.checkWeaponTextures(weaponId);
+                                                missingTextures = !Plugin.checkWeaponTextures(modelData.id);
                                             }
 
                                             RowLayout {
                                                 spacing: 10
                                                 anchors.fill: parent
                                                 
-                                                SPLabeled {
-                                                    text: "ID:"
-                                                    label.opacity: 0.5
-
-                                                    Text {
-                                                        Layout.preferredWidth: 75
-                                                        text: modelData.value
-                                                        color: AlgStyle.text.color.normal
-                                                    }
+                                                Text {
+                                                    Layout.preferredWidth: 75
+                                                    text: modelData.id
+                                                    color: AlgStyle.text.color.normal
                                                 }
-                                                
-                                                SPLabeled {
-                                                    text: "Name:"
-                                                    label.opacity: 0.5
 
-                                                    Text {
-                                                        Layout.preferredWidth: 100
-                                                        text: modelData.text
-                                                        color: AlgStyle.text.color.normal
-                                                    }
+                                                Text {
+                                                    Layout.preferredWidth: 100
+                                                    text: modelData.name
+                                                    color: AlgStyle.text.color.normal
                                                 }
+
+                                                Text {
+                                                    Layout.preferredWidth: 50
+                                                    text: modelData.uv_scale.toFixed(3)
+                                                    color: AlgStyle.text.color.normal
+                                                }
+
+                                                Item { Layout.fillWidth: true }
 
                                                 Text {
                                                     text: "!"
@@ -490,7 +551,7 @@ SPDialog {
                                                     background.color: "black"
                                                     background.opacity: hovered ? 0.5 : 0.25
 
-                                                    onClicked: internal.remWeapon(modelData.value)
+                                                    onClicked: internal.remWeapon(modelData.id)
                                                 }
                                             }
                                         }
@@ -575,7 +636,7 @@ SPDialog {
                             }
 
                             SPSlider {
-                                id: texScale
+                                id: g_flPatternTexCoordScale
                                 text: "Texture Scale"
                                 from: -10
                                 to: 10
@@ -587,6 +648,47 @@ SPDialog {
                                 checkable: true
                                 tooltip.text: "For some finishes, the automatic scale adjustment per-weapon is not desired"
                                 Layout.fillWidth: true
+                            }
+
+                            SPLabeled {
+                                text: "Color"
+                                label.font.bold: true
+                                Layout.fillWidth: true
+                                Layout.topMargin: 20
+                                Layout.bottomMargin: 10
+                                SPSeparator { Layout.fillWidth: true }
+                            }
+
+                            SPButton {
+                                id: useColMask
+                                checkable: true
+                                text: "Use Paint-By-Number Mask"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useMatMasks.checked != checked) useMatMasks.checked = checked
+                            }
+
+                            Repeater {
+                                model: 4
+                                delegate: SPLabeled {
+                                    text: `Color${index}`
+                                    Layout.fillWidth: true
+
+                                    property alias arrayColor: colorPicker.arrayColor
+
+                                    SPColorButton { 
+                                        id: colorPicker
+                                        Layout.fillWidth: true
+                                    }
+                                }
+                                onItemAdded: (i, item) => internal.weaponFinish[`g_vColor${i}`].control = item
+                            }
+
+                            MultiSlider {
+                                id: sprayBlend
+                                model: ["Back", "Top"]
+                                paramName: "Spray Blend"
+                                width: parent.width
                             }
 
                             SPLabeled {
@@ -621,9 +723,9 @@ SPDialog {
                                 to: 1
                                 pickValue: false
                             }
-
+                                
                             SPLabeled {
-                                text: "Color"
+                                text: "Materials"
                                 label.font.bold: true
                                 Layout.fillWidth: true
                                 Layout.topMargin: 20
@@ -631,22 +733,79 @@ SPDialog {
                                 SPSeparator { Layout.fillWidth: true }
                             }
 
-                            Repeater {
-                                model: 4
-                                delegate: SPLabeled {
-                                    text: `Color${index}`
-                                    Layout.fillWidth: true
-
-                                    property alias arrayColor: colorPicker.arrayColor
-
-                                    SPColorButton { 
-                                        id: colorPicker
-                                        Layout.fillWidth: true
-                                    }
-                                }
-                                onItemAdded: (i, item) => internal.weaponFinish[`uCol${i}`].control = item
+                            SPButton {
+                                id: useRoughTex
+                                checkable: true
+                                text: "Use Roughness Texture"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useRoughByCol.checked && checked) useRoughByCol.checked = false
                             }
-                            
+
+                            SPButton {
+                                id: useRoughByCol
+                                checkable: true
+                                text: "Use Roughness By Color"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useRoughTex.checked && checked) useRoughTex.checked = false
+                            }
+
+                            SPSlider {
+                                id: paintRoughness
+                                text: "Paint Roughness"
+                                from: 0
+                                to: 1
+                            }
+
+                            MultiSlider {
+                                id: paintRoughNum
+                                model: ["X", "Y", "Z", "W"]
+                                paramName: "Paint Roughness"
+                                Layout.fillWidth: true
+                            }
+
+                            SPButton {
+                                id: useMatMasks
+                                checkable: true
+                                text: "Use Material Mask"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                                onCheckedChanged: if (useColMask.checked != checked) useColMask.checked = checked
+                            }
+
+                            MultiSlider {
+                                id: paintMetalNum
+                                model: ["X", "Y", "Z", "W"]
+                                paramName: "Paint Metalness"
+                                Layout.fillWidth: true
+                            }
+
+                            SPLabeled {
+                                text: "Normals"
+                                label.font.bold: true
+                                Layout.fillWidth: true
+                                Layout.topMargin: 20
+                                Layout.bottomMargin: 10
+                                SPSeparator { Layout.fillWidth: true }
+                            }
+
+                            SPButton {
+                                id: useNormalMap
+                                checkable: true
+                                text: "Use Normal Map"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                            }
+
+                            SPButton {
+                                id: useAOTex
+                                checkable: true
+                                text: "Use Ambient Occlusion"
+                                tooltip.text: `Whether to ${text.toLowerCase()}`
+                                Layout.fillWidth: true
+                            }
+
                             SPLabeled {
                                 text: "Effects"
                                 label.font.bold: true
@@ -655,6 +814,36 @@ SPDialog {
                                 Layout.bottomMargin: 10
                                 SPSeparator { Layout.fillWidth: true }
                             }
+                            
+                            SPButton {
+                                id: usePearlMask
+                                text: "Use Pearlescent Mask"
+                                Layout.fillWidth: true
+                                checkable: true
+                            }
+
+                            SPSlider {
+                                id: pearlScale
+                                text: "Pearlescent Scale"
+                                from: -6
+                                to: 6
+                            }
+
+                            SPLabeled {
+                                text: "Wear and Grunge"
+                                label.font.bold: true
+                                Layout.fillWidth: true
+                                Layout.topMargin: 20
+                                Layout.bottomMargin: 10
+                                SPSeparator { Layout.fillWidth: true }
+                            }
+                            
+                            MultiSlider {
+                                id: paintDurabilityNum
+                                model: ["X", "Y", "Z", "W"]
+                                paramName: "Paint Durability"
+                                Layout.fillWidth: true
+                            }
 
                             SPRangeSlider {
                                 id: wearRange
@@ -662,58 +851,6 @@ SPDialog {
                                 minValue: 0.0
                                 maxValue: 1.0
                                 pickValue: false
-                            }
-
-                            SPButton {
-                                id: usePearlescentMask
-                                text: "Custom Pearlescent Mask"
-                                Layout.fillWidth: true
-                                checkable: true
-                            }
-
-                            SPSlider {
-                                id: pearlescentScale
-                                text: "Pearlescent Scale"
-                                from: -6
-                                to: 6
-                            }
-
-                            SPButton {
-                                id: useRoughnessTexture
-                                text: "Custom Roughness Texture"
-                                Layout.fillWidth: true
-                                checkable: true
-                            }
-                                
-                            SPSlider {
-                                id: paintRoughness
-                                text: "Paint Roughness"
-                                from: 0
-                                to: 1
-                            }
-
-                            SPLabeled {
-                                text: "Advanced"
-                                label.font.bold: true
-                                Layout.fillWidth: true
-                                Layout.topMargin: 20
-                                Layout.bottomMargin: 10
-                                SPSeparator { Layout.fillWidth: true }
-                            }
-
-                            Repeater {
-                                model: [
-                                    { id: "uUseCustomNormal", text: "Custom Normal Map" },
-                                    { id: "uUseCustomMasks", text: "Custom Material Mask" },
-                                    { id: "uUseCustomAOTex", text: "Custom Ambient Occlusion" }
-                                ]
-                                delegate: SPButton {
-                                    checkable: true
-                                    text: modelData.text
-                                    tooltip.text: `Whether to use ${modelData.text.toLowerCase()} or the weapon default one`
-                                    Layout.fillWidth: true
-                                }
-                                onItemAdded: (i, item) => internal.weaponFinish[model[i].id].control = item
                             }
                         }
                     }

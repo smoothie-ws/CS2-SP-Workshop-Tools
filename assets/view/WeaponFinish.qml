@@ -5,7 +5,6 @@ QtObject {
 
     property var parameters: {}
 
-    // load weapon finish parameters
     function loadParams() {
         const values = loadWeaponFinishProject();
         for (const [param, value] of Object.entries(values)) 
@@ -16,54 +15,47 @@ QtObject {
         return values;
     }
 
-    function getParams() {
+    function dumpParams() {
         const w = {};
         for (const [param, component] of Object.entries(parameters))
             w[param] = component.control[component.prop];
         return w;
     }
 
-    // connect widgets to shader
+    // connects widgets to shader
     function connect() {
-        for (const [param, component] of Object.entries(parameters)) 
-            if (param.startsWith("u")) {
-                const control = component.control;
-                const prop = component.prop;
-                if (["filePath", "url"].includes(prop))
-                    control[prop + "Changed"].connect(() => 
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${control[prop]}"`)
-                    );
-                else if (["range", "arrayColor", "transform"].includes(prop))
-                    control[prop + "Changed"].connect(() => 
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${control[prop]}]`)
-                    );
-                else
-                    control[prop + "Changed"].connect(() => 
-                        Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${control[prop]}`)
-                    );
+        const shaderParams = Object.keys(JSON.parse(Plugin.js('alg.shaders.parameters(0)')));
+
+        for (const param of shaderParams) {
+            if (!parameters.hasOwnProperty(param)) continue;
+
+            const { prop, control, expr } = parameters[param];
+            const signalName = prop + 'Changed';
+
+            if (parameters[param].slot) {
+                try { control[signalName].disconnect(parameters[param].slot); } catch (e) {}
+                parameters[param].slot = null;
             }
+
+            const fn = expr == null ? 
+                () => Plugin.js(`alg.shaders.parameter(0,"${param}").value = ${JSON.stringify(control[prop])}`) : 
+                () => Plugin.js(`alg.shaders.parameter(0,"${param}").value = ${JSON.stringify(expr(control[prop]))}`);
+            fn();
+            
+            if (control[signalName]) {
+                control[signalName].connect(fn);
+                parameters[param].slot = fn;
+            }
+        }
     }
 
     function dump() {
-        Plugin.dumpWeaponFinish(JSON.stringify(getParams()));
+        Plugin.dumpWeaponFinish(JSON.stringify(dumpParams()));
     }
 
     function updateWeapon(weapon) {
-        for (const [param, path] of Object.entries(JSON.parse(Plugin.updateWeapon(weapon)))) // 
+        for (const [param, path] of Object.entries(JSON.parse(Plugin.updateWeapon(weapon))))
             parameters[param].control.url = path;
-    }
-
-    function syncShader() {
-        for (const [param, component] of Object.entries(parameters)) 
-            if (param.startsWith("u")) {
-                const value = component.control[component.prop];
-                if (["filePath", "url"].includes(component.prop))
-                    Plugin.js(`alg.shaders.parameter(0, "${param}").value = "${value}"`);
-                else if (["range", "arrayColor", "transform"].includes(component.prop))
-                    Plugin.js(`alg.shaders.parameter(0, "${param}").value = [${value}]`);
-                else
-                    Plugin.js(`alg.shaders.parameter(0, "${param}").value = ${value}`);
-            }
     }
 
     function syncEcon() {
@@ -84,8 +76,11 @@ QtObject {
     }
 
     function resetParameter(parameter) {
-        const component = parameters[parameter];
-        component.control[component.prop] = loadWeaponFinishProject()[parameter];
+        const value = JSON.parse(Plugin.getDefaultWeaponFinishParameter(parameter));
+        if (value !== undefined && value !== null) {
+            const component = parameters[parameter];
+            component.control[component.prop] = value;
+        }
     }
 
     function loadWeaponFinishProject() {

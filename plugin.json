@@ -2,46 +2,151 @@
     "version": "v1.0.0-beta",
     "settings": {
         "cs2_path": "",
-        "weapon_list": {
-            "ak47": "AK-47",
-            "aug": "AUG",
-            "awp": "AWP",
-            "bizon": "PP-Bizon",
-            "cz75a": "CZ75-Auto",
-            "deagle": "Desert Eagle",
-            "elite": "Dual Berettas",
-            "famas": "FAMAS",
-            "fiveseven": "Five-SeveN",
-            "glock18": "Glock-18",
-            "g3sg1": "G3SG1",
-            "galilar": "Galil AR",
-            "mac10": "MAC-10",
-            "m249": "M249",
-            "m4a1_silencer": "M4A1-S",
-            "m4a4": "M4A4",
-            "mag7": "MAG-7",
-            "mp5sd": "MP5-SD",
-            "mp7": "MP7",
-            "mp9": "MP9",
-            "negev": "Negev",
-            "nova": "Nova",
-            "hkp2000": "P2000",
-            "p250": "P250",
-            "p90": "P90",
-            "revolver": "R8 Revolver",
-            "sawedoff": "Sawed-Off",
-            "scar20": "SCAR-20",
-            "sg556": "SG 553",
-            "ssg08": "SSG 08",
-            "tec9": "Tec-9",
-            "ump45": "UMP-45",
-            "usp_silencer": "USP-S",
-            "xm1014": "XM1014",
-            "taser": "Zeus x27"
+        "weapons": {
+            "ak47": {
+                "name": "AK-47",
+                "uv_scale": 0.549
+            },
+            "aug": {
+                "name": "AUG",
+                "uv_scale": 0.763
+            },
+            "awp": {
+                "name": "AWP",
+                "uv_scale": 1.029
+            },
+            "bizon": {
+                "name": "PP-Bizon",
+                "uv_scale": 0.596
+            },
+            "cz75a": {
+                "name": "CZ75-Auto",
+                "uv_scale": 0.4
+            },
+            "deagle": {
+                "name": "Desert Eagle",
+                "uv_scale": 0.3
+            },
+            "elite": {
+                "name": "Dual Berettas",
+                "uv_scale": 0.282
+            },
+            "famas": {
+                "name": "FAMAS",
+                "uv_scale": 0.66
+            },
+            "fiveseven": {
+                "name": "Five-SeveN",
+                "uv_scale": 0.264
+            },
+            "glock18": {
+                "name": "Glock-18",
+                "uv_scale": 0.446
+            },
+            "g3sg1": {
+                "name": "G3SG1",
+                "uv_scale": 0.703
+            },
+            "galilar": {
+                "name": "Galil AR",
+                "uv_scale": 0.75
+            },
+            "mac10": {
+                "name": "MAC-10",
+                "uv_scale": 0.495
+            },
+            "m249": {
+                "name": "M249",
+                "uv_scale": 1.151
+            },
+            "m4a1_silencer": {
+                "name": "M4A1-S",
+                "uv_scale": 0.9167
+            },
+            "m4a4": {
+                "name": "M4A4",
+                "uv_scale": 0.425
+            },
+            "mag7": {
+                "name": "MAG-7",
+                "uv_scale": 0.612
+            },
+            "mp5sd": {
+                "name": "MP5-SD",
+                "uv_scale": 0.446
+            },
+            "mp7": {
+                "name": "MP7",
+                "uv_scale": 0.446
+            },
+            "mp9": {
+                "name": "MP9",
+                "uv_scale": 0.485
+            },
+            "negev": {
+                "name": "Negev",
+                "uv_scale": 0.74
+            },
+            "nova": {
+                "name": "Nova",
+                "uv_scale": 0.744
+            },
+            "hkp2000": {
+                "name": "P2000",
+                "uv_scale": 0.288
+            },
+            "p250": {
+                "name": "P250",
+                "uv_scale": 0.371
+            },
+            "p90": {
+                "name": "P90",
+                "uv_scale": 0.537
+            },
+            "revolver": {
+                "name": "R8 Revolver",
+                "uv_scale": 0.5
+            },
+            "sawedoff": {
+                "name": "Sawed-Off",
+                "uv_scale": 0.445
+            },
+            "scar20": {
+                "name": "SCAR-20",
+                "uv_scale": 0.84
+            },
+            "sg556": {
+                "name": "SG 553",
+                "uv_scale": 0.809
+            },
+            "ssg08": {
+                "name": "SSG 08",
+                "uv_scale": 1.084
+            },
+            "tec9": {
+                "name": "Tec-9",
+                "uv_scale": 0.427
+            },
+            "ump45": {
+                "name": "UMP-45",
+                "uv_scale": 0.882
+            },
+            "usp_silencer": {
+                "name": "USP-S",
+                "uv_scale": 0.516
+            },
+            "xm1014": {
+                "name": "XM1014",
+                "uv_scale": 0.54
+            },
+            "taser": {
+                "name": "Zeus x27",
+                "uv_scale": 0.36
+            }
         },
         "weapon_finish": {
             "style": "gs",
-            "texScale": 1,
+            "g_flPatternTexCoordScale": 1,
             "texRotationRange": [
                 0,
                 0
@@ -54,38 +159,62 @@
                 0,
                 0
             ],
-            "uIgnoreWeaponSizeScale": false,
+            "g_bIgnoreWeaponSizeScale": true,
             "wearRange": [
                 0,
                 1
             ],
-            "uUsePearlMask": true,
-            "uPearlScale": 0,
-            "uUseCustomRough": true,
-            "uPaintRoughness": 0.6,
-            "uCol0": [
-                1,
-                1,
-                1
+            "g_flPearlescentScale": 0,
+            "g_bUsePearlescenceMask": true,
+            "g_bRoughnessPerColor": false,
+            "g_bUseRoughness": true,
+            "g_bUseNormalMap": true,
+            "g_bOverrideDefaultMasks": true,
+            "g_bOverrideAmbientOcclusion": true,
+            "g_flPaintRoughness": 0.6,
+            "g_vPaintRoughness": [
+                0.6,
+                0.6,
+                0.6,
+                0.6
             ],
-            "uCol1": [
-                1,
-                1,
-                1
+            "g_vPaintMetalness": [
+                0,
+                0,
+                0,
+                0
             ],
-            "uCol2": [
-                1,
-                1,
-                1
+            "g_vPaintDurability": [
+                0,
+                0,
+                0,
+                0
             ],
-            "uCol3": [
-                1,
-                1,
-                1
+            "g_vSprayBiasBlend": [
+                0,
+                0
             ],
-            "uUseCustomNormal": true,
-            "uUseCustomMasks": true,
-            "uUseCustomAOTex": true
-        }
+            "g_vColor0": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "g_vColor1": [
+                0.59,
+                0.59,
+                0.59
+            ],
+            "g_vColor2": [
+                0.38,
+                0.38,
+                0.38
+            ],
+            "g_vColor3": [
+                0.42,
+                0.42,
+                0.42
+            ]
+        },
+        "check_for_updates": true
     }
 }

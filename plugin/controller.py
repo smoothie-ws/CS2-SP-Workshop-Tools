@@ -1,4 +1,5 @@
 import json
+import substance_painter as sp
 
 from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings, Updates
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
@@ -28,7 +29,7 @@ class MainView(QmlView):
     # slots
     @QtCore.Slot(str, result=str)
     def importTexture(self, path:str) -> str:
-        return Resource.import_session_resource(path, Resource.Usage.TEXTURE).identifier().url()
+        return Resource.import_session_resource(path, Resource.Usage.TEXTURE, group="CS2").identifier().url()
         
     @QtCore.Slot(str)
     def showInExplorer(self, path:str):
@@ -55,15 +56,15 @@ class MainView(QmlView):
     def updateWeapon(self, weapon: str):
         return json.dumps(WeaponFinish.update_weapon(weapon))
 
-    @QtCore.Slot(str)
-    def updateStyle(self, style: str):
+    @QtCore.Slot(str, bool)
+    def updateStyle(self, style: str, extern_mode: bool):
         def change(res: bool, msg: str):
             if res:
                 Log.warning(msg) 
                 self.styleReady.emit()
             else:
                 Log.error(msg)
-        WeaponFinish.update_style(style, change)
+        WeaponFinish.update_style(style, extern_mode, change)
 
     @QtCore.Slot(str)
     def updateEconPath(self, path: str):
@@ -84,6 +85,24 @@ class MainView(QmlView):
     @QtCore.Slot()
     def exportWeaponFinishTextures(self):
         WeaponFinish.export_textures()
+
+    @QtCore.Slot(str, result=str)
+    def getDefaultWeaponFinishParameter(self, parameter: str) -> str:
+        return json.dumps(Plugin.settings.get("weapon_finish", {}).get(parameter))
+
+    @QtCore.Slot(result=str)
+    def getPreviewEnvs(self) -> str:
+        return json.dumps({e: Path.filename(e) for e in Path.listdir(Path.asset("envs"))})
+
+    @QtCore.Slot(str)
+    def setEnv(self, env: str) -> None:
+        if WeaponFinish.is_open():
+            sp.display.set_environment_resource(Resource.import_session_resource(
+                Path.asset("envs", env), 
+                Resource.Usage.ENVIRONMENT, 
+                Path.filename(env), 
+                "CS2"
+            ).identifier())
 
 
 class WeaponFinishInitWindow(QmlDialog):
@@ -233,7 +252,7 @@ class UpdateWindow(QmlDialog):
 class SettingsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Settings", icon, "Plugin", path)
-        self.view.setMinimumSize(QtCore.QSize(735, 425))
+        self.view.setMinimumSize(QtCore.QSize(875, 425))
         
     def on_confirmed(self, data: str) -> None:
         for key, value in json.loads(data).items():

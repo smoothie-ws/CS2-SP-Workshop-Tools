@@ -35,6 +35,10 @@ SPControl {
         mapChanged.connect(comboBox.syncModel);
     }
 
+    onWheel: e => {
+        currentIndex = (model.length + currentIndex - Math.floor(e.angleDelta.y / 120)) % model.length;
+    }
+
     ComboBox {
         id: comboBox
         textRole: "text"
