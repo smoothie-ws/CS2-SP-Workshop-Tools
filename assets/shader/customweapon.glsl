@@ -186,7 +186,7 @@ uniform sampler2D g_tGrunge;
     }
 #endif
 
-#if !AN && !AM && !AA
+#if GS
     const vec3 g_vPaintAlbedoLevels = vec3(0.045, 1.32193264, 1.00);
 #endif
 const vec3 g_vMetallicPaintAlbedoLevels = vec3(0.080, 1.32193264, 1.00);
@@ -417,7 +417,7 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
     #elif AN || AM || AA
         O.metalness.z = flInvPaintBlend;
 
-        float flGrungeLum = luminance(cGrunge.xyz);
+        float flGrungeLum = luma(cGrunge.xyz);
         float grungeBoost = (1.0 - flGrungeLum) * 0.2;
 
         #if AM
@@ -451,7 +451,7 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
         float flOilRubBlend = saturate(flCavity * flAo - g_flWearAmount * 0.1) - flGrunge * 0.23;
         flOilRubBlend = smoothstep(0.0, 0.15, flOilRubBlend + 0.08);
 
-        float flGrungeLum = luminance(cGrunge.xyz);
+        float flGrungeLum = luma(cGrunge.xyz);
         float flWear = (1.0 - cGrunge.w) * g_flWearAmount;
 
         float flRoughness = gflRoughness;
@@ -484,10 +484,12 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
     if (g_bUsePearlescenceMask)
         O.metalness.z *= tex2D(g_tPearlescenceMask, vBaseUV_PatternUV.zw).r;
 
-    O.pearlFactor = g_flPearlescentScale * O.metalness.z;
-
+    O.pearlFactor = g_flPearlescentScale;
+    
     // ----- COLOR -----
 
+    vec3 cBase = sRGB2linear(tex2D(g_tColor, vBaseUV_PatternUV.xy).xyz);
+    
     #if !CU && !AQ && !GS
         vec3 cPaint = g_vColor0;
     #endif
@@ -509,7 +511,7 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
 
         cPaint = mix(mix(cBase, cPaint, fvMasks.x), vec3(0.38, 0.37, 0.35), flPaintBlend);
         cPaint = saturate(saturate(cPaint * cPattern) * cPattern);
-        cPaint *= mix(cGrunge.xyz, vec3(1.0), vec3(flPaintBlend));
+        cPaint *= mix(cGrunge.xyz, vec3(1.0), flPaintBlend);
     #else
         #if SO
             cPaint = mix(cPaint, g_vColor1, fvMasks.x);
@@ -541,7 +543,7 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
             vec3 cOilRubColor = mix(g_vColor1, g_vColor3, pow(g_flWearAmount, 0.5));
             cPatina = mix(cOilRubColor, cPatina, flOilRubBlend) * cPattern;
 
-            float flPatternLum = luminance(cPattern);
+            float flPatternLum = luma(cPattern);
             vec3 cScratches = g_vColor0 * flPatternLum;
 
             vec3 cPaint = mix(cPatina, cScratches, flPatinaBlend);
@@ -556,19 +558,15 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
         cPaint *= cGrunge.xyz;
     #endif
 
-    vec3 fvAlbedoLevels = mix(
-        g_vPaintAlbedoLevels, 
-        g_vMetallicPaintAlbedoLevels, 
-        #if GS
-            mix(g_flPaintMetalness, 1.0, fvMasks.x) // flMetalness ?
-        #else
-            1.0 // flMetalness ?
-        #endif
-    );
+    #if !GS
+        vec3 fvAlbedoLevels = g_vMetallicPaintAlbedoLevels;
+    #else
+        vec3 fvAlbedoLevels = mix(g_vPaintAlbedoLevels, g_vMetallicPaintAlbedoLevels, mix(g_flPaintMetalness, 1.0, fvMasks.x));
+    #endif
 
     vec3 cPaintN = normalize(max(vec3(0.0003), cPaint));
     float nMax = max(cPaintN.x, max(cPaintN.y, cPaintN.z));
-    float lum =  min(fvAlbedoLevels.x, luminance(
+    float lum =  min(fvAlbedoLevels.x, luma(
         #if AQ
             cPattern * g_vColor1
         #elif GS
@@ -582,7 +580,6 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
     vec3 painted = (cPaintN * target) / nMax;
     cPaint = mix(cPaint, painted, g_flWearAmount);
 
-    vec3 cBase = sRGB2linear(tex2D(g_tColor, vBaseUV_PatternUV.xy).xyz);
     O.color = vec4(mix(cPaint, cBase, flPaintBlend), 1.0 - flPaintBlend);
 
     // ----- NORMAL -----

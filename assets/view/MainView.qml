@@ -48,7 +48,6 @@ Rectangle {
 
         function onStyleReady() {
             weaponFinish.connect();
-            Plugin.info(JSON.stringify(Plugin.js("alg.shaders.groups(0)")));
         }
 
         function onPluginAboutToClose() {
@@ -210,7 +209,7 @@ Rectangle {
                     var param = JSON.parse(Plugin.getDefaultWeaponFinishParameter(multi.paramId));
                     if (param == null)
                         return;
-                    var value = [index];
+                    var value = param[index];
                     if (value == undefined)
                         return;
                     control.value = value;

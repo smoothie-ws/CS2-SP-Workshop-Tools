@@ -30,7 +30,7 @@ void shade(V2F inputs) {
 
     if (g_bLivePreview) {
         composeCustomWeapon(inputs, O);
-        pearl(O);
+        computePearlescence(O);
         
         if (g_bPBRValidation)
             validatePBR(O);
