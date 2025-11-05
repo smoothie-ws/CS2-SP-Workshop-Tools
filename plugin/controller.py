@@ -174,11 +174,10 @@ class WeaponFinishInitWindow(QmlDialog):
 class UpdateWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
         super().__init__("CS2 Workshop Tools Update", icon, "Plugin", path)
-        self.view.setMinimumSize(QtCore.QSize(500, 500))
         
     opened = QtCore.Signal(str, str)
     
-    def check_for_updates(self):
+    def check_for_updates(self, is_manual: bool = False):
         try:
             latest, commits_raw = Updates.check_for_updates("smoothie-ws/CS2-SP-Workshop-Tools", Plugin.version)
             if latest and commits_raw:
@@ -197,11 +196,15 @@ class UpdateWindow(QmlDialog):
                     else:
                         commits_misc.append(commit)
                         
-                self.open(self.latest, [
+                self.view.setMinimumSize(QtCore.QSize(500, 500))
+                self.open(latest, [
                     { "name": "Added", "color": "#60206332", "commits": commits_added },
                     { "name": "Fixed", "color": "#60204E63", "commits": commits_fixed },
                     { "name": "Misc", "color": "#60612063", "commits": commits_misc }
                 ])
+            elif is_manual:
+                self.view.setMinimumSize(QtCore.QSize(500, 250))
+                self.open(Plugin.version, [])
         except Exception as e:
             Log.info(f'Failed to check for updates: {e}')
         
@@ -244,10 +247,10 @@ class UpdateWindow(QmlDialog):
     def getCheckForUpdates(self) -> bool:
         return Plugin.settings.get("check_for_updates", True)
     
-    @QtCore.Slot(bool)
+    @QtCore.Slot(bool, result=bool)
     def setCheckForUpdates(self, check: bool):
         Plugin.settings["check_for_updates"] = check
-    
+        return not check
 
 class SettingsWindow(QmlDialog):
     def __init__(self, path: str, icon: QtGui.QIcon):
@@ -277,7 +280,7 @@ class SettingsWindow(QmlDialog):
     @QtCore.Slot()
     def checkForUpdates(self) -> None:
         from . import CS2WT
-        CS2WT.update_window.check_for_updates()
+        CS2WT.update_window.check_for_updates(True)
         
     @QtCore.Slot(str, list)
     def startDecompilation(self, cs2_path, weapons: list):

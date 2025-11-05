@@ -65,7 +65,7 @@ class Updates:
                 if ex.code == 404:
                     return latest, all_commits_to(latest, limit=100, timeout=5)
                 
-        return None, None
+        return None, []
     
     @staticmethod
     def update(repo: str, tag: str, dest: str, state_callback, update_callback):

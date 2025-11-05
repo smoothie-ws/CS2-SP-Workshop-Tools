@@ -7,29 +7,31 @@ import "./SPWidgets"
 SPDialog {
     id: root
     confirm.text: "Download & Install"
+    confirm.visible: updateAvailable
     option: Item {
         Connections {
             target: Plugin
 
             function onOpened(latest, commitsRaw) {
+                const commits = JSON.parse(commitsRaw);
+                updateAvailable = commits.length > 0;
+
                 ignoreButton.checked = !Plugin.getCheckForUpdates();
-                listRepeater.model = JSON.parse(commitsRaw);
+                listRepeater.model = commits;
                 changelogLabel.latest = latest;
             }
         }
 
         SPButton {
             id: ignoreButton
+            visible: root.updateAvailable
             width: implicitWidth + 10
             text: "Don't show again"
             background.color: hovered ? Qt.rgba(1, 1, 1, 0.05) : "transparent"
             label.horizontalAlignment: Text.AlignRight
             anchors.verticalCenter: parent.verticalCenter
 
-            onClicked: {
-                Plugin.setCheckForUpdates(checked);
-                checked = !checked;
-            }
+            onClicked: checked = Plugin.setCheckForUpdates(checked);
 
             Rectangle {
                 x: 5
@@ -47,6 +49,8 @@ SPDialog {
             }
         }
     }
+
+    property bool updateAvailable: false
 
     SPPopup {
         id: downloadingPopup
@@ -131,6 +135,7 @@ SPDialog {
             spacing: 15
 
             Image {
+                visible: root.updateAvailable
                 source: Plugin.asset("icons/arrow.png")
                 opacity: 0.75
                 mipmap: true
@@ -140,9 +145,9 @@ SPDialog {
             }
             
             Text {
-                text: "New version available!"
+                text: root.updateAvailable ? "New version available!" : "A newer version is already installed!"
                 font.bold: true
-                font.pixelSize: 22
+                font.pixelSize: root.updateAvailable ? 22 : 18
                 color: AlgStyle.text.color.normal
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -157,7 +162,7 @@ SPDialog {
             Text {
                 id: versionLabel
                 textFormat: Text.RichText
-                text: `<b>${Plugin.getPluginVersion()}</b> → <b>${changelogLabel.latest}</b> Changelog`
+                text: root.updateAvailable ? `<b>${Plugin.getPluginVersion()}</b> → <b>${changelogLabel.latest}</b> Changelog` : Plugin.getPluginVersion()
                 font.pixelSize: 12
                 color: AlgStyle.text.color.normal
                 Layout.fillWidth: true
@@ -175,6 +180,7 @@ SPDialog {
 
         Rectangle {
             id: changelogBackground
+            visible: root.updateAvailable
             radius: 15
             color: Qt.rgba(0.0, 0.0, 0.0, 0.1)
             Layout.fillWidth: true
