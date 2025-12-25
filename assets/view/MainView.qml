@@ -181,8 +181,8 @@ Rectangle {
 
         Component.onCompleted: arrayChanged.connect(() => lock.update(() => {
             for (var i = 0; i < rep.model.length; i++)
-                rep.itemAt(i).control.value = array[i];
-        }))
+                rep.itemAt(i).value = array[i];
+        }));
         
         Repeater {
             id: rep
@@ -190,7 +190,7 @@ Rectangle {
             delegate: SPParameter {
                 Layout.fillWidth: true
 
-                property alias control: control
+                property alias value: control.value
 
                 SPSlider {
                     id: control
@@ -384,7 +384,7 @@ Rectangle {
                 }
 
                 SPLabeled {
-                    text: "Preview Environment"
+                    text: "Environment Map"
                     Layout.fillWidth: true
 
                     SPComboBox {
@@ -645,7 +645,8 @@ Rectangle {
                             "aa": "Anodized Airbrushed",
                             "cu": "Custom Paint Job",
                             "aq": "Patina",
-                            "gs": "Gunsmith"
+                            "gs": "Gunsmith",
+                            "ce": "Custom Paint Job Extended"
                         }
                     }
 
@@ -1021,6 +1022,28 @@ Rectangle {
                             }
                         }
                     }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                SPButton {
+                    id: saveAsDefaults
+                    icon.source: Plugin.asset("icons/save.png")
+                    text: "Save as defaults"
+                }
+
+                SPSeparator { Layout.fillWidth: true }
+
+                SPButton {
+                    id: restoreDefaults
+                    #if QT_VERSION >= 6
+                    icon.source: "./icons/cycle.png"
+                    #else
+                    icon.source: "./SPWidgets/icons/cycle.png"
+                    #endif
+                    text: "Restore defaults"
                 }
             }
         }

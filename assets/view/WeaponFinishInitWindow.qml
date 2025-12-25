@@ -187,7 +187,8 @@ SPDialog {
                     "aa": "Anodized Airbrushed",
                     "cu": "Custom Paint Job",
                     "aq": "Patina",
-                    "gs": "Gunsmith"
+                    "gs": "Gunsmith",
+                    "ce": "Custom Paint Job Extended"
                 }
             }
         }

@@ -12,6 +12,7 @@ import lib-sampler.glsl
 #define CU PAINT_STYLE == 6 // Custom Paint Job
 #define AQ PAINT_STYLE == 7 // Patina
 #define GS PAINT_STYLE == 8 // Gunsmith
+#define CE PAINT_STYLE == 9 // Custom Paint Job Extended
 
 //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
 uniform vec4 g_vPatternTexCoordXform0;

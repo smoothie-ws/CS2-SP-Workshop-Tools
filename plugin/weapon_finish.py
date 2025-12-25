@@ -14,7 +14,8 @@ class WeaponFinish:
 		"aa" : 5, # Anodized Airbrushed
 		"cu" : 6, # Custom Paint Job
 		"aq" : 7, # Patina
-		"gs" : 8  # Gunsmith
+		"gs" : 8, # Gunsmith
+		"ce" : 9 # Custom Paint Job Extended
 	}
  
 	@staticmethod
@@ -317,7 +318,8 @@ class WeaponFinish:
 				"aa": "AnodizedAirbrushed",
 				"cu": "CustomPaintJob",
 				"aq": "Patina",
-				"gs": "Gunsmith"
+				"gs": "Gunsmith",
+				"ce": "Custom Paint Job Extended"
 			}.get(weapon_finish.get("style", "gs"))
 
 			wear = weapon_finish.get("wearRange", [0.0, 1.0])
