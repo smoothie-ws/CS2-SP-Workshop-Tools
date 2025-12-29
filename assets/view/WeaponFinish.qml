@@ -12,7 +12,6 @@ QtObject {
                 const component = parameters[param];
                 component.control[component.prop] = value;
             }
-        return values;
     }
 
     function dumpParams() {

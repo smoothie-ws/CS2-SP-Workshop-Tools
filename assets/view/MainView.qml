@@ -180,8 +180,8 @@ Rectangle {
         }
 
         Component.onCompleted: arrayChanged.connect(() => lock.update(() => {
-            for (var i = 0; i < rep.model.length; i++)
-                rep.itemAt(i).value = array[i];
+            for (let i = 0; i < rep.model.length; i++)
+                rep.itemAt(i).value = array[i]; // sometimes this causes a crash
         }));
         
         Repeater {
@@ -636,18 +636,7 @@ Rectangle {
                         id: styleBox
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        map: {
-                            "so": "Solid Color",
-                            "hy": "Hydrographic",
-                            "sp": "Spray Paint",
-                            "an": "Anodized",
-                            "am": "Anodized Multicolored",
-                            "aa": "Anodized Airbrushed",
-                            "cu": "Custom Paint Job",
-                            "aq": "Patina",
-                            "gs": "Gunsmith",
-                            "ce": "Custom Paint Job Extended"
-                        }
+                        map: JSON.parse(Plugin.getFinishStyles())
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, weapon.scopeWidth)

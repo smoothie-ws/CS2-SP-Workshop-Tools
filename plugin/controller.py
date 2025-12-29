@@ -86,6 +86,10 @@ class MainView(QmlView):
     def exportWeaponFinishTextures(self):
         WeaponFinish.export_textures()
 
+    @QtCore.Slot(result=str)
+    def getFinishStyles(self):
+        return json.dumps(Plugin.settings.get("finish_styles", {}))
+
     @QtCore.Slot(str, result=str)
     def getDefaultWeaponFinishParameter(self, parameter: str) -> str:
         return json.dumps(Plugin.settings.get("weapon_finish", {}).get(parameter))
@@ -145,6 +149,10 @@ class WeaponFinishInitWindow(QmlDialog):
         else:
             WeaponFinish.set_up(weapon_finish, callback)
             
+    @QtCore.Slot(result=str)
+    def getFinishStyles(self):
+        return json.dumps(Plugin.settings.get("finish_styles", {}))
+
     @QtCore.Slot(result=str)
     def getDefaultStyle(self):
         return Plugin.settings.get("weapon_finish", {}).get("style", "gs")

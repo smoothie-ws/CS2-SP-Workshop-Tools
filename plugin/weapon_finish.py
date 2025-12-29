@@ -5,19 +5,6 @@ import substance_painter as sp
 from .painter import Log, Path, Macro, Plugin, Resource, ProjectSettings
 
 class WeaponFinish:
-	FINISH_STYLES = {
-		"so" : 0, # Solid Color
-		"hy" : 1, # Hydrographic
-		"sp" : 2, # Spray-Paint
-		"an" : 3, # Anodized
-		"am" : 4, # Anodized Multicolored
-		"aa" : 5, # Anodized Airbrushed
-		"cu" : 6, # Custom Paint Job
-		"aq" : 7, # Patina
-		"gs" : 8, # Gunsmith
-		"ce" : 9 # Custom Paint Job Extended
-	}
- 
 	@staticmethod
 	def current() -> dict:
 		return ProjectSettings.get("weapon_finish")
@@ -160,9 +147,9 @@ class WeaponFinish:
 	
 				name = f'cs2_{fs}'
 				path = Path.join(shader_dir, f'{name}.glsl')
-				index = WeaponFinish.FINISH_STYLES[fs]
 				Path.write(path, Macro.process(shader_source, {
-        			"PAINT_STYLE": index,
+        			# "PAINT_STYLE": list(Plugin.settings.get("finish_styles", {}).keys()).index(fs),
+					"PAINT_STYLE": 8,
 					"EXTERN_MODE": extern_mode
            		}, path=shader_path))
 				
@@ -213,16 +200,9 @@ class WeaponFinish:
 			parts = value.split("_")
 			if len(parts) == 2:
 				weapon_finish["style"] = {
-					"SolidColor": "so",
-					"HydroGraphic": "hy",
-					"SprayPaint": "sp",
-					"Anodized": "an",
-					"AnodizedMulticolor": "am",
-					"AnodizedAirbrushed": "aa",
-					"CustomPaintJob": "cu",
-					"Patina": "aq",
-					"Gunsmith": "gs"
-				}.get(parts[1])
+					name.replace(" ", "").replace("-", ""): code
+					for code, name in Plugin.settings.get("finish_styles", {}).items()
+				}.get(parts[1], "gs")
 			else:
 				Log.warning("Failed to fetch style")
    
@@ -307,20 +287,12 @@ class WeaponFinish:
 		
 		econitem: str = weapon_finish.get("econitem", "")
 		if econitem != "":
+			style = weapon_finish.get("style", "gs")
+
 			# fetch weapon finish parameters
 			finish_name = Path.filename(econitem)
-			finish_style = {					
-            	"so": "SolidColor",
-				"hy": "HydroGraphic",
-				"sp": "SprayPaint",
-				"an": "Anodized",
-				"am": "AnodizedMulticolor",
-				"aa": "AnodizedAirbrushed",
-				"cu": "CustomPaintJob",
-				"aq": "Patina",
-				"gs": "Gunsmith",
-				"ce": "Custom Paint Job Extended"
-			}.get(weapon_finish.get("style", "gs"))
+			finish_style = Plugin.settings.get("finish_styles", {}).get(style, "Gunsmith")
+			finish_style = finish_style.replace(" ", "").replace("-", "")
 
 			wear = weapon_finish.get("wearRange", [0.0, 1.0])
 

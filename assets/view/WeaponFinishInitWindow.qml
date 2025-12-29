@@ -178,18 +178,7 @@ SPDialog {
             SPComboBox {
                 id: styleBox
                 Layout.fillWidth: true
-                map: {
-                    "so": "Solid Color",
-                    "hy": "Hydrographic",
-                    "sp": "Spray Paint",
-                    "an": "Anodized",
-                    "am": "Anodized Multicolored",
-                    "aa": "Anodized Airbrushed",
-                    "cu": "Custom Paint Job",
-                    "aq": "Patina",
-                    "gs": "Gunsmith",
-                    "ce": "Custom Paint Job Extended"
-                }
+                map: JSON.parse(Plugin.getFinishStyles())
             }
         }
 

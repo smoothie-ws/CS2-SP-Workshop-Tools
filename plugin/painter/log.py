@@ -6,16 +6,16 @@ class Log:
     channel = "Plugin"
 
     @staticmethod
-    def info(msg: str):
-        sp.logging.log(sp.logging.INFO, Log.channel, msg)
+    def info(msg: any):
+        sp.logging.log(sp.logging.INFO, Log.channel, str(msg))
     
     @staticmethod
-    def error(msg: str):
-        sp.logging.log(sp.logging.ERROR, Log.channel, msg)
+    def error(msg: any):
+        sp.logging.log(sp.logging.ERROR, Log.channel, str(msg))
     
     @staticmethod
-    def warning(msg: str):
-        sp.logging.log(sp.logging.WARNING, Log.channel, msg)
+    def warning(msg: any):
+        sp.logging.log(sp.logging.WARNING, Log.channel, str(msg))
 
     @staticmethod
     def fatal():

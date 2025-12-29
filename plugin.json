@@ -2,6 +2,18 @@
     "version": "v1.0.0-beta",
     "settings": {
         "cs2_path": "",
+        "finish_styles": {
+            "so": "Solid Color",
+            "hy": "Hydrographic",
+            "sp": "Spray-Paint",
+            "an": "Anodized",
+            "am": "Anodized Multicolor",
+            "aa": "Anodized Airbrushed",
+            "cu": "Custom Paint Job",
+            "aq": "Patina",
+            "gs": "Gunsmith",
+            "ce": "Custom Paint Job Extended"
+        },
         "weapons": {
             "ak47": {
                 "name": "AK-47",
