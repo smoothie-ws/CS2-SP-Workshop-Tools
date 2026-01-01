@@ -177,12 +177,15 @@ Rectangle {
         SPLock {
             id: lock
             property var array: []
-        }
 
-        Component.onCompleted: arrayChanged.connect(() => lock.update(() => {
-            for (let i = 0; i < rep.model.length; i++)
-                rep.itemAt(i).value = array[i]; // sometimes this causes a crash
-        }));
+            onArrayChanged: lock.update(() => {
+                if (array.length == rep.count)
+                    for (let i = 0; i < rep.count; i++)
+                        rep.itemAt(i).value = array[i];
+                else 
+                    throw `Array length mismatch! Expected ${rep.count}, got ${array.length}`;
+            })
+        }
         
         Repeater {
             id: rep
