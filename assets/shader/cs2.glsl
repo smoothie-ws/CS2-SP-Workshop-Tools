@@ -2,13 +2,13 @@ import lib-normal.glsl
 import lib-vectors.glsl
 
 #include "std/pbr.glsl"
-#include "customweapon.glsl"
+#include "cs2_customweapon.glsl"
 
 //: metadata {
 //:  "custom-ui" : "cs2-ui.qml"
 //: }
 
-// General Parameters --------------------------------------------- //
+// General ------------------------------------------------------- //
 
 //: param custom { "default": true }
 uniform_specialization bool g_bLivePreview;
@@ -16,14 +16,6 @@ uniform_specialization bool g_bLivePreview;
 uniform_specialization int g_bDebugChannel;
 //: param custom { "default": false }
 uniform_specialization bool g_bPBRValidation;
-#if EXTERN_MODE
-//: param auto channel_basecolor
-    uniform SamplerSparse g_tMatColor;
-//: param auto channel_roughness
-    uniform SamplerSparse g_tMatRough;
-//: param auto channel_user0
-    uniform SamplerSparse g_tMatMasks;
-#endif
 
 void shade(V2F inputs) {
     CustomWeaponOutputs O;

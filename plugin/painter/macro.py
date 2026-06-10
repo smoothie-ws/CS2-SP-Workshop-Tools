@@ -36,7 +36,7 @@ class Macro:
             
         processed_lines = []
         for line in code.split("\n"):
-            if not line.startswith("//:"):
+            if not line.lstrip().startswith("//:"):
                 if remove_comments:
                     line = line.split("//")[0]
                 for macro in macros.keys():
@@ -102,6 +102,8 @@ class Macro:
                 elif line.startswith("#endif"):
                     condition_stack.pop()
                     continue
+            else:
+                line = line.lstrip()
 
             if not skipping() and line != "":
                 processed_lines.append(line)

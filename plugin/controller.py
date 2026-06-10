@@ -90,16 +90,12 @@ class MainView(QmlView):
     def getFinishStyles(self):
         return json.dumps(Plugin.settings.get("finish_styles", {}))
 
-    @QtCore.Slot(str, result=str)
-    def getDefaultWeaponFinishParameter(self, parameter: str) -> str:
-        return json.dumps(Plugin.settings.get("weapon_finish", {}).get(parameter))
-
     @QtCore.Slot(result=str)
     def getPreviewEnvs(self) -> str:
         return json.dumps({e: Path.filename(e) for e in Path.listdir(Path.asset("envs"))})
 
     @QtCore.Slot(str)
-    def setEnv(self, env: str) -> None:
+    def setPreviewEnv(self, env: str) -> None:
         if WeaponFinish.is_open():
             sp.display.set_environment_resource(Resource.import_session_resource(
                 Path.asset("envs", env), 
@@ -107,6 +103,19 @@ class MainView(QmlView):
                 Path.filename(env), 
                 "CS2"
             ).identifier())
+
+    @QtCore.Slot(result=str)
+    def getDefaultWeaponFinishParameters(self) -> str:
+        return json.dumps(Plugin.settings.get("weapon_finish", {}))
+
+    @QtCore.Slot(str, result=str)
+    def getDefaultWeaponFinishParameter(self, parameter: str) -> str:
+        return json.dumps(Plugin.settings.get("weapon_finish", {}).get(parameter))
+
+    @QtCore.Slot(str)
+    def setDefaultWeaponFinishParameters(self, parameters: str):
+        Plugin.settings["weapon_finish"] = json.loads(parameters)
+        Log.warning("Updated default weapon finish parameters")
 
 
 class WeaponFinishInitWindow(QmlDialog):

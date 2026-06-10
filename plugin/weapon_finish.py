@@ -2,7 +2,9 @@ import json
 import math
 import substance_painter as sp
 
+from .shader_params import get_params
 from .painter import Log, Path, Macro, Plugin, Resource, ProjectSettings
+
 
 class WeaponFinish:
 	@staticmethod
@@ -58,6 +60,7 @@ class WeaponFinish:
 				sp.event.DISPATCHER.disconnect(sp.event.ShelfCrawlingEnded, proceed)
 
 			# update the document channel stack
+
 			new_stack = {
 				sp.textureset.ChannelType.BaseColor: (sp.textureset.ChannelFormat.sRGB8, None),
 				sp.textureset.ChannelType.Roughness: (sp.textureset.ChannelFormat.L8, None),
@@ -65,15 +68,7 @@ class WeaponFinish:
 				sp.textureset.ChannelType.User1: (sp.textureset.ChannelFormat.L8, "Alpha"),
 				sp.textureset.ChannelType.User2: (sp.textureset.ChannelFormat.L8, "Pearlescence")
 			}
-			allowed_channels = [
-				sp.textureset.ChannelType.BaseColor,
-				sp.textureset.ChannelType.Roughness,
-				sp.textureset.ChannelType.User0,
-				sp.textureset.ChannelType.User1,
-				sp.textureset.ChannelType.User2,
-				sp.textureset.ChannelType.Height,
-				sp.textureset.ChannelType.Normal
-			]
+
 			try:
 				for texture_set in sp.textureset.all_texture_sets():
 					for stack in texture_set.all_stacks():
@@ -85,9 +80,19 @@ class WeaponFinish:
 									stack.edit_channel(channel_type, channel_format, channel_label)
 							else:
 								stack.add_channel(channel_type, channel_format, channel_label)
-						# remove unnecessary channels 
+						# remove unnecessary channels
 						for channel_type, channel in stack.all_channels().items():
-							if channel_type not in allowed_channels:
+							if channel_type not in [
+									sp.textureset.ChannelType.BaseColor,
+									sp.textureset.ChannelType.Roughness,
+									sp.textureset.ChannelType.Metallic,
+									sp.textureset.ChannelType.User0,
+									sp.textureset.ChannelType.User1,
+									sp.textureset.ChannelType.User2,
+									sp.textureset.ChannelType.Height,
+									sp.textureset.ChannelType.Normal,
+									sp.textureset.ChannelType.AO
+								]:
 								stack.remove_channel(channel_type)
 			except Exception as e:
 				callback(False, f'Failed to set up the document channel stack: {str(e)}')
@@ -144,12 +149,13 @@ class WeaponFinish:
    
 			if len(shader_source) > 0:
 				shader_dir = Path.cleardir(Path.join(Path.plugin, "shaders"))
-	
+				shader_params = get_params(fs, extern_mode)
+				Log.info(json.dumps(shader_params))
+				
 				name = f'cs2_{fs}'
 				path = Path.join(shader_dir, f'{name}.glsl')
 				Path.write(path, Macro.process(shader_source, {
-        			# "PAINT_STYLE": list(Plugin.settings.get("finish_styles", {}).keys()).index(fs),
-					"PAINT_STYLE": 8,
+        			"PAINT_STYLE": list(Plugin.settings.get("finish_styles", {}).keys()).index(fs),
 					"EXTERN_MODE": extern_mode
            		}, path=shader_path))
 				

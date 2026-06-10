@@ -13,6 +13,7 @@ Rectangle {
     }
     
     default property alias children: content.children
+    property alias content: content
     property alias spacing: content.spacing
     property alias header: header.sourceComponent
     property alias toggled: groupButton.checked

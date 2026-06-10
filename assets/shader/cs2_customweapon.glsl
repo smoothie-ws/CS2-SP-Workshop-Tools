@@ -14,104 +14,28 @@ import lib-sampler.glsl
 #define GS PAINT_STYLE == 8 // Gunsmith
 #define CE PAINT_STYLE == 9 // Custom Paint Job Extended
 
-//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
-uniform vec4 g_vPatternTexCoordXform0;
-//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
-uniform vec4 g_vPatternTexCoordXform1;
-//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
-uniform vec4 g_vWearTexCoordXform0;
-//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
-uniform vec4 g_vWearTexCoordXform1;
-//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
-uniform vec4 g_vGrungeTexCoordXform0;
-//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
-uniform vec4 g_vGrungeTexCoordXform1;
+// Paint Textures ------------------------------------------- //
 
-//: param custom { "default": true }
-uniform bool g_bOverrideDefaultMasks;
-//: param custom { "default": true }
-uniform bool g_bOverrideAmbientOcclusion;
-//: param custom { "default": true }
-uniform bool g_bUseNormalMap;
-//: param custom { "default": true }
-uniform bool g_bUseRoughness;
-//: param custom { "default": true }
-uniform bool g_bUsePearlescenceMask;
-
-//: param custom { "default": 0.0 }
-uniform float g_flWearAmount;
-//: param custom { "default": 0.6 }
-uniform float g_flPaintRoughness;
-//: param custom { "default": 0.0 }
-uniform float g_flPearlescentScale;
-#if !AQ
-//: param custom { "default": 0.0 }
-    uniform float g_fWearSoftness;
-#endif
-#if !CU
-//: param custom { "default": [0.50, 0.50, 0.50] }
-    uniform vec3 g_vColor0;
-    #if !AN
-//: param custom { "default": [0.59, 0.59, 0.59] }
-        uniform vec3 g_vColor1;
-//: param custom { "default": [0.38, 0.38, 0.38] }
-        uniform vec3 g_vColor2;
-//: param custom { "default": [0.42, 0.42, 0.42] }
-        uniform vec3 g_vColor3;
-    #endif
-#endif
-#if !CU && !AQ && !GS
-//: param custom { "default": [0.0, 0.0, 0.0, 0.0] }
-    uniform vec4 g_vPaintDurability;
-    #if SO || HY || SP
-//: param custom { "default": false }
-        uniform bool g_bRoughnessPerColor;
-//: param custom { "default": [0.6, 0.6, 0.6, 0.6] }
-        uniform vec4 g_vPaintRoughness;
-//: param custom { "default": [0.0, 0.0, 0.0, 0.0] }
-        uniform vec4 g_vPaintMetalness;
-    #endif
+#if EXTERN_MODE
+    //: param auto channel_basecolor
+    uniform SamplerSparse g_tMatColor;
+    //: param auto channel_roughness
+    uniform SamplerSparse g_tMatRough;
+    //: param auto channel_user0
+    uniform SamplerSparse g_tMatMasks;
+    //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
+    uniform sampler2D g_tPattern;
 #else
-    #if !CU
-//: param custom { "default": 1 }
-        uniform int g_nColorAdjustmentMode;
-    #endif
-    #if !AQ
-//: param custom { "default": 0.0 }
-        uniform float g_flPaintMetalness;
-    #endif
-    #if GS
-//: param custom { "default": false }
-        uniform bool g_bPearlescentOnMetallicOnly;
-    #endif
-#endif
-#if !SO
-//: param custom { "default": 1.0 }
-    uniform float g_flColorBrightness;
-    #if SP || AA
-//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
-        uniform vec4 g_vPatternTexCoordXformHalftoneA0;
-//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
-        uniform vec4 g_vPatternTexCoordXformHalftoneA1;
-//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
-        uniform vec4 g_vPatternTexCoordXformHalftoneB0;
-//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
-        uniform vec4 g_vPatternTexCoordXformHalftoneB1;
-//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
-        uniform vec4 g_vPatternTexCoordXformHalftoneC0;
-//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
-        uniform vec4 g_vPatternTexCoordXformHalftoneC1;
-//: param custom { "default": false }
-        uniform int bSpraypaintHalftone;
-//: param custom { "default": [0.0, 1.0, 1.0] }
-        uniform vec3 g_vSprayBiasBlend;
-//: param custom { "default": 1.0 }
-        uniform float g_fHalftoneCavityCutoff;
-        uniform vec3 g_vHalftonePatternLevels;
-        uniform vec2 g_vHalftoneThresholds;
-//: param custom { "default": 1 }
-        uniform int g_bHalftoneInCavity;
-    #endif
+    //: param auto channel_basecolor
+    uniform SamplerSparse g_tPattern;
+    //: param auto channel_roughness
+    uniform SamplerSparse g_tPaintRoughness;
+    //: param auto channel_user0
+    uniform SamplerSparse g_tPaintMasks;
+    //: param auto channel_user1
+    uniform SamplerSparse g_tPaintAlpha;
+    //: param auto channel_user2
+    uniform SamplerSparse g_tPearlescenceMask;
 #endif
 
 // Weapon Base Textures ------------------------------------------- //
@@ -125,7 +49,7 @@ uniform sampler2D g_tSurface;
 //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
 uniform sampler2D g_tAmbientOcclusion;
 #if !SP && !CU
-//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
+    //: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
     uniform sampler2D g_tMasks;
 #endif
 
@@ -136,30 +60,167 @@ uniform sampler2D g_tWear;
 //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
 uniform sampler2D g_tGrunge;
 
+// Common --------------------------------------------------------- //
+
+//: param custom { "default": 0.0 }
+uniform float g_flWearAmount;
+
+//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
+uniform vec4 g_vPatternTexCoordXform0;
+//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
+uniform vec4 g_vPatternTexCoordXform1;
+//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
+uniform vec4 g_vWearTexCoordXform0;
+//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
+uniform vec4 g_vWearTexCoordXform1;
+//: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
+uniform vec4 g_vGrungeTexCoordXform0;
+//: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
+uniform vec4 g_vGrungeTexCoordXform1;
+
+// Colors ------------------------------------------------------- //
+
+#if !CU
+    #if AQ || GS
+        //: param custom { "default": [0.50, 0.50, 0.50], "group": "CS2:Colors", "control": "ColorButton", "text": "Base Metal" }
+    #else
+        //: param custom { "default": true, "group": "CS2:Colors", "control": "Button", "text": "Use Paint-By-Number Mask" }
+        uniform bool g_bOverrideDefaultMasks;
+        #if EXTERN_MODE
+            //: param custom { "default": "", "default_color": [1.0, 0.0, 0.0], "group": "CS2:Colors", "control": "TextureFetcher", "text": "Paint-By-Number Mask" }
+            uniform sampler2D g_tPaintMasks;
+        #endif
+        //: param custom { "default": [0.50, 0.50, 0.50], "group": "CS2:Colors", "control": "ColorButton", "text": "Base Coat" }
+    #endif
+    uniform vec3 g_vColor0;
+    #if !AN
+        #if AQ || GS
+            //: param custom { "default": [0.59, 0.59, 0.59], "group": "CS2:Colors", "control": "ColorButton", "text": "Patina Tint" }
+        #else
+            //: param custom { "default": [0.59, 0.59, 0.59], "group": "CS2:Colors", "control": "ColorButton", "text": "Red Mask" }
+        #endif
+        uniform vec3 g_vColor1;
+        #if AQ || GS
+            //: param custom { "default": [0.38, 0.38, 0.38], "group": "CS2:Colors", "control": "ColorButton", "text": "Patina Wear" }
+        #else
+            //: param custom { "default": [0.38, 0.38, 0.38], "group": "CS2:Colors", "control": "ColorButton", "text": "Green Mask" }
+        #endif
+        uniform vec3 g_vColor2;
+        #if AQ || GS
+            //: param custom { "default": [0.42, 0.42, 0.42], "group": "CS2:Colors", "control": "ColorButton", "text": "Grime" }
+        #else
+            //: param custom { "default": [0.42, 0.42, 0.42], "group": "CS2:Colors", "control": "ColorButton", "text": "Blue Mask" }
+        #endif
+        uniform vec3 g_vColor3;
+    #endif
+#endif
+
+// Materials ------------------------------------------------------- //
+
+//: param custom { "default": 0.6, "group": "CS2:Materials", "control": "Slider", "text": "Paint Roughness" }
+uniform float g_flPaintRoughness;
+//: param custom { "default": true, "group": "CS2:Materials", "control": "Button", "text": "Use Roughness Texture" }
+uniform bool g_bUseRoughness;
 #if EXTERN_MODE
-//: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-    uniform sampler2D g_tPattern;
-//: param custom { "default": "", "default_color": [1.0, 0.5, 0.5] }
+    //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5], "group": "CS2:Materials", "control": "TextureFetcher", "text": "Roughness Texture" }
     uniform sampler2D g_tPaintRoughness;
-//: param custom { "default": "", "default_color": [1.0, 0.0, 0.0] }
+#endif
+//: param custom { "default": true, "group": "CS2:Materials", "control": "Button", "text": "Use Material Mask" }
+uniform bool g_bOverrideDefaultMasks;
+#if EXTERN_MODE
+    //: param custom { "default": "", "default_color": [1.0, 0.0, 0.0], "group": "CS2:Materials", "control": "TextureFetcher", "text": "Material Mask" }
     uniform sampler2D g_tPaintMasks;
-//: param custom { "default": "", "default_color": [0.0, 0.0, 0.0] }
-    uniform sampler2D g_tPearlescenceMask;
-//: param custom { "default": "", "default_color": [0.5, 0.5, 1.0] }
+#endif
+#if SO || HY || SP
+    //: param custom { "default": false, "group": "CS2:Materials", "control": "Button", "text": "Use Roughness By Color" }
+    uniform bool g_bRoughnessPerColor;
+    //: param custom { "default": [0.6, 0.6, 0.6, 0.6], "group": "CS2:Materials", "control": "MultiSlider", "text": "Paint Roughness" }
+    uniform vec4 g_vPaintRoughness;
+    //: param custom { "default": [0.0, 0.0, 0.0, 0.0], "group": "CS2:Materials", "control": "MultiSlider", "text": "Paint Metalness" }
+    uniform vec4 g_vPaintMetalness;
+#endif
+
+// Normals ------------------------------------------------------- //
+
+//: param custom { "default": true, "group": "CS2:Normals", "control": "Button", "text": "Use Normal Map" }
+uniform bool g_bUseNormalMap;
+#if EXTERN_MODE
+    //: param custom { "default": "", "default_color": [0.5, 0.5, 1.0], "group": "CS2:Normals", "control": "TextureFetcher", "text": "Normal Map" }
     uniform sampler2D g_tPaintNormal;
-//: param custom { "default": "", "default_color": [1.0, 1.0, 1.0] }
+#endif
+//: param custom { "default": true, "group": "CS2:Normals", "control": "Button", "text": "Use Ambient Occlusion" }
+uniform bool g_bOverrideAmbientOcclusion;
+#if EXTERN_MODE
+    //: param custom { "default": "", "default_color": [1.0, 1.0, 1.0], "group": "CS2:Normals", "control": "TextureFetcher", "text": "Ambient Occlusion" }
     uniform sampler2D g_tPaintAO;
-#else
-//: param auto channel_basecolor
-    uniform SamplerSparse g_tPattern;
-//: param auto channel_roughness
-    uniform SamplerSparse g_tPaintRoughness;
-//: param auto channel_user0
-    uniform SamplerSparse g_tPaintMasks;
-//: param auto channel_user1
-    uniform SamplerSparse g_tPaintAlpha;
-//: param auto channel_user2
-    uniform SamplerSparse g_tPearlescenceMask;
+#endif
+
+// Effects ------------------------------------------------------- //
+
+//: param custom { "default": 0.0, "group": "CS2:Effects", "control": "Slider", "text": "Pearlescent Scale", "min": -6.0, "max": 6.0 }
+uniform float g_flPearlescentScale;
+//: param custom { "default": true, "group": "CS2:Effects", "control": "Button", "text": "Use Pearlescence Mask" }
+uniform bool g_bUsePearlescenceMask;
+#if EXTERN_MODE
+    //: param custom { "default": "", "default_color": [0.0, 0.0, 0.0], "group": "CS2:Effects", "control": "TextureFetcher", "text": "Pearlescence Mask" }
+    uniform sampler2D g_tPearlescenceMask;
+#endif
+
+// Wear and Grunge ------------------------------------------------------- //
+
+#if !CU && !AQ && !GS
+    //: param custom { "default": [0.0, 0.0, 0.0, 0.0], "group": "CS2:Wear and Grunge", "control": "MultiSlider", "text": "Paint Durability" }
+    uniform vec4 g_vPaintDurability;
+#elif !AQ
+    //: param custom { "default": 0.0, "group": "CS2:Wear and Grunge", "control": "Slider", "text": "Wear Softness" }
+    uniform float g_fWearSoftness;
+#endif
+
+// Unspecified ------------------------------------------------------- //
+
+#if CU || AQ || GS
+    #if !CU
+        //: param custom { "default": 1 }
+        uniform int g_nColorAdjustmentMode;
+    #endif
+    #if !AQ
+        //: param custom { "default": 0.0 }
+        uniform float g_flPaintMetalness;
+    #endif
+    #if GS
+        //: param custom { "default": false }
+        uniform bool g_bPearlescentOnMetallicOnly;
+    #endif
+#endif
+
+#if !SO
+    //: param custom { "default": 1.0 }
+    uniform float g_flColorBrightness;
+#endif
+
+#if SP || AA
+    //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
+    uniform vec4 g_vPatternTexCoordXformHalftoneA0;
+    //: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
+    uniform vec4 g_vPatternTexCoordXformHalftoneA1;
+    //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
+    uniform vec4 g_vPatternTexCoordXformHalftoneB0;
+    //: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
+    uniform vec4 g_vPatternTexCoordXformHalftoneB1;
+    //: param custom { "default": [1.0, 0.0, 0.0, 0.0] }
+    uniform vec4 g_vPatternTexCoordXformHalftoneC0;
+    //: param custom { "default": [0.0, 1.0, 0.0, 0.0] }
+    uniform vec4 g_vPatternTexCoordXformHalftoneC1;
+    //: param custom { "default": false }
+    uniform int bSpraypaintHalftone;
+    //: param custom { "default": [0.0, 1.0, 1.0] }
+    uniform vec3 g_vSprayBiasBlend;
+    //: param custom { "default": 1.0 }
+    uniform float g_fHalftoneCavityCutoff;
+    uniform vec3 g_vHalftonePatternLevels;
+    uniform vec2 g_vHalftoneThresholds;
+    //: param custom { "default": 1 }
+    uniform int g_bHalftoneInCavity;
 #endif
 
 #if SO || HY || SP
@@ -597,5 +658,6 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
             inputs.normal = tangentSpaceToWorldSpace(normalize(n), inputs);
         }
     #endif
+    
     O.vectors = computeLocalFrame(inputs);
 }

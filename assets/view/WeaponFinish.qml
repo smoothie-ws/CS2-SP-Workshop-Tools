@@ -82,6 +82,21 @@ QtObject {
         }
     }
 
+    function saveDefaults() {
+        Plugin.setDefaultWeaponFinishParameters(JSON.stringify(dumpParams()));
+    }
+
+    function restoreDefaults() {
+        const exclude = ["weapon", "econitem", "texturesFolder"];
+        const values = JSON.parse(Plugin.getDefaultWeaponFinishParameters());
+
+        for (const [param, value] of Object.entries(values)) 
+            if (!exclude.includes(param) && param in parameters) {
+                const component = parameters[param];
+                component.control[component.prop] = value;
+            }
+    }
+
     function loadWeaponFinishProject() {
         return JSON.parse(Plugin.getWeaponFinish());
     }

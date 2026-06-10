@@ -54,6 +54,7 @@ SPDialog {
             root.isNew = isNew;
             root.meshFile = "";
             nameInput.name = "name";
+            nameInput.nameStatus = Plugin.valWeaponFinishName(nameInput.name);
             weaponBox.currentKey = "";
             styleBox.currentKey = Plugin.getDefaultStyle();
         }

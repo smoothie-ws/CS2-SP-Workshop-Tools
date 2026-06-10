@@ -46,8 +46,99 @@ Rectangle {
             weaponFinish.syncEcon();
         }
 
+
         function onStyleReady() {
             weaponFinish.connect();
+
+            // for (let i = paramsColumn.children.length - 1; i >= 0; --i)
+            //     paramsColumn.children[i].destroy();
+
+            // for (const g of JSON.parse(Plugin.js("alg.shaders.groups(0)"))) {
+            //     const gParts = g.split(":");
+            //     if (gParts.length == 2 && gParts[0] === "CS2") {
+            //         // parameter group
+            //         const groupComponent = Qt.createComponent(`./SPWidgets/SPGroup.qml`);
+            //         const group = groupComponent.createObject(paramsColumn, { 
+            //             "Layout.fillWidth": true, 
+            //             "text": gParts[1] 
+            //         });
+
+            //         const groupShaderParams = JSON.parse(Plugin.js(`alg.shaders.parameters(0, "${g}")`));
+            //         for (const [paramName, paramData] of Object.entries(groupShaderParams)) {
+            //             const props = paramData.description.properties;
+
+            //             const text = props.text;
+            //             const widget = props.control;
+            //             const visible = props.visible;
+            //             const expr = props.expr == null ? (x) => x : new Function(props.expr);
+                        
+            //             // parameter container
+            //             const paramComponent = Qt.createComponent("./SPWidgets/SPParameter.qml");
+            //             const param = paramComponent.createObject(group.content, { "Layout.fillWidth": true });
+
+            //             const fields = { 
+            //                 "id": paramName,
+            //                 "Layout.fillWidth": true
+            //             };
+
+            //             let prop, controlParent = param;
+            //             switch (widget) {
+            //                 case "Button":
+            //                     prop = "checked";
+            //                     fields["text"] = text;
+            //                     fields["checkable"] = true;
+            //                     break;
+            //                 case "ColorButton":
+            //                     prop = "arrayColor";
+            //                     const labelComponent = Qt.createComponent("./SPWidgets/SPLabeled.qml");
+            //                     controlParent = labelComponent.createObject(param, { "text": text, "Layout.fillWidth": true });
+            //                     break;
+            //                 case "TextureFetcher":
+            //                     prop = "url";
+            //                     fields["text"] = text;
+            //                     break;
+            //                 case "Slider":
+            //                     prop = "value";
+            //                     fields["from"] = paramData.description.min;
+            //                     fields["to"] = paramData.description.max;
+            //                     fields["text"] = text;
+            //                     break;
+            //                 case "MultiSlider":
+            //                     prop = "array";
+            //                     fields["from"] = paramData.description.min;
+            //                     fields["to"] = paramData.description.max;
+            //                     fields["model"] = props.model == null ? [ "X", "Y", "Z", "W" ] : props.model;
+            //                     fields["paramId"] = fields["id"];
+            //                     fields["paramName"] = text;
+            //                     break;
+            //                 default:
+            //                     prop = "value";
+            //                     fields["text"] = text;
+            //             }
+
+            //             // parameter control
+            //             const controlComponent = Qt.createComponent(`./SPWidgets/SP${widget}.qml`);
+            //             const control = controlComponent.createObject(controlParent, fields);
+
+            //             // connections
+            //             if (visible != null) 
+            //                 Qt.createQmlObject(`
+            //                     import QtQml 2.15
+            //                     Binding {
+            //                         property: "visible"
+            //                         value: (${visible})
+            //                     }
+            //                 `, param).target = param;
+
+            //             param["resetRequested"].connect(() => {
+            //                 control[prop] = JSON.parse(Plugin.getDefaultWeaponFinishParameter(paramName));
+            //             });
+            //             control[`${prop}Changed`].connect(() => {
+            //                 Plugin.js(`alg.shaders.parameter(0, "${paramName}").value = ${JSON.stringify(expr(control[prop]))}`);
+            //             });
+            //         }
+            //     }
+            // }
         }
 
         function onPluginAboutToClose() {
@@ -112,7 +203,7 @@ Rectangle {
 
             // dynamically generated components
             "g_tColor":                          { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tMetalness":                      { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tRoughness":                      { control: null,                 prop: "url",           slot: null,  expr: null },
             "g_tSurface":                        { control: null,                 prop: "url",           slot: null,  expr: null },
             "g_tAmbientOcclusion":               { control: null,                 prop: "url",           slot: null,  expr: null },
             "g_tMasks":                          { control: null,                 prop: "url",           slot: null,  expr: null },
@@ -133,96 +224,26 @@ Rectangle {
         }
     }
 
-    TransformMatrix { id: patternTransform; baseScale: ignoreWeaponSizeScale.checked ? 1.0 : weaponBox.uvScale }
-    TransformMatrix { id: wearTransform; baseScale: patternTransform.baseScale }
-    TransformMatrix { id: grungeTransform; baseScale: patternTransform.baseScale }
+    component TextureParameter: SPParameter {
+        required property string paramId
 
-    component TextureFetcher: ColumnLayout {
-        id: fetcher
+        property alias text: label.text
+        property alias url: resourcePicker.url
 
-        required property string text
-
-        property alias checked: toggler.checked
-        property alias url: picker.url
-
-        SPButton {
-            id: toggler
-            checkable: true
-            text: `Use ${fetcher.text}`
-            tooltip.text: `Whether to ${text.toLowerCase()}`
-            Layout.fillWidth: true
-        }
-        
         SPLabeled {
-            text: fetcher.text
-            visible: fetcher.checked && externMode.checked
-
+            id: label
             SPResourcePicker {
-                id: picker
+                id: resourcePicker
                 Layout.fillWidth: true
                 filters: AlgResourcePicker.TEXTURE
             }
         }
+        onResetRequested: weaponFinish.resetParameter(paramId)
     }
 
-    component MultiSlider: ColumnLayout {
-        id: multi
-        
-        required property string paramId
-        required property string paramName
-        
-        property alias model: rep.model
-        property alias array: lock.array
-        
-        SPLock {
-            id: lock
-            property var array: []
-
-            onArrayChanged: lock.update(() => {
-                if (array.length == rep.count)
-                    for (let i = 0; i < rep.count; i++)
-                        rep.itemAt(i).value = array[i];
-                else 
-                    throw `Array length mismatch! Expected ${rep.count}, got ${array.length}`;
-            })
-        }
-        
-        Repeater {
-            id: rep
-            model: []
-            delegate: SPParameter {
-                Layout.fillWidth: true
-
-                property alias value: control.value
-
-                SPSlider {
-                    id: control
-                    text: `${multi.paramName} - ${modelData}`
-                    from: 0.0
-                    to: 1.0
-
-                    onValueChanged: lock.update(() => {
-                        var arr = lock.array;
-                        arr[index] = value;
-                        lock.array = arr;
-                    })
-                }
-
-                onResetRequested: {
-                    var param = JSON.parse(Plugin.getDefaultWeaponFinishParameter(multi.paramId));
-                    if (param == null)
-                        return;
-                    var value = param[index];
-                    if (value == undefined)
-                        return;
-                    control.value = value;
-                }
-            }
-            
-            onItemAdded: (i, item) => array.splice(i, 0, 0.0)
-            onItemRemoved: (i, item) => array.remove(i)
-        }
-    }
+    TransformMatrix { id: patternTransform; baseScale: ignoreWeaponSizeScale.checked ? 1.0 : weaponBox.uvScale }
+    TransformMatrix { id: wearTransform; baseScale: patternTransform.baseScale }
+    TransformMatrix { id: grungeTransform; baseScale: patternTransform.baseScale }
     
     ColumnLayout {
         anchors.fill: root
@@ -393,7 +414,7 @@ Rectangle {
                     SPComboBox {
                         Layout.fillWidth: true
                         map: JSON.parse(Plugin.getPreviewEnvs())
-                        onCurrentKeyChanged: Plugin.setEnv(currentKey)
+                        onCurrentKeyChanged: Plugin.setPreviewEnv(currentKey)
                     }
                 }
 
@@ -427,13 +448,11 @@ Rectangle {
                     Repeater {
                         id: textureRepeater
                         model: [
-                            { param: "g_tWear",          text: "Wear"              },
-                            { param: "g_tGrunge",        text: "Grunge"            },
-                            { param: "g_tColor",        text: "Base Color"        },
+                            { param: "g_tColor",            text: "Base Color"        },
                             { param: "g_tMetalness",        text: "Roughness"         },
-                            { param: "g_tMasks",        text: "Masks"             },
-                            { param: "g_tSurface",       text: "Normal"            },
-                            { param: "g_tAmbientOcclusion",       text: "Cavity"            }
+                            { param: "g_tMasks",            text: "Masks"             },
+                            { param: "g_tSurface",          text: "Normal"            },
+                            { param: "g_tAmbientOcclusion", text: "Cavity"            }
                         ]
 
                         delegate: SPLabeled {
@@ -471,9 +490,9 @@ Rectangle {
                 onSeedChanged: {
                     const r = new Random.Stream(seed);
 
-                    patternTransform.rotation = r.randomFloat(texRotation.minValue, texRotation.maxValue);
-                    patternTransform.translationX = r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue);
-                    patternTransform.translationY = r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue);
+                    texRotation.value = r.randomFloat(texRotation.minValue, texRotation.maxValue);
+                    texOffsetX.value = r.randomFloat(texOffsetX.minValue, texOffsetX.maxValue);
+                    texOffsetY.value = r.randomFloat(texOffsetY.minValue, texOffsetY.maxValue);
 
                     wearTransform.scale = r.randomFloat(1.6, 1.8);
                     wearTransform.rotation = r.randomFloat(0.0, 360.0);
@@ -692,6 +711,7 @@ Rectangle {
                 ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                 ColumnLayout {
+                    id: paramsColumn
                     width: weaponFinishSettings.width - 20
                     spacing: 10
 
@@ -748,7 +768,7 @@ Rectangle {
                             width: parent.width
                             visible: ["so", "hy", "sp", "an", "am", "aa"].includes(styleBox.currentKey)
 
-                            TextureFetcher {
+                            SPTextureFetcher {
                                 id: useColMask
                                 text: "Paint-By-Number Mask"
                                 Layout.fillWidth: true
@@ -815,7 +835,7 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Texture Placement"
 
-                        MultiSlider {
+                        SPMultiSlider {
                             id: sprayBlend
                             visible: styleBox.currentKey == "sp"
                             model: ["Back", "Top"]
@@ -866,12 +886,24 @@ Rectangle {
                             width: parent.width
                             visible: !useRoughByCol.visible || (useRoughByCol.visible && !useRoughByCol.checked)
                             
-                            TextureFetcher {
+                            SPTextureFetcher {
                                 id: useRoughTex
                                 text: "Roughness Texture"
                                 Layout.fillWidth: true
                             }
                             onResetRequested: weaponFinish.resetParameter("g_bUseRoughness")
+                        }
+
+                        SPParameter {
+                            width: parent.width
+                            visible: root.styleBox.currentKey == "ce"
+                            
+                            SPTextureFetcher {
+                                id: useMetalMask
+                                text: "Paint Metalness Mask"
+                                Layout.fillWidth: true
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_bUseMetalness")
                         }
 
                         SPParameter {
@@ -887,7 +919,7 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("g_bRoughnessPerColor")
                         }
 
-                        MultiSlider {
+                        SPMultiSlider {
                             id: paintRoughNum
                             visible: useRoughByCol.visible && useRoughByCol.checked
                             model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
@@ -913,7 +945,7 @@ Rectangle {
                             width: parent.width
                             visible: !useColMask.visible
                             
-                            TextureFetcher {
+                            SPTextureFetcher {
                                 id: useMatMasks
                                 text: "Material Mask"
                                 Layout.fillWidth: true
@@ -921,7 +953,7 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("g_bOverrideDefaultMasks")
                         }
 
-                        MultiSlider {
+                        SPMultiSlider {
                             id: paintMetalNum
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
                             model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
@@ -933,12 +965,53 @@ Rectangle {
 
                     SPGroup {
                         Layout.fillWidth: true
+                        text: "Overlay"
+                        visible: styleBox.currentKey == "ce"
+
+                        SPParameter {
+                            width: parent.width
+                            
+                            SPButton {
+                                id: enableOverlay
+                                checkable: true
+                                text: "Enable Overlay"
+                                Layout.fillWidth: true
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_bEnableOverlay")
+                        }
+
+                        Column {
+                            visible: enableOverlay.checked
+                            Layout.fillWidth: true
+                            
+                            TextureParameter {
+                                visible: root.styleBox.currentKey == "ce"
+                                paramId: "g_tOverlay"
+                                text: "Overlay Texture"
+                            }
+
+                            SPParameter {
+                                width: parent.width
+                                
+                                SPButton {
+                                    id: randomizeOverlayUVs
+                                    text: "Randomize Overlay UVs"
+                                    checkable: true
+                                    Layout.fillWidth: true
+                                }
+                                onResetRequested: weaponFinish.resetParameter("g_bRandomizeOverlayUVs")
+                            }
+                        }
+                    }
+
+                    SPGroup {
+                        Layout.fillWidth: true
                         text: "Normals"
 
                         SPParameter {
                             width: parent.width
                             
-                            TextureFetcher {
+                            SPTextureFetcher {
                                 id: useNormalMap
                                 text: "Normal Map"
                                 Layout.fillWidth: true
@@ -950,7 +1023,7 @@ Rectangle {
                         SPParameter {
                             width: parent.width
                             
-                            TextureFetcher {
+                            SPTextureFetcher {
                                 id: useAOTex
                                 text: "Ambient Occlusion"
                                 Layout.fillWidth: true
@@ -966,8 +1039,20 @@ Rectangle {
 
                         SPParameter {
                             width: parent.width
+                            visible: root.styleBox.currentKey == "ce"
                             
-                            TextureFetcher {
+                            SPTextureFetcher {
+                                id: useSFXMask
+                                text: "SFX Mask"
+                                Layout.fillWidth: true
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_bUseSFXMask")
+                        }
+
+                        SPParameter {
+                            width: parent.width
+                            
+                            SPTextureFetcher {
                                 id: usePearlMask
                                 text: "Pearlescence Mask"
                                 Layout.fillWidth: true
@@ -985,13 +1070,31 @@ Rectangle {
                             }
                             onResetRequested: weaponFinish.resetParameter("g_flPearlescentScale")
                         }
+
+                        SPMultiSlider {
+                            id: glitterNum
+                            visible: root.styleBox.currentKey == "ce"
+                            model: ["Intensity", "Scale", "Rainbow Balance", "Rainbow Spread"]
+                            paramId: "g_vGlitter"
+                            paramName: "Glitter"
+                            width: parent.width
+                        }
+
+                        SPMultiSlider {
+                            id: iridescentNum
+                            visible: root.styleBox.currentKey == "ce"
+                            model: ["Strength", "Scale", "Hue Shift"]
+                            paramId: "g_vIridescent"
+                            paramName: "Iridescent"
+                            width: parent.width
+                        }
                     }
 
                     SPGroup {
                         Layout.fillWidth: true
                         text: "Wear and Grunge"
 
-                        MultiSlider {
+                        SPMultiSlider {
                             id: paintDurabilityNum
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey)
                             model: ["Base Coat", "Red Mask", "Green Mask", "Blue Mask"]
@@ -1013,6 +1116,38 @@ Rectangle {
                                 weaponFinish.resetParameter("g_flWearAmount");
                             }
                         }
+
+                        TextureParameter {
+                            visible: root.styleBox.currentKey == "ce"
+                            paramId: "g_tWear"
+                            text: "Wear Texture"
+                        }
+
+                        SPParameter {
+                            SPSlider {
+                                id: wearSoftness
+                                text: "Wear Softness"
+                                from: -6
+                                to: 6
+                            }
+                            onResetRequested: weaponFinish.resetParameter("g_fWearSoftness")
+                        }
+
+                        SPParameter {
+                            SPRangeSlider {
+                                id: wearRotation
+                                text: "Wear Rotation"
+                                from: -360
+                                to: 360
+                                onValueChanged: wearTransform.rotation = value
+                            }
+                        }
+
+                        TextureParameter {
+                            visible: root.styleBox.currentKey == "ce"
+                            paramId: "g_tGrunge"
+                            text: "Grunge Texture"
+                        }
                     }
                 }
             }
@@ -1022,20 +1157,25 @@ Rectangle {
 
                 SPButton {
                     id: saveAsDefaults
-                    icon.source: Plugin.asset("icons/save.png")
                     text: "Save as defaults"
+                    icon.source: Plugin.asset("icons/save.png")
+                    tooltip.text: "Save current settings as default"
+
+                    onClicked: weaponFinish.saveDefaults()
                 }
 
                 SPSeparator { Layout.fillWidth: true }
 
                 SPButton {
                     id: restoreDefaults
+                    text: "Restore defaults"
                     #if QT_VERSION >= 6
                     icon.source: "./icons/cycle.png"
                     #else
                     icon.source: "./SPWidgets/icons/cycle.png"
                     #endif
-                    text: "Restore defaults"
+
+                    onClicked: weaponFinish.restoreDefaults()
                 }
             }
         }
