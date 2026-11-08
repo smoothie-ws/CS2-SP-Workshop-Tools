@@ -18,7 +18,7 @@ SPDialog {
                 "";
                 break;
             case 2:
-                "Name cannot be empty";
+                "Use letters, digits, underscores or hyphens";
                 break;
             case 3:
                 "This name is already in use";
@@ -108,7 +108,7 @@ SPDialog {
                         id: fileDialog
                         title: "Select file"
                         nameFilters: [ "Mesh Files (*.fbx *.abc *.obj *.dae *.ply *.gltf *.glb *.usd *.usda *.usdc *.usdz)" ]
-                        onAccepted: root.meshFile = fileUrl.toString().substring(8);
+                        onAccepted: root.meshFile = Plugin.localPath(fileUrl.toString());
                     }
                 }
             }
@@ -122,7 +122,6 @@ SPDialog {
         SPLabeled {
             id: nameInput
             text: "Name"
-            enabled: nameStatus > 0
             scopeWidth: root.scopeWidth
             Layout.fillWidth: true
 

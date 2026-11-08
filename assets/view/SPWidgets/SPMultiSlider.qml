@@ -48,12 +48,16 @@ ColumnLayout {
                 internal.array.splice(index, 0, slider.value);
             }
 
-            onResetRequested: slider.value = JSON.parse(Plugin.getDefaultWeaponFinishParameter(root.paramId))
+            onResetRequested: {
+                const defaults = JSON.parse(Plugin.getDefaultWeaponFinishParameter(root.paramId));
+                if (defaults && defaults[index] !== undefined)
+                    slider.value = defaults[index];
+            }
         }
 
         onItemRemoved: (i, _) => {
-            sliders.splice(i, 1);
-            array.splice(i, 1);
+            internal.sliders.splice(i, 1);
+            internal.array.splice(i, 1);
         }
     }
 }

@@ -13,18 +13,20 @@ class ProjectSettings:
     
     @staticmethod
     def contains(key: str) -> bool:
-        return sp.js.evaluate(f'alg.project.settings.contains("{key}")')
+        return sp.js.evaluate(f'alg.project.settings.contains({json.dumps(key)})')
     
     @staticmethod
     def remove(key: str) -> None:
-        sp.js.evaluate(f'alg.project.settings.remove("{key}")')
+        sp.js.evaluate(f'alg.project.settings.remove({json.dumps(key)})')
     
     @staticmethod
     def get(key: str, default=None):
-        if ProjectSettings.contains(key):
-            return sp.js.evaluate(f'alg.project.settings.value("{key}")')
-        return default
+        result = sp.js.evaluate(
+            '(function(key) { return alg.project.settings.contains(key) '
+            '? [true, alg.project.settings.value(key)] : [false, null]; })('
+            + json.dumps(key) + ')')
+        return result[1] if result[0] else default
     
     @staticmethod
     def set(key: str, value) -> None:
-        sp.js.evaluate(f'alg.project.settings.setValue("{key}", {json.dumps(value)})')
+        sp.js.evaluate(f'alg.project.settings.setValue({json.dumps(key)}, {json.dumps(value)})')

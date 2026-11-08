@@ -1,10 +1,10 @@
 import json
 import substance_painter as sp
 
-from .ui import UI, QtVersion
+from .ui import UI
 from .log import Log
 from .path import Path
-from .macro import Macro
+from .preprocess import sync_views
 
 
 class Plugin:
@@ -14,20 +14,26 @@ class Plugin:
     
     @staticmethod
     def save():
-        Path.write(Path.settings, json.dumps({
+        written = Path.write(Path.settings, json.dumps({
             "version": Plugin.version,
             "settings": Plugin.settings
         }, indent=4, ensure_ascii=False))
+        if not written:
+            raise OSError(f"Could not save plugin settings: {Path.settings}")
     
     @classmethod
     def start(cls, path: str, name: str):
+        if Plugin.connections or UI.widgets:
+            cls.close()
         Log.channel = name
-        Path.plugin = path
-        Path.settings = Path.join(Path.plugin, "plugin.json")
-        Path.documents = sp.js.evaluate("alg.documents_directory")
-        
+        connected = []
         try:
+            Path.plugin = path
+            Path.settings = Path.join(Path.plugin, "plugin.json")
+            Path.documents = sp.js.evaluate("alg.documents_directory")
             data = json.loads(Path.read(Path.settings, ""))
+            if not isinstance(data, dict) or not isinstance(data.get("settings", {}), dict):
+                raise ValueError("Plugin settings must be a JSON object")
             Plugin.settings = data.get("settings", {})
             Plugin.version = data.get("version", "v0.0.1a")
             Plugin.preprocess()
@@ -51,53 +57,65 @@ class Plugin:
             }
             for event, callback in Plugin.connections.items():
                 sp.event.DISPATCHER.connect_strong(event, callback)
-                
+                connected.append((event, callback))
+
             cls.on_start()
             Log.warning(f'Plugin started (version {Plugin.version})')
-            
+
             if sp.project.is_open():
                 cls.on_project_opened()
-        except:
-            cls.on_close()
+        except Exception as startup_error:
+            Log.error(f"Failed to start plugin: {startup_error}")
+            for event, callback in reversed(connected):
+                try:
+                    sp.event.DISPATCHER.disconnect(event, callback)
+                except Exception as error:
+                    Log.error(f"Failed to disconnect Painter event after startup failure: {error}")
+            Plugin.connections = {}
+            try:
+                cls.on_close()
+            except Exception as error:
+                Log.error(f"Failed to close partially started plugin: {error}")
+            try:
+                UI.clear()
+            except Exception as error:
+                Log.error(f"Failed to clear partial plugin UI: {error}")
             Log.fatal()
-            
 
     @classmethod
     def close(cls):
+        errors = []
+        for event, callback in list(Plugin.connections.items()):
+            try:
+                sp.event.DISPATCHER.disconnect(event, callback)
+            except Exception as error:
+                errors.append(f"Failed to disconnect Painter event: {error}")
+        Plugin.connections = {}
+
+        try:
+            cls.on_close()
+        except Exception as error:
+            errors.append(f"Plugin close handler failed: {error}")
         try:
             UI.clear()
+        except Exception as error:
+            errors.append(f"Failed to clear plugin UI: {error}")
+        try:
             Plugin.save()
-            for event, callback in Plugin.connections.items():
-                sp.event.DISPATCHER.disconnect(event, callback)
-            cls.on_close()
-            Log.warning("Plugin closed")
-        except:
+        except Exception as error:
+            errors.append(f"Failed to save plugin settings: {error}")
+
+        for error in errors:
+            Log.error(error)
+        if errors:
             Log.fatal()
+        else:
+            Log.warning("Plugin closed")
     
     @classmethod
     def preprocess(cls):
-        asset_view_path = Path.asset("view")
-        
-        if Path.exists(asset_view_path):
-            view_path = Path.cleardir(Path.join(Path.plugin, "view"))
-            def process(path: str):
-                asset_path = Path.join(asset_view_path, path)
-                if Path.isdir(asset_path):
-                    Path.cleardir(Path.join(view_path, path))
-                    for p in Path.listdir(asset_path):
-                        process(Path.join(path, p))
-                else:
-                    view_asset_path = Path.join(view_path, path)
-                    if path.lower().endswith("qml"):
-                        sources = Path.read(asset_path)
-                        sources = Macro.process(sources, {"QT_VERSION": QtVersion}, False)
-                        Path.write(view_asset_path, sources)
-                    else:
-                        Path.copy(asset_path, view_asset_path)
-                
-            for p in Path.listdir(asset_view_path):
-                process(p)
-                
+        sync_views(Path.asset("view"), Path.join(Path.plugin, "view"))
+
     # to override
     
     @classmethod

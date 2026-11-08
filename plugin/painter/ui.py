@@ -1,13 +1,7 @@
 from typing import TypeVar, Generic
 import substance_painter as sp
 
-QtVersion = 5 if sp.application.version_info() < (10, 1, 0) else 6
-
-# qt5 vs qt6 check
-if QtVersion < 6:
-    from PySide2 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui, QtQml
-else:
-    from PySide6 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui, QtQml
+from PySide6 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui, QtQml
 
 TWidget = TypeVar('TWidget', bound=QtWidgets.QWidget)
 
@@ -77,11 +71,29 @@ class UI:
     @staticmethod
     def remove_widget(widget: QtWidgets.QWidget):
         if widget in UI.widgets:
-            sp.ui.delete_ui_element(widget)
+            # Drop the reference even if Painter fails to detach its native
+            # UI element. Otherwise clear() can get stuck retrying this item.
             UI.widgets.remove(widget)
+            try:
+                sp.ui.delete_ui_element(widget)
+            except Exception:
+                try:
+                    widget.hide()
+                except Exception:
+                    pass
+                raise
 
     @staticmethod
     def clear():
-        while len(UI.widgets) > 0:
-            UI.remove_widget(UI.widgets[0])
-    
+        errors = []
+        for widget in reversed(UI.widgets.copy()):
+            try:
+                UI.remove_widget(widget)
+            except Exception as error:
+                try:
+                    name = widget.objectName() or type(widget).__name__
+                except Exception:
+                    name = type(widget).__name__
+                errors.append(f"{name}: {error}")
+        if errors:
+            raise RuntimeError("Could not remove plugin UI elements: " + "; ".join(errors))

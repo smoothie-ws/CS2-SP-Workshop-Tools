@@ -7,6 +7,10 @@ Rectangle {
     id: root
     height: 35
     color: AlgStyle.background.color.mainWindow
+
+    // Painter calls this entry point when opening the shader parameters panel.
+    // The parameters themselves are edited in the plugin's dock.
+    function displayShaderParameters(shaderId) {}
     
     onHeightChanged: if (height != label.height) height = Qt.binding(() => label.height)
 

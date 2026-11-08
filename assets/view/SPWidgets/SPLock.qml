@@ -6,8 +6,7 @@ QtObject {
     function update(f) {
         if (!updating) {
             updating = true;
-            f();
-            updating = false;
+            try { f(); } finally { updating = false; }
         }
     }
 }

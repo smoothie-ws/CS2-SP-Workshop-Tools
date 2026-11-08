@@ -1,8 +1,5 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.3
-#if QT_VERSION == 5
-import QtQuick.Window 2.15
-#endif
 import "math.js" as MathUtils
 
 SPButton {

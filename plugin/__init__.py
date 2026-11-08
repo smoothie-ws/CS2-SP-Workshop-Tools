@@ -1,35 +1,37 @@
 import webbrowser
 import substance_painter as sp
 
+from .econ import STYLE_CODES
 from .weapon_finish import WeaponFinish
+from .shader_ui import install_shader_ui
 from .painter import UI, Plugin, Path, QmlView
 from .painter.qml import QtWidgets, QtGui
-from .controller import MainView, UpdateWindow, SettingsWindow, WeaponFinishInitWindow
+from .controller import MainView, SettingsWindow, WeaponFinishInitWindow
 
 
 class CS2WT(Plugin):
     main_view: MainView = None
-    update_window: UpdateWindow = None
     settings_window: SettingsWindow = None
     wf_init_window: WeaponFinishInitWindow = None
 
     @classmethod
     def start(cls, path):
         super().start(path, "CS2 Workshop Tools")
-        if Plugin.settings.get("check_for_updates", True):
-            CS2WT.update_window.check_for_updates()
 
     @classmethod
     def on_start(cls):
-        # shader ui
-        sp_shader_ui_path = Path.join(Path.documents, "assets", "shaders", "custom-ui", "cs2-ui.qml")
-        if not Path.exists(sp_shader_ui_path):
-            Path.copy(Path.asset("shader", "ui.qml"), sp_shader_ui_path)
+        styles = Plugin.settings.get("finish_styles", {})
+        Plugin.settings["finish_styles"] = {code: styles[code] for code in STYLE_CODES if code in styles}
+        defaults = Plugin.settings.get("weapon_finish", {})
+        if defaults.get("style") not in STYLE_CODES:
+            defaults["style"] = "cu"
+        install_shader_ui()
             
         CS2WT.init_ui()
     
     @classmethod
     def on_close(cls):
+        WeaponFinish.cancel_pending_setups()
         if WeaponFinish.is_open():
             CS2WT.main_view.pluginAboutToClose.emit()
     
@@ -67,7 +69,6 @@ class CS2WT(Plugin):
         
         icon = QtGui.QIcon(Path.asset("icons", "logo.png"))
         CS2WT.main_view = MainView(QmlView.view_path("MainView.qml"), icon)
-        CS2WT.update_window = UpdateWindow(QmlView.view_path("UpdateWindow.qml"), icon)
         CS2WT.settings_window = SettingsWindow(QmlView.view_path("SettingsView.qml"), icon)
         CS2WT.wf_init_window = WeaponFinishInitWindow(QmlView.view_path("WeaponFinishInitWindow.qml"), icon)
         

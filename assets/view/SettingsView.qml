@@ -19,20 +19,13 @@ SPDialog {
 
             onLinkActivated: Qt.openUrlExternally(link)
         }
-        
-        SPButton {
-            text: "Check for updates"
-            anchors.verticalCenter: parent.verticalCenter
-
-            onClicked: Plugin.checkForUpdates()
-        }
     }
 
     QtObject {
         id: internal
         
         property string cs2Path: ""
-        property bool cs2PathIsValid: false
+        property bool cs2PathIsValid: true
         property var weapons: []
         property bool weaponIsValid: false
 
@@ -47,13 +40,16 @@ SPDialog {
                     weaponIsValid = false;
                     return;
                 }
-            weaponIsValid = id != "" && name != "" && length != "" && uv_scale != "";
+            weaponIsValid = /^[a-z0-9_]+$/.test(id) && name != "" && uv_scale != ""
+                && Number.isFinite(Number(uv_scale)) && Number(uv_scale) > 0;
         }
 
         function addWeapon() {
+            valWeapon();
+            if (!weaponIsValid) return;
             weapons[weaponIdInput.text.trim()] = {
                 name: weaponNameInput.text.trim(),
-                uv_scale: weaponUVScaleInput.value,
+                uv_scale: Number(weaponUVScaleInput.text.trim()),
             }
             weaponIdInput.text = "";
             weaponNameInput.text = "";
@@ -75,15 +71,12 @@ SPDialog {
                 weaponModel.push({
                     id: wid,
                     name: w.name,
-                    length: w.length,
                     uv_scale: w.uv_scale
                 });
             weaponsRepater.model = weaponModel;
         }
 
-        function startDecompilation() {
-            Plugin.startDecompilation(cs2Path, Object.keys(weapons));
-        }
+
     }
     
     function getData() {
@@ -102,101 +95,6 @@ SPDialog {
         internal.syncWeapons();
     }
 
-    SPPopup {
-        id: decompilationPopup
-        anchors.centerIn: parent
-        title: "Decompiling"
-        ignorable: false
-        closable: false
-        acceptable: false
-        cancelable: false
-
-        property real progress: 0.0
-        property string log: ""
-        property string currentState: "Decompiling"
-
-        onOpened: {
-            progress = 0.0;
-            log = "";
-            currentState = "Decompiling";
-        }
-
-        Connections {
-            target: Plugin
-
-            function onDecompilationStarted() {
-                decompilationPopup.open();
-                onDecompilationUpdated(0.0, "Decompilation started")
-            }
-
-            function onDecompilationStateChanged(state) {
-                decompilationPopup.currentState = state;
-            }
-
-            function onDecompilationUpdated(progress, msg) {
-                decompilationPopup.progress = progress;
-                decompilationPopup.log += `[${Plugin.time()}]: ${msg}\n`;
-            }
-
-            function onDecompilationFinished() {
-                decompilationPopup.close();
-                weaponsWidgets.refresh();
-            }
-        }
-
-        content: ColumnLayout {
-            width: 400
-            spacing: 15
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Text {
-                    text: `${decompilationPopup.currentState}...`
-                    color: AlgStyle.text.color.normal
-                    Layout.fillWidth: true
-                }
-
-                Text {
-                    color: AlgStyle.text.color.normal
-                    text: `${parseInt(decompilationPopup.progress * 100)}%`
-                }
-            }
-
-            Rectangle {
-                height: 10
-                radius: 15
-                Layout.fillWidth: true
-                color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
-
-                Rectangle {
-                    height: parent.height
-                    radius: parent.radius
-                    width: Math.max(height, decompilationPopup.progress * parent.width)
-                    color: AlgStyle.text.color.normal
-                }
-            }
-            
-            Rectangle {
-                height: 100
-                radius: 15
-                Layout.fillWidth: true
-                color: Qt.rgba(0.0, 0.0, 0.0, 0.25)
-
-                ScrollView {
-                    anchors.fill: parent
-                    clip: true
-
-                    Text {
-                        text: decompilationPopup.log
-                        color: AlgStyle.text.color.normal
-                        anchors.fill: parent
-                        anchors.margins: 10
-                    }
-                }
-            }
-        }
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -249,7 +147,7 @@ SPDialog {
                         selectFolder: true
 
                         onAccepted: {
-                            cs2PathInput.text = fileUrl.toString().substring(8);
+                            cs2PathInput.text = Plugin.localPath(fileUrl.toString());
                             cs2PathInput.textEdited();
                         }
                     }
@@ -275,27 +173,11 @@ SPDialog {
                 }
 
                 SPButton {
-                    text: "Decompile"
-                    enabled: internal.cs2PathIsValid
-                    icon.source: Plugin.asset("icons/export.png")
-                    icon.width: 15
-                    icon.height: 15
-                    tooltip.text: "Decompile all the missing weapon textures from the list below"
-                    background.color: hovered ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(0, 0, 0, 0.25)
-
-                    onClicked: internal.startDecompilation()
-                }
-
-                SPButton {
                     tooltip.text: "Refresh"
                     implicitWidth: 25
                     implicitHeight: implicitWidth
                     contentAlignment: Qt.AlignCenter
-                    #if QT_VERSION >= 6
                     icon.source: "./icons/cycle.png"
-                    #else
-                    icon.source: "./SPWidgets/icons/cycle.png"
-                    #endif
                     icon.width: implicitWidth * 0.5
                     icon.height: implicitHeight * 0.5
 
@@ -456,11 +338,7 @@ SPDialog {
                                             contentAlignment: Qt.AlignCenter
                                             implicitWidth: 20
                                             implicitHeight: implicitWidth
-                                            #if QT_VERSION >= 6
                                             icon.source: "./icons/close.png"
-                                            #else
-                                            icon.source: "./SPWidgets/icons/close.png"
-                                            #endif
                                             icon.width: implicitWidth * 0.5
                                             icon.height: implicitHeight * 0.5
                                             tooltip.text: "Remove"

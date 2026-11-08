@@ -16,27 +16,16 @@ import lib-sampler.glsl
 
 // Paint Textures ------------------------------------------- //
 
-#if EXTERN_MODE
-    //: param auto channel_basecolor
-    uniform SamplerSparse g_tMatColor;
-    //: param auto channel_roughness
-    uniform SamplerSparse g_tMatRough;
-    //: param auto channel_user0
-    uniform SamplerSparse g_tMatMasks;
-    //: param custom { "default": "", "default_color": [0.5, 0.5, 0.5] }
-    uniform sampler2D g_tPattern;
-#else
-    //: param auto channel_basecolor
-    uniform SamplerSparse g_tPattern;
-    //: param auto channel_roughness
-    uniform SamplerSparse g_tPaintRoughness;
-    //: param auto channel_user0
-    uniform SamplerSparse g_tPaintMasks;
-    //: param auto channel_user1
-    uniform SamplerSparse g_tPaintAlpha;
-    //: param auto channel_user2
-    uniform SamplerSparse g_tPearlescenceMask;
-#endif
+//: param auto channel_basecolor
+uniform SamplerSparse g_tPattern;
+//: param auto channel_roughness
+uniform SamplerSparse g_tPaintRoughness;
+//: param auto channel_user0
+uniform SamplerSparse g_tPaintMasks;
+//: param auto channel_user1
+uniform SamplerSparse g_tPaintAlpha;
+//: param auto channel_user2
+uniform SamplerSparse g_tPearlescenceMask;
 
 // Weapon Base Textures ------------------------------------------- //
 
@@ -84,12 +73,6 @@ uniform vec4 g_vGrungeTexCoordXform1;
     #if AQ || GS
         //: param custom { "default": [0.50, 0.50, 0.50], "group": "CS2:Colors", "control": "ColorButton", "text": "Base Metal" }
     #else
-        //: param custom { "default": true, "group": "CS2:Colors", "control": "Button", "text": "Use Paint-By-Number Mask" }
-        uniform bool g_bOverrideDefaultMasks;
-        #if EXTERN_MODE
-            //: param custom { "default": "", "default_color": [1.0, 0.0, 0.0], "group": "CS2:Colors", "control": "TextureFetcher", "text": "Paint-By-Number Mask" }
-            uniform sampler2D g_tPaintMasks;
-        #endif
         //: param custom { "default": [0.50, 0.50, 0.50], "group": "CS2:Colors", "control": "ColorButton", "text": "Base Coat" }
     #endif
     uniform vec3 g_vColor0;
@@ -121,16 +104,8 @@ uniform vec4 g_vGrungeTexCoordXform1;
 uniform float g_flPaintRoughness;
 //: param custom { "default": true, "group": "CS2:Materials", "control": "Button", "text": "Use Roughness Texture" }
 uniform bool g_bUseRoughness;
-#if EXTERN_MODE
-    //: param custom { "default": "", "default_color": [1.0, 0.5, 0.5], "group": "CS2:Materials", "control": "TextureFetcher", "text": "Roughness Texture" }
-    uniform sampler2D g_tPaintRoughness;
-#endif
 //: param custom { "default": true, "group": "CS2:Materials", "control": "Button", "text": "Use Material Mask" }
 uniform bool g_bOverrideDefaultMasks;
-#if EXTERN_MODE
-    //: param custom { "default": "", "default_color": [1.0, 0.0, 0.0], "group": "CS2:Materials", "control": "TextureFetcher", "text": "Material Mask" }
-    uniform sampler2D g_tPaintMasks;
-#endif
 #if SO || HY || SP
     //: param custom { "default": false, "group": "CS2:Materials", "control": "Button", "text": "Use Roughness By Color" }
     uniform bool g_bRoughnessPerColor;
@@ -144,16 +119,8 @@ uniform bool g_bOverrideDefaultMasks;
 
 //: param custom { "default": true, "group": "CS2:Normals", "control": "Button", "text": "Use Normal Map" }
 uniform bool g_bUseNormalMap;
-#if EXTERN_MODE
-    //: param custom { "default": "", "default_color": [0.5, 0.5, 1.0], "group": "CS2:Normals", "control": "TextureFetcher", "text": "Normal Map" }
-    uniform sampler2D g_tPaintNormal;
-#endif
 //: param custom { "default": true, "group": "CS2:Normals", "control": "Button", "text": "Use Ambient Occlusion" }
 uniform bool g_bOverrideAmbientOcclusion;
-#if EXTERN_MODE
-    //: param custom { "default": "", "default_color": [1.0, 1.0, 1.0], "group": "CS2:Normals", "control": "TextureFetcher", "text": "Ambient Occlusion" }
-    uniform sampler2D g_tPaintAO;
-#endif
 
 // Effects ------------------------------------------------------- //
 
@@ -161,17 +128,14 @@ uniform bool g_bOverrideAmbientOcclusion;
 uniform float g_flPearlescentScale;
 //: param custom { "default": true, "group": "CS2:Effects", "control": "Button", "text": "Use Pearlescence Mask" }
 uniform bool g_bUsePearlescenceMask;
-#if EXTERN_MODE
-    //: param custom { "default": "", "default_color": [0.0, 0.0, 0.0], "group": "CS2:Effects", "control": "TextureFetcher", "text": "Pearlescence Mask" }
-    uniform sampler2D g_tPearlescenceMask;
-#endif
 
 // Wear and Grunge ------------------------------------------------------- //
 
 #if !CU && !AQ && !GS
     //: param custom { "default": [0.0, 0.0, 0.0, 0.0], "group": "CS2:Wear and Grunge", "control": "MultiSlider", "text": "Paint Durability" }
     uniform vec4 g_vPaintDurability;
-#elif !AQ
+#endif
+#if !AQ
     //: param custom { "default": 0.0, "group": "CS2:Wear and Grunge", "control": "Slider", "text": "Wear Softness" }
     uniform float g_fWearSoftness;
 #endif
@@ -288,9 +252,7 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
     #if !AQ
         #if HY || AM || CU || GS
             vec4 fvPattern = tex2D(g_tPattern, vBaseUV_PatternUV.zw);
-            #if !EXTERN_MODE
-                fvPattern.a = tex2D(g_tPaintAlpha, vBaseUV_PatternUV.zw).x;
-            #endif
+            fvPattern.a = tex2D(g_tPaintAlpha, vBaseUV_PatternUV.zw).x;
             float flPatternAlpha = smoothstep(0.5, 0.6, fvPattern.a) * smoothstep(1.0, 0.9, fvPattern.a);
         #elif SP || AA
             vec3 fvPos = inputs.position * 2.0;
@@ -303,12 +265,10 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
             vec2 sprayBlend = g_vSprayBiasBlend.yz * pow(abs(fvNormal.yz), vec2(7.0));
 
             BoxSample fvTex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXform0, g_vPatternTexCoordXform1);
-            #if !EXTERN_MODE
-                BoxSample fvAlphaTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXform0, g_vPatternTexCoordXform1);
-                fvTex.tX.w = fvAlphaTex.tX.x;
-                fvTex.tY.w = fvAlphaTex.tY.x;
-                fvTex.tZ.w = fvAlphaTex.tZ.x;
-            #endif
+            BoxSample fvAlphaTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXform0, g_vPatternTexCoordXform1);
+            fvTex.tX.w = fvAlphaTex.tX.x;
+            fvTex.tY.w = fvAlphaTex.tY.x;
+            fvTex.tZ.w = fvAlphaTex.tZ.x;
             vec4 fvPatternMask = mix(mix(fvTex.tX, fvTex.tY, sprayBlend.x), fvTex.tZ, sprayBlend.y);
             
             vec4 fvPattern;
@@ -316,20 +276,18 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
                 BoxSample fvATex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXformHalftoneA0, g_vPatternTexCoordXformHalftoneA1);
                 BoxSample fvBTex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXformHalftoneB0, g_vPatternTexCoordXformHalftoneB1);
                 BoxSample fvCTex = boxSample(g_tPattern, fvPos.xyz, g_vPatternTexCoordXformHalftoneC0, g_vPatternTexCoordXformHalftoneC1);
-                #if !EXTERN_MODE
-                    BoxSample fvAlphaATex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneA0, g_vPatternTexCoordXformHalftoneA1);
-                    fvATex.tX.w = fvAlphaATex.tX.x;
-                    fvATex.tY.w = fvAlphaATex.tY.x;
-                    fvATex.tZ.w = fvAlphaATex.tZ.x;
-                    BoxSample fvAlphaBTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneB0, g_vPatternTexCoordXformHalftoneB1);
-                    fvBTex.tX.w = fvAlphaBTex.tX.x;
-                    fvBTex.tY.w = fvAlphaBTex.tY.x;
-                    fvBTex.tZ.w = fvAlphaBTex.tZ.x;
-                    BoxSample fvAlphaCTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneC0, g_vPatternTexCoordXformHalftoneC1);
-                    fvCTex.tX.w = fvAlphaCTex.tX.x;
-                    fvCTex.tY.w = fvAlphaCTex.tY.x;
-                    fvCTex.tZ.w = fvAlphaCTex.tZ.x;
-                #endif
+                BoxSample fvAlphaATex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneA0, g_vPatternTexCoordXformHalftoneA1);
+                fvATex.tX.w = fvAlphaATex.tX.x;
+                fvATex.tY.w = fvAlphaATex.tY.x;
+                fvATex.tZ.w = fvAlphaATex.tZ.x;
+                BoxSample fvAlphaBTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneB0, g_vPatternTexCoordXformHalftoneB1);
+                fvBTex.tX.w = fvAlphaBTex.tX.x;
+                fvBTex.tY.w = fvAlphaBTex.tY.x;
+                fvBTex.tZ.w = fvAlphaBTex.tZ.x;
+                BoxSample fvAlphaCTex = boxSample(g_tPaintAlpha, fvPos.xyz, g_vPatternTexCoordXformHalftoneC0, g_vPatternTexCoordXformHalftoneC1);
+                fvCTex.tX.w = fvAlphaCTex.tX.x;
+                fvCTex.tY.w = fvAlphaCTex.tY.x;
+                fvCTex.tZ.w = fvAlphaCTex.tZ.x;
                 
                 float c = flCavity;
                 if (g_bHalftoneInCavity != 0)
@@ -429,9 +387,7 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
 
     #else
         vec4 fvPattern = tex2D(g_tPattern, vBaseUV_PatternUV.zw);
-        #if !EXTERN_MODE
-            fvPattern.a = tex2D(g_tPaintAlpha, vBaseUV_PatternUV.zw).x;
-        #endif
+        fvPattern.a = tex2D(g_tPaintAlpha, vBaseUV_PatternUV.zw).x;
     #endif
     
     vec4 cGrunge = sRGB2linear(tex2D(g_tGrunge, vWearUV_GrungeUV.zw));
@@ -652,12 +608,6 @@ void composeCustomWeapon(V2F inputs, out CustomWeaponOutputs O) {
         vec3 n = tex2D(g_tSurface, vBaseUV_PatternUV.xy).rgb * 2.0 - 1.0;
         inputs.normal = tangentSpaceToWorldSpace(normalize(n), inputs);
     }
-    #if EXTERN_MODE
-        else {
-            vec3 n = tex2D(g_tPaintNormal, vBaseUV_PatternUV.xy).rgb * 2.0 - 1.0;
-            inputs.normal = tangentSpaceToWorldSpace(normalize(n), inputs);
-        }
-    #endif
     
     O.vectors = computeLocalFrame(inputs);
 }

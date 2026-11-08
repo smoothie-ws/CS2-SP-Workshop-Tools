@@ -18,6 +18,7 @@ Rectangle {
     // 1 - regular project
     // 2 - weapon finish
     property int projectKind: 0
+    readonly property string selectedStyle: styleBox.currentKey || ""
 
     Connections {
         target: Plugin
@@ -26,17 +27,23 @@ Rectangle {
             root.projectKind = kind;
             if (kind == 2) {
                 weaponFinish.loadParams();
+                weaponFinish.updateWeapon(weaponBox.currentKey, true);
+                weaponFinish.updateStyle();
                 const c = weaponFinish.parameters["econitem"];
                 if (c !== undefined) {
                     const p = c.control[c.prop];
-                    if (p !== undefined) {
-                        const f = p.substring(p.replace("\\", "/").lastIndexOf("/"));
-                        const n = f.substring(1, f.lastIndexOf("."));
+                    if (typeof p === "string") {
+                        const n = Plugin.fileName(p);
                         if (n !== "") {
                             finishName.text = `#${n.toUpperCase()}`;
                             return;
                         }
                     }
+                }
+                const project = JSON.parse(Plugin.getWeaponFinish()) || {};
+                if (project.name) {
+                    finishName.text = `#${project.name.toUpperCase()}`;
+                    return;
                 }
             }
             finishName.text = "#UNKNOWN";
@@ -50,95 +57,6 @@ Rectangle {
         function onStyleReady() {
             weaponFinish.connect();
 
-            // for (let i = paramsColumn.children.length - 1; i >= 0; --i)
-            //     paramsColumn.children[i].destroy();
-
-            // for (const g of JSON.parse(Plugin.js("alg.shaders.groups(0)"))) {
-            //     const gParts = g.split(":");
-            //     if (gParts.length == 2 && gParts[0] === "CS2") {
-            //         // parameter group
-            //         const groupComponent = Qt.createComponent(`./SPWidgets/SPGroup.qml`);
-            //         const group = groupComponent.createObject(paramsColumn, { 
-            //             "Layout.fillWidth": true, 
-            //             "text": gParts[1] 
-            //         });
-
-            //         const groupShaderParams = JSON.parse(Plugin.js(`alg.shaders.parameters(0, "${g}")`));
-            //         for (const [paramName, paramData] of Object.entries(groupShaderParams)) {
-            //             const props = paramData.description.properties;
-
-            //             const text = props.text;
-            //             const widget = props.control;
-            //             const visible = props.visible;
-            //             const expr = props.expr == null ? (x) => x : new Function(props.expr);
-                        
-            //             // parameter container
-            //             const paramComponent = Qt.createComponent("./SPWidgets/SPParameter.qml");
-            //             const param = paramComponent.createObject(group.content, { "Layout.fillWidth": true });
-
-            //             const fields = { 
-            //                 "id": paramName,
-            //                 "Layout.fillWidth": true
-            //             };
-
-            //             let prop, controlParent = param;
-            //             switch (widget) {
-            //                 case "Button":
-            //                     prop = "checked";
-            //                     fields["text"] = text;
-            //                     fields["checkable"] = true;
-            //                     break;
-            //                 case "ColorButton":
-            //                     prop = "arrayColor";
-            //                     const labelComponent = Qt.createComponent("./SPWidgets/SPLabeled.qml");
-            //                     controlParent = labelComponent.createObject(param, { "text": text, "Layout.fillWidth": true });
-            //                     break;
-            //                 case "TextureFetcher":
-            //                     prop = "url";
-            //                     fields["text"] = text;
-            //                     break;
-            //                 case "Slider":
-            //                     prop = "value";
-            //                     fields["from"] = paramData.description.min;
-            //                     fields["to"] = paramData.description.max;
-            //                     fields["text"] = text;
-            //                     break;
-            //                 case "MultiSlider":
-            //                     prop = "array";
-            //                     fields["from"] = paramData.description.min;
-            //                     fields["to"] = paramData.description.max;
-            //                     fields["model"] = props.model == null ? [ "X", "Y", "Z", "W" ] : props.model;
-            //                     fields["paramId"] = fields["id"];
-            //                     fields["paramName"] = text;
-            //                     break;
-            //                 default:
-            //                     prop = "value";
-            //                     fields["text"] = text;
-            //             }
-
-            //             // parameter control
-            //             const controlComponent = Qt.createComponent(`./SPWidgets/SP${widget}.qml`);
-            //             const control = controlComponent.createObject(controlParent, fields);
-
-            //             // connections
-            //             if (visible != null) 
-            //                 Qt.createQmlObject(`
-            //                     import QtQml 2.15
-            //                     Binding {
-            //                         property: "visible"
-            //                         value: (${visible})
-            //                     }
-            //                 `, param).target = param;
-
-            //             param["resetRequested"].connect(() => {
-            //                 control[prop] = JSON.parse(Plugin.getDefaultWeaponFinishParameter(paramName));
-            //             });
-            //             control[`${prop}Changed`].connect(() => {
-            //                 Plugin.js(`alg.shaders.parameter(0, "${paramName}").value = ${JSON.stringify(expr(control[prop]))}`);
-            //             });
-            //         }
-            //     }
-            // }
         }
 
         function onPluginAboutToClose() {
@@ -148,24 +66,26 @@ Rectangle {
 
     Component.onCompleted: {
         styleBox.currentKeyChanged.connect(() => weaponFinish.updateStyle());
-        externMode.checkedChanged.connect(() => weaponFinish.updateStyle());
 
-        weaponBox.currentKeyChanged.connect(() => { if (root.projectKind == 2) weaponFinish.updateWeapon(weaponBox.currentKey); });
-        weaponFinish.parameters["g_tWear"].control.url = Plugin.importTexture(Plugin.asset("textures/paint_wear.png").slice(5));
-        weaponFinish.parameters["g_tGrunge"].control.url = Plugin.importTexture(Plugin.asset("textures/gun_grunge.png").slice(5));
+        weaponBox.currentKeyChanged.connect(() => { if (root.projectKind == 2 && !weaponFinish.loading) weaponFinish.updateWeapon(weaponBox.currentKey); });
+        weaponFinish.parameters["g_tWear"].control.url = Plugin.importTexture(Plugin.localPath(Plugin.asset("textures/paint_wear.png")));
+        weaponFinish.parameters["g_tGrunge"].control.url = Plugin.importTexture(Plugin.localPath(Plugin.asset("textures/gun_grunge.png")));
+        weaponFinish.captureDefaults();
     }
 
     WeaponFinish {
         id: weaponFinish
+        objectName: "weaponFinish"
 
         parameters: {
-            "externMode":                        { control: externMode,           prop: "checked",       slot: null,  expr: null },
+            "seed":                              { control: general,              prop: "seed",          slot: null,  expr: null },
             "style":                             { control: styleBox,             prop: "currentKey",    slot: null,  expr: null },
             "weapon":                            { control: weaponBox,            prop: "currentKey",    slot: null,  expr: null },
             "econitem":                          { control: econitem,             prop: "filePath",      slot: null,  expr: null },
             "texturesFolder":                    { control: texturesFolder,       prop: "filePath",      slot: null,  expr: null },
             "wearRange":                         { control: wearRange,            prop: "range",         slot: null,  expr: null },
             "g_flPatternTexCoordScale":          { control: patternTexCoordScale, prop: "value",         slot: null,  expr: null },
+            "uTexTransform":                     { control: patternTransform,     prop: "components",    slot: null,  expr: null },
             "texRotationRange":                  { control: texRotation,          prop: "range",         slot: null,  expr: null },
             "texOffsetXRange":                   { control: texOffsetX,           prop: "range",         slot: null,  expr: null },
             "texOffsetYRange":                   { control: texOffsetY,           prop: "range",         slot: null,  expr: null },
@@ -173,13 +93,14 @@ Rectangle {
             // shader parameters
             "g_bLivePreview":                    { control: enableLivePreview,    prop: "checked",       slot: null,  expr: null },
             "g_bPBRValidation":                  { control: pbrValidation,        prop: "validating",    slot: null,  expr: null },
-            "g_bDebugChannel":                   { control: debugChannel,         prop: "currentKey",    slot: null,  expr: null },
+            "g_bDebugChannel":                   { control: debugChannel,         prop: "currentKey",    slot: null,  expr: value => Number(value) },
             "g_vPatternTexCoordXform0":          { control: patternTransform,     prop: "matrixForm0",   slot: null,  expr: null },
             "g_vPatternTexCoordXform1":          { control: patternTransform,     prop: "matrixForm1",   slot: null,  expr: null },
             "g_vWearTexCoordXform0":             { control: wearTransform,        prop: "matrixForm0",   slot: null,  expr: null },
             "g_vWearTexCoordXform1":             { control: wearTransform,        prop: "matrixForm1",   slot: null,  expr: null },
             "g_vGrungeTexCoordXform0":           { control: grungeTransform,      prop: "matrixForm0",   slot: null,  expr: null },
             "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null,  expr: null },
+            "g_fWearSoftness":                   { control: wearSoftness,          prop: "value",         slot: null,  expr: null },
             "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null,  expr: null },
             "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null,  expr: null },
             "g_bOverrideAmbientOcclusion":       { control: useAOTex,             prop: "checked",       slot: null,  expr: null },
@@ -187,13 +108,7 @@ Rectangle {
             "g_bUseNormalMap":                   { control: useNormalMap,         prop: "checked",       slot: null,  expr: null },
             "g_bUseRoughness":                   { control: useRoughTex,          prop: "checked",       slot: null,  expr: null },
             "g_bUsePearlescenceMask":            { control: usePearlMask,         prop: "checked",       slot: null,  expr: null },
-            "g_tPattern":                        { control: patternTex,           prop: "url",           slot: null,  expr: null },
-            "g_tPaintRoughness":                 { control: useRoughTex,          prop: "url",           slot: null,  expr: null },
-            "g_tPearlescenceMask":               { control: usePearlMask,         prop: "url",           slot: null,  expr: null },
-            "g_tPaintNormal":                    { control: useNormalMap,         prop: "url",           slot: null,  expr: null },
-            "g_tPaintMasks":                     { control: useMatMasks,          prop: "url",           slot: null,  expr: null },
-            "g_tPaintAO":                        { control: useAOTex,             prop: "url",           slot: null,  expr: null },
-            "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null,  expr: null },
+            "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null,  expr: value => [0, value[0], value[1]] },
             "g_flPaintRoughness":                { control: paintRough,           prop: "value",         slot: null,  expr: null },
             "g_flPearlescentScale":              { control: pearlScale,           prop: "value",         slot: null,  expr: null },
             "g_bRoughnessPerColor":              { control: useRoughByCol,        prop: "checked",       slot: null,  expr: null },
@@ -203,12 +118,12 @@ Rectangle {
 
             // dynamically generated components
             "g_tColor":                          { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tRoughness":                      { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tMetalness":                      { control: null,                 prop: "url",           slot: null,  expr: null },
             "g_tSurface":                        { control: null,                 prop: "url",           slot: null,  expr: null },
             "g_tAmbientOcclusion":               { control: null,                 prop: "url",           slot: null,  expr: null },
             "g_tMasks":                          { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tWear":                           { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tGrunge":                         { control: null,                 prop: "url",           slot: null,  expr: null },
+            "g_tWear":                           { control: wearTexture,                 prop: "url",           slot: null,  expr: null },
+            "g_tGrunge":                         { control: grungeTexture,                 prop: "url",           slot: null,  expr: null },
             "g_vColor0":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
             "g_vColor1":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
             "g_vColor2":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
@@ -216,11 +131,8 @@ Rectangle {
         }
 
         function updateStyle() {
-            if (root.projectKind == 2) 
-                Plugin.updateStyle(
-                    styleBox.currentKey, 
-                    externMode.checked
-                );
+            if (root.projectKind == 2 && !weaponFinish.loading)
+                Plugin.updateStyle(styleBox.currentKey);
         }
     }
 
@@ -241,7 +153,14 @@ Rectangle {
         onResetRequested: weaponFinish.resetParameter(paramId)
     }
 
-    TransformMatrix { id: patternTransform; baseScale: ignoreWeaponSizeScale.checked ? 1.0 : weaponBox.uvScale }
+    TransformMatrix {
+        id: patternTransform
+        baseScale: ignoreWeaponSizeScale.checked ? 1.0 : weaponBox.uvScale
+        onScaleChanged: patternTexCoordScale.value = scale
+        onTranslationXChanged: texOffsetX.value = translationX
+        onTranslationYChanged: texOffsetY.value = translationY
+        onRotationChanged: texRotation.value = rotation
+    }
     TransformMatrix { id: wearTransform; baseScale: patternTransform.baseScale }
     TransformMatrix { id: grungeTransform; baseScale: patternTransform.baseScale }
     
@@ -284,6 +203,7 @@ Rectangle {
 
             Text {
                 id: finishName
+                objectName: "finishName"
                 text: "#UNKNOWN"
                 Layout.maximumWidth: 150
                 elide: Text.ElideRight
@@ -380,14 +300,6 @@ Rectangle {
                     verticalAlignment: Text.AlignVCenter
                 }
 
-                SPButton {
-                    id: externMode
-                    checkable: true
-                    text: "External Mode"
-                    tooltip.text: "Use external pattern textures instead of project channels"
-                    Layout.fillWidth: true
-                }
-
                 SPLabeled {
                     enabled: enableLivePreview.checked
                     opacity: enabled ? 1.0 : 0.5
@@ -430,15 +342,6 @@ Rectangle {
                             const item = textureRepeater.itemAt(i);
                             if (!item || item.url === "")
                                 return false;
-                        }
-                        if (externMode.checked) {
-                            if (patternTex.url === "" || patternTex.url === null)
-                                return false;
-                            for (const p of ["Rough", "Pearl", "Normal", "Masks", "AO"]) {
-                                const c = weaponFinish.parameters[`g_tPaint${p}`].control;
-                                if (c.checked && (c.url === "" || c.url === null))
-                                    return false;
-                            }
                         }
                         return true;
                     }
@@ -525,10 +428,7 @@ Rectangle {
                         icon.height: 15
                         background.color: hovered ? Qt.rgba(0, 0, 0, 0.75) : Qt.rgba(0, 0, 0, 0.25)
 
-                        onClicked: {
-                            Plugin.importWeaponFinishEcon();
-                            weaponFinish.loadParams();
-                        }
+                        onClicked: weaponFinish.importEcon()
                     }
 
                     Text {
@@ -550,7 +450,7 @@ Rectangle {
                             id: econFileDialog
                             title: "Select file"
                             nameFilters: [ "CS2 Econ Item (*.econitem)" ]
-                            onAccepted: econitem.filePath = fileUrl.toString().substring(8);
+                            onAccepted: econitem.filePath = Plugin.localPath(fileUrl.toString());
                         }
                     }
 
@@ -610,7 +510,7 @@ Rectangle {
                             id: texturesFolderDialog
                             title: "Select folder"
                             selectFolder: true
-                            onAccepted: texturesFolder.filePath = fileUrl.toString().substring(8);
+                            onAccepted: texturesFolder.filePath = Plugin.localPath(fileUrl.toString());
                         }
                     }
 
@@ -643,7 +543,7 @@ Rectangle {
                         property var weapons: JSON.parse(Plugin.getWeapons())
                         property real uvScale: 1.0
 
-                        onCurrentKeyChanged: uvScale = weapons[currentKey].uv_scale
+                        onCurrentKeyChanged: uvScale = weapons[currentKey] ? weapons[currentKey].uv_scale : 1.0
                     }
 
                     Component.onCompleted: scopeWidth = Math.max(scopeWidth, style.scopeWidth)
@@ -719,20 +619,6 @@ Rectangle {
                         Layout.fillWidth: true
                         text: "Common"
 
-                        SPLabeled {
-                            id: patternTex
-                            visible: ["hy", "sp", "am", "aa", "cu", "aq", "gs"].includes(styleBox.currentKey) && externMode.checked
-                            text: ["hy", "sp", "am", "aa"].includes(styleBox.currentKey) ? "Pattern Mask" : "Albedo Texture"
-
-                            property alias url: patternTexPicker.url
-
-                            SPResourcePicker {
-                                id: patternTexPicker
-                                Layout.fillWidth: true
-                                filters: AlgResourcePicker.TEXTURE
-                            }
-                        }
-
                         SPParameter {
                             SPSlider {
                                 id: patternTexCoordScale
@@ -776,7 +662,7 @@ Rectangle {
                                 SPLock {
                                     Component.onCompleted: {
                                         useColMask.checkedChanged.connect(() => update(() => useMatMasks.checked = useColMask.checked));
-                                        useMatMasks.checkedChanged.connect(() => update(() => useColMask.checked = useColMask.checked));
+                                        useMatMasks.checkedChanged.connect(() => update(() => useColMask.checked = useMatMasks.checked));
                                     }
                                 }
                             }
@@ -837,7 +723,7 @@ Rectangle {
 
                         SPMultiSlider {
                             id: sprayBlend
-                            visible: styleBox.currentKey == "sp"
+                            visible: ["sp", "aa"].includes(styleBox.currentKey)
                             model: ["Back", "Top"]
                             paramId: "g_vSprayBiasBlend"
                             paramName: "Spray Blend"
@@ -896,7 +782,7 @@ Rectangle {
 
                         SPParameter {
                             width: parent.width
-                            visible: root.styleBox.currentKey == "ce"
+                            visible: styleBox.currentKey == "ce"
                             
                             SPTextureFetcher {
                                 id: useMetalMask
@@ -985,7 +871,7 @@ Rectangle {
                             Layout.fillWidth: true
                             
                             TextureParameter {
-                                visible: root.styleBox.currentKey == "ce"
+                                visible: styleBox.currentKey == "ce"
                                 paramId: "g_tOverlay"
                                 text: "Overlay Texture"
                             }
@@ -1039,7 +925,7 @@ Rectangle {
 
                         SPParameter {
                             width: parent.width
-                            visible: root.styleBox.currentKey == "ce"
+                            visible: styleBox.currentKey == "ce"
                             
                             SPTextureFetcher {
                                 id: useSFXMask
@@ -1073,7 +959,7 @@ Rectangle {
 
                         SPMultiSlider {
                             id: glitterNum
-                            visible: root.styleBox.currentKey == "ce"
+                            visible: styleBox.currentKey == "ce"
                             model: ["Intensity", "Scale", "Rainbow Balance", "Rainbow Spread"]
                             paramId: "g_vGlitter"
                             paramName: "Glitter"
@@ -1082,7 +968,7 @@ Rectangle {
 
                         SPMultiSlider {
                             id: iridescentNum
-                            visible: root.styleBox.currentKey == "ce"
+                            visible: styleBox.currentKey == "ce"
                             model: ["Strength", "Scale", "Hue Shift"]
                             paramId: "g_vIridescent"
                             paramName: "Iridescent"
@@ -1118,7 +1004,8 @@ Rectangle {
                         }
 
                         TextureParameter {
-                            visible: root.styleBox.currentKey == "ce"
+                            id: wearTexture
+                            visible: false
                             paramId: "g_tWear"
                             text: "Wear Texture"
                         }
@@ -1144,7 +1031,8 @@ Rectangle {
                         }
 
                         TextureParameter {
-                            visible: root.styleBox.currentKey == "ce"
+                            id: grungeTexture
+                            visible: false
                             paramId: "g_tGrunge"
                             text: "Grunge Texture"
                         }
@@ -1169,11 +1057,7 @@ Rectangle {
                 SPButton {
                     id: restoreDefaults
                     text: "Restore defaults"
-                    #if QT_VERSION >= 6
                     icon.source: "./icons/cycle.png"
-                    #else
-                    icon.source: "./SPWidgets/icons/cycle.png"
-                    #endif
 
                     onClicked: weaponFinish.restoreDefaults()
                 }

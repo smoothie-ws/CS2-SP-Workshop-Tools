@@ -7,6 +7,19 @@ SPLock {
     property real translationX: 0.0
     property real translationY: 0.0
 
+    // Canonical econitem values: scale, X/Y offset, rotation in degrees.
+    property var components: [1.0, 0.0, 0.0, 0.0]
+    onComponentsChanged: {
+        if (updating || !components || components.length !== 4) return;
+        update(() => {
+            scale = components[0];
+            translationX = components[1];
+            translationY = components[2];
+            rotation = components[3];
+        });
+        build();
+    }
+
     property real baseScale: 1.0
 
     property var matrixForm0: [1.0, 0.0, 0.0, 0.0]
@@ -37,6 +50,7 @@ SPLock {
 
             matrixForm0 = [cos * s, -sin * s, 0.0, s * cos * m0 + s * -sin * m1 + tx - 0.5];
             matrixForm1 = [sin * s,  cos * s, 0.0, s * sin * m0 + s *  cos * m1 + ty - 0.5];
+            components = [scale, translationX, translationY, rotation];
         });
     }
 
@@ -66,6 +80,7 @@ SPLock {
             rotation = Math.floor(((t * 180) / 3.1415927 + 0.005) * 100) / 100;
             translationX = Math.floor((tx - s * cos * m0 + s * -sin * m1 + 0.5 + 0.005) * 100) / 100;
             translationY = Math.floor((ty - s * sin * m0 + s *  cos * m1 + 0.5 + 0.005) * 100) / 100;
+            components = [scale, translationX, translationY, rotation];
         });
     }
 }

@@ -13,30 +13,35 @@ SPControl {
     property alias currentValue: comboBox.currentValue
     property alias currentIndex: comboBox.currentIndex
 
-    Component.onCompleted: {
-        if (currentKey != null)
-            currentIndex = Object.keys(map).indexOf(currentKey);
-        var updating = false;
-        function update(f) {
-            if (!updating) {
-                updating = true;
-                f();
-                updating = false;
-            }
-        }
-        currentIndexChanged.connect(() =>
-            update(() => currentKey = Object.keys(map)[currentIndex])
-        );
-        currentKeyChanged.connect(() =>
-            update(() => currentIndex = Object.keys(map).indexOf(currentKey))
-        );
+    QtObject {
+        id: internal
+        property bool ready: false
+        property bool syncing: false
 
-        comboBox.syncModel();
-        mapChanged.connect(comboBox.syncModel);
+        function sync(f) {
+            if (syncing) return;
+            syncing = true;
+            try { f(); } finally { syncing = false; }
+        }
     }
 
+    Component.onCompleted: {
+        internal.ready = true;
+        comboBox.syncModel();
+    }
+    onMapChanged: if (internal.ready) comboBox.syncModel()
+    onCurrentIndexChanged: if (internal.ready) internal.sync(() => {
+        const keys = Object.keys(map || {});
+        currentKey = currentIndex >= 0 && currentIndex < keys.length ? keys[currentIndex] : null;
+    })
+    onCurrentKeyChanged: if (internal.ready) internal.sync(() => {
+        currentIndex = Object.keys(map || {}).indexOf(String(currentKey));
+    })
+
     onWheel: e => {
-        currentIndex = (model.length + currentIndex - Math.floor(e.angleDelta.y / 120)) % model.length;
+        const count = comboBox.count;
+        if (count > 0)
+            currentIndex = (count + currentIndex - Math.floor(e.angleDelta.y / 120)) % count;
     }
 
     ComboBox {
@@ -46,12 +51,15 @@ SPControl {
         anchors.fill: parent
 
         function syncModel() {
-            if (!root.map || typeof root.map !== "object")
-                return;
-            const m = [];
-            for (const [value, text] of Object.entries(root.map))
-                m.push({value: value, text: text});
-            model = m;
+            internal.sync(() => {
+                const previousKey = root.currentKey;
+                const entries = Object.entries(root.map || {});
+                model = entries.map(entry => ({value: entry[0], text: entry[1]}));
+                currentIndex = previousKey === null || previousKey === undefined
+                    ? (entries.length > 0 ? 0 : -1)
+                    : entries.findIndex(entry => entry[0] === String(previousKey));
+                root.currentKey = currentIndex >= 0 ? entries[currentIndex][0] : null;
+            });
         }
 
         background: Rectangle {
@@ -65,7 +73,7 @@ SPControl {
         }
 
         contentItem: Text {
-            text: comboBox.displayText
+            text: comboBox.displayText || ""
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignLeft
             verticalAlignment: Text.AlignVCenter
@@ -118,7 +126,7 @@ SPControl {
                         id: itemLabel
                         x: 10
                         y: (parent.height - height) * 0.5
-                        text: comboBox.textRole === '' ? modelData : (Array.isArray(comboBox.model) ? modelData[comboBox.textRole] : model[comboBox.textRole])
+                        text: modelData && modelData.text !== undefined ? modelData.text : ""
                         font.pixelSize: 11
                         color: comboBox.currentIndex === index ? "#fff" : "#cfcfcf"
                     }

@@ -5,7 +5,7 @@ import lib-vectors.glsl
 #include "cs2_customweapon.glsl"
 
 //: metadata {
-//:  "custom-ui" : "cs2-ui.qml"
+//:  "custom-ui" : "cs2-workshop-tools-ui.qml"
 //: }
 
 // General ------------------------------------------------------- //
@@ -44,15 +44,9 @@ void shade(V2F inputs) {
                 shadePBR(O);
         }
     } else {
-        #if EXTERN_MODE
-            O.color.rgb = tex2D(g_tMatColor, inputs.tex_coord).rgb;
-            O.metalness.x = tex2D(g_tMatRough, inputs.tex_coord).x;
-            O.metalness.y = tex2D(g_tMatMasks, inputs.tex_coord).x;
-        #else
-            O.color.rgb = tex2D(g_tPattern, inputs.tex_coord).rgb;
-            O.metalness.x = tex2D(g_tPaintRoughness, inputs.tex_coord).x;
-            O.metalness.y = tex2D(g_tPaintMasks, inputs.tex_coord).x;
-        #endif
+        O.color.rgb = tex2D(g_tPattern, inputs.tex_coord).rgb;
+        O.metalness.x = tex2D(g_tPaintRoughness, inputs.tex_coord).x;
+        O.metalness.y = tex2D(g_tPaintMasks, inputs.tex_coord).x;
         O.metalness.w = getAO(inputs.tex_coord, true);
         O.vectors = computeLocalFrame(inputs);
 

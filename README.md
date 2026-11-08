@@ -14,8 +14,6 @@
     -   [Next Steps](#next-steps)
         -   [Plugin Settings](#plugin-settings)
         -   [Base Weapon Textures](#base-weapon-textures)
-            -   [Option 1: Decompilation](#option-1-decompilation)
-            -   [Option 2: Manual Provision](#option-2-manual-provision)
 -   **[Guide](#guide)**
     -   [Creating a Weapon Finish Project](#creating-a-weapon-finish-project)
         -   [Option 1: New Project](#option-1-new-project)
@@ -35,7 +33,7 @@
 
 This project is an **unofficial fan-made tool** for creating **[Counter-Strike 2 Weapon Finishes](https://www.counter-strike.net/workshop/workshopfinishes)** with **[Adobe Substance 3D Painter](https://www.adobe.com/products/substance3d/apps/painter.html)**. It is not affiliated with **[Valve](https://www.valvesoftware.com/)**, **[Counter-Strike 2](https://www.counter-strike.net/cs2)**, **[Adobe](https://www.adobe.com/)**, or **[Substance 3D Painter](https://www.adobe.com/products/substance3d/apps/painter.html).**
 
-This plugin is currently under active development. There may be bugs or issues.  
+This plugin is currently under active development. There may be bugs or issues.
 If you encounter any, please [report them](https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/issues).
 
 ## How It Works
@@ -60,15 +58,13 @@ It also provides 9 [GLSL](https://helpx.adobe.com/substance-3d-painter/scripting
 
 These shaders are used to preview Weapon Finish settings live inside Substance Painter.
 
-Base weapon texture decompilation has been released using the [Valve Resource Format](https://github.com/ValveResourceFormat/ValveResourceFormat) (VRF) CLI tool.
+Base weapon textures must be supplied manually.
 
 # Getting Started
 
 ## Installation
 
 1. **Make sure you have Substance 3D Painter installed on your PC.**<br />
-
-    > **Note:** Supported Substance 3D Painter versions are `9.1.1 - 11.0.2`. **Earlier versions may be unstable!**
 
 2. **[Download the plugin](https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/releases/latest)**
 
@@ -83,6 +79,10 @@ Base weapon texture decompilation has been released using the [Valve Resource Fo
         ![image](https://github.com/user-attachments/assets/ec17bc3b-a734-4f29-aec2-6cf40fa55695)
 
     - Unpack the plugin so the path becomes: `.../python/plugins/CS2 Workshop Tools`
+
+### Installing from source
+
+A source checkout can be placed directly in the Python plugins folder: the plugin directory must contain `__init__.py`, `plugin.json`, `plugin/` and `assets/`. There is no installer or built-in updater. Restart the plugin after replacing files.
 
 ## Launching
 
@@ -112,7 +112,7 @@ The plugin shaders require a set of base weapon textures to calculate paint wear
 
 **These textures are not bundled with the plugin.**
 
-If you have CS2 installed, the plugin can automatically decompile and extract them. Otherwise, you need to provide them manually.
+Provide the five base maps manually using the filenames below.
 
 In the plugin settings, you'll see a warning icon next to any weapon missing textures:
 
@@ -120,32 +120,14 @@ In the plugin settings, you'll see a warning icon next to any weapon missing tex
 
 This means required textures could not be found.
 
-#### Option 1: Decompilation
-
-To automatically extract base textures:
-
-1. Set the CS2 path:
-
-![CS2 Path](https://imgur.com/kB7NCnL.png)
-
-2. Click the **Decompile** button:
-
-![Decompile button](https://imgur.com/g10GhyR.png)
-
-This will begin the decompilation process:
-
-![Decompilation](https://imgur.com/DPF74Ak.png)
-
-> **Note:** This may take several minutes. Do not close the plugin during this process.
-
-#### Option 2: Manual Provision
-
 To manually provide the textures:
 
-1. Place them in the `.../CS2 Workshop Tools/assets/textures/models/...` directory.  
-> **Important:** Filenames must follow the format  
-> `<weapon id>/<weapon id>_[cavity|color|masks|rough|surface].png`  
-> e.g. `ak47/ak47_cavity.png`, `taser/taser_surface.png`, etc.
+1. Place them in the `.../CS2 Workshop Tools/assets/textures/models/...` directory.
+> **Important:** Filenames must follow the format
+> `<weapon id>/<weapon id>_[cavity|color|masks|rough|normal].png`
+> e.g. `ak47/ak47_cavity.png`, `taser/taser_normal.png`, etc.
+
+The former `_surface.png` name is accepted as a fallback when `_normal.png` is absent. If both are present, `_normal.png` takes precedence. The maps connect as color → `g_tColor`, rough → `g_tMetalness`, normal → `g_tSurface`, masks → `g_tMasks`, cavity → `g_tAmbientOcclusion`.
 
 2. Click **Refresh** to reload and validate textures:
 
@@ -189,7 +171,7 @@ To create a brand-new Weapon Finish project:
 
 ![New Weapon Finish window](https://imgur.com/5sFznDp.png)
 
-3. Wait for the project setup to complete.
+3. Wait for the project setup to complete. Save an existing unsaved project with **Save As** first; creation is cancelled if a changed project cannot be saved.
 
 ### Option 2: From Existing Project
 
@@ -205,7 +187,7 @@ You can also set up an existing Substance Painter project:
 
 ![Set up Weapon Finish window](https://imgur.com/Rah6Iax.png)
 
-4. Wait for the process to finish.
+4. Wait for the process to finish. Additional channels and existing channel data are preserved. If a required channel has an incompatible format, convert it explicitly before setup; the plugin refuses lossy automatic conversion.
 
 ## Weapon Finish Workflow
 
@@ -223,7 +205,7 @@ Most of the settings mimic the official [CS2 Workshop Tools](https://developer.v
 
 According to the [official guide](https://www.counter-strike.net/workshop/workshopfinishes#pbr), Weapon Finishes should use values within the effective PBR range:
 
-- **Metallic**: 180–250  
+- **Metallic**: 180–250
 - **Non-metallic**: 55–220
 
 Enable validation by clicking **PBR Validation** or pressing **V**. This feature works **only in Live Preview mode**.
@@ -275,4 +257,16 @@ Use the **Export Textures** button to export maps using the preset format compat
 
 ![Textures folder](https://imgur.com/SK2ULne.png)
 
-Enjoy!
+For multiple texture sets, the first set exports to the selected folder and is referenced by the single `.econitem`; subsequent sets export to `texture_set_2`, `texture_set_3`, etc. Choose a separate finish/project if each set needs its own `.econitem`. Without an econitem filename, export uses the finish name, then weapon ID, then `untitled`.
+
+When AO export is enabled, each texture set needs a baked ambient occlusion mesh map or an AO channel. All sets are checked before export starts; missing required inputs produce an error instead of a silently incomplete export.
+
+UNC destinations are supported by exporting all sets to a temporary local folder first and then publishing the finished files to the share. Each destination file is replaced atomically. A failed staged set publishes no network outputs; a later network-copy error is reported and can leave an already published subset.
+
+There are nine available styles. Custom Paint Job Extended is disabled until its shader and controls are complete; saved projects using that style open as Custom Paint Job.
+
+The active shader starts at `assets/shader/cs2.glsl` and includes `cs2_customweapon.glsl`. `cs2_weapon.glsl` is an unused Source 2 Viewer/SPIR-V reference dump retained for comparison; it is never loaded by the plugin.
+
+Texture selection uses Painter resource metadata, so an embedded image stays selected even if its original source file is gone. When Qt cannot decode a thumbnail (such as some grayscale TGA files), the resource name remains visible and the texture still works in the shader.
+
+The export preset builder, export pipeline and shader snapshot/restore are separate modules (`export_presets.py`, `texture_export.py`, `shader_state.py`). Generated QML is synchronized incrementally by `painter/preprocess.py`; unchanged files retain their timestamps. Shader controls initialize through one bridge call, and reconnecting removes previous signal handlers.

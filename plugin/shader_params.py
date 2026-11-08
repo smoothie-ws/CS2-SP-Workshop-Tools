@@ -34,12 +34,12 @@ class TransformMatrixRow(ShaderParam):
         super().__init__("vec4", [1.0, 0.0, 0.0, 0.0] if is_first_row else [0.0, 1.0, 0.0, 0.0], condition, is_uniform, expr)
 
 
-def get_params(PS: str, EX: bool):
+def get_params(PS: str):
     return ShaderParams.build({
         "Common": ShaderParamsGroup({
             "g_tPattern": Texture(
                 name="Pattern Mask" if PS in ["hy", "sp", "am", "aa"] else "Albedo Texture",
-                condition=PS not in ["so", "an"] and EX
+                condition=PS not in ["so", "an"]
             ),
             "g_flPatternTexCoordScale": Slider(
                 name="Texture Scale", 
@@ -108,7 +108,7 @@ def get_params(PS: str, EX: bool):
             ),
             "g_tPaintMasks": Texture(
                 name="Paint-By-Number Mask",
-                condition=PS not in ["aq", "gs"] and EX
+                condition=PS not in ["aq", "gs"]
             ),
             "g_vColor0": Color(
                 name="Base Metal" if PS in ["aq", "gs"] else "Base Coat",
@@ -272,16 +272,8 @@ def get_params(PS: str, EX: bool):
             "g_bUseNormalMap": Checkbox(
                 name="Use Normal Map"
             ),
-            "g_tPaintNormal": Texture(
-                name="Normal Map", 
-                visible="g_bUseNormalMap"
-            ),
             "g_bOverrideAmbientOcclusion": Checkbox(
                 name="Use Ambient Occlusion"
-            ),
-            "g_tPaintAO": Texture(
-                name="Ambient Occlusion", 
-                visible="g_bOverrideAmbientOcclusion"
             )
         }),
         "Effects": ShaderParamsGroup({

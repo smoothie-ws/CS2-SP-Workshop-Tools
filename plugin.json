@@ -11,8 +11,7 @@
             "aa": "Anodized Airbrushed",
             "cu": "Custom Paint Job",
             "aq": "Patina",
-            "gs": "Gunsmith",
-            "ce": "Custom Paint Job Extended"
+            "gs": "Gunsmith"
         },
         "weapons": {
             "ak47": {
@@ -226,7 +225,6 @@
                 0.42,
                 0.42
             ]
-        },
-        "check_for_updates": true
+        }
     }
 }

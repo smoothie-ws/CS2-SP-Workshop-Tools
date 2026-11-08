@@ -7,7 +7,7 @@ from time import localtime, strftime
 from .log import Log
 from .path import Path
 from .plugin import Plugin
-from .ui import UI, QtVersion, QtQuickWidgets, QtWidgets, QtCore, QtGui
+from .ui import UI, QtQuickWidgets, QtWidgets, QtCore, QtGui
 
 
 class QmlView(QtCore.QObject):
@@ -63,8 +63,41 @@ class QmlView(QtCore.QObject):
     
     @QtCore.Slot(str, result=str)
     def asset(self, path: str) -> str:
-        return f'file:{Path.asset(path)}'
+        return QtCore.QUrl.fromLocalFile(Path.asset(path)).toString()
     
+    @QtCore.Slot(str, result=str)
+    def fileName(self, path: str) -> str:
+        return Path.filename(path)
+
+    @QtCore.Slot(str, result=str)
+    def fileUrl(self, path: str) -> str:
+        return QtCore.QUrl.fromLocalFile(path).toString()
+
+    @QtCore.Slot(str, str, result=str)
+    def resourcePreview(self, url: str, path: str) -> str:
+        view = getattr(self, "view", None)
+        if view is not None and view.engine().imageProvider("resources") is not None:
+            return "image://resources/" + url
+        # Python-created QQuickWidget engines may not have Painter's provider.
+        # Keep the valid resource selected even when Qt cannot show a thumbnail
+        # (for example grayscale TGA, or an embedded image without a source file).
+        if path and Path.exists(path) and QtGui.QImageReader(path).canRead():
+            return QtCore.QUrl.fromLocalFile(path).toString()
+        return ""
+
+    @QtCore.Slot(str, result=str)
+    def localPath(self, url: str) -> str:
+        value = QtCore.QUrl(url)
+        return value.toLocalFile() if value.isLocalFile() else ""
+
+    @QtCore.Slot(str, bool, result=str)
+    def folderUrl(self, path: str, select_folder: bool) -> str:
+        if not path:
+            path = Path.documents
+        elif not select_folder:
+            path = Path.to(path)
+        return QtCore.QUrl.fromLocalFile(path).toString()
+
     @QtCore.Slot(str, result=bool)
     def pathExists(self, path: str) -> bool:
         return Path.exists(path)
@@ -81,10 +114,6 @@ class QmlView(QtCore.QObject):
     def error(self, msg: str):
         Log.error(msg)
 
-    @QtCore.Slot(result=int)
-    def getQtVersion(self) -> int:
-        return QtVersion
-    
     @QtCore.Slot(result=str)
     def getPluginPath(self) -> str:
         return Path.plugin
@@ -114,7 +143,8 @@ class QmlWindow(QmlView):
             event.accept()
             
         self.window.closeEvent = on_closed
-        self.window.setWindowIcon(icon)
+        if icon is not None:
+            self.window.setWindowIcon(icon)
         self.window.setWindowTitle(title)
         self.window.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
         
