@@ -24,9 +24,10 @@ Rectangle {
         target: Plugin
 
         function onProjectKindChanged(kind) {
+            weaponFinish.disconnect();
             root.projectKind = kind;
             if (kind == 2) {
-                weaponFinish.loadParams();
+                const project = weaponFinish.loadParams();
                 weaponFinish.updateWeapon(weaponBox.currentKey, true);
                 weaponFinish.updateStyle();
                 const c = weaponFinish.parameters["econitem"];
@@ -40,7 +41,6 @@ Rectangle {
                         }
                     }
                 }
-                const project = JSON.parse(Plugin.getWeaponFinish()) || {};
                 if (project.name) {
                     finishName.text = `#${project.name.toUpperCase()}`;
                     return;
@@ -61,6 +61,7 @@ Rectangle {
 
         function onPluginAboutToClose() {
             weaponFinish.dump();
+            weaponFinish.disconnect();
         }
     }
 
@@ -78,56 +79,56 @@ Rectangle {
         objectName: "weaponFinish"
 
         parameters: {
-            "seed":                              { control: general,              prop: "seed",          slot: null,  expr: null },
-            "style":                             { control: styleBox,             prop: "currentKey",    slot: null,  expr: null },
-            "weapon":                            { control: weaponBox,            prop: "currentKey",    slot: null,  expr: null },
-            "econitem":                          { control: econitem,             prop: "filePath",      slot: null,  expr: null },
-            "texturesFolder":                    { control: texturesFolder,       prop: "filePath",      slot: null,  expr: null },
-            "wearRange":                         { control: wearRange,            prop: "range",         slot: null,  expr: null },
-            "g_flPatternTexCoordScale":          { control: patternTexCoordScale, prop: "value",         slot: null,  expr: null },
-            "uTexTransform":                     { control: patternTransform,     prop: "components",    slot: null,  expr: null },
-            "texRotationRange":                  { control: texRotation,          prop: "range",         slot: null,  expr: null },
-            "texOffsetXRange":                   { control: texOffsetX,           prop: "range",         slot: null,  expr: null },
-            "texOffsetYRange":                   { control: texOffsetY,           prop: "range",         slot: null,  expr: null },
+            "seed": { control: general, prop: "seed" },
+            "style": { control: styleBox, prop: "currentKey" },
+            "weapon": { control: weaponBox, prop: "currentKey" },
+            "econitem": { control: econitem, prop: "filePath" },
+            "texturesFolder": { control: texturesFolder, prop: "filePath" },
+            "wearRange": { control: wearRange, prop: "range" },
+            "g_flPatternTexCoordScale": { control: patternTexCoordScale, prop: "value" },
+            "uTexTransform": { control: patternTransform, prop: "components" },
+            "texRotationRange": { control: texRotation, prop: "range" },
+            "texOffsetXRange": { control: texOffsetX, prop: "range" },
+            "texOffsetYRange": { control: texOffsetY, prop: "range" },
 
             // shader parameters
-            "g_bLivePreview":                    { control: enableLivePreview,    prop: "checked",       slot: null,  expr: null },
-            "g_bPBRValidation":                  { control: pbrValidation,        prop: "validating",    slot: null,  expr: null },
-            "g_bDebugChannel":                   { control: debugChannel,         prop: "currentKey",    slot: null,  expr: value => Number(value) },
-            "g_vPatternTexCoordXform0":          { control: patternTransform,     prop: "matrixForm0",   slot: null,  expr: null },
-            "g_vPatternTexCoordXform1":          { control: patternTransform,     prop: "matrixForm1",   slot: null,  expr: null },
-            "g_vWearTexCoordXform0":             { control: wearTransform,        prop: "matrixForm0",   slot: null,  expr: null },
-            "g_vWearTexCoordXform1":             { control: wearTransform,        prop: "matrixForm1",   slot: null,  expr: null },
-            "g_vGrungeTexCoordXform0":           { control: grungeTransform,      prop: "matrixForm0",   slot: null,  expr: null },
-            "g_vGrungeTexCoordXform1":           { control: grungeTransform,      prop: "matrixForm1",   slot: null,  expr: null },
-            "g_fWearSoftness":                   { control: wearSoftness,          prop: "value",         slot: null,  expr: null },
-            "g_flWearAmount":                    { control: wearAmount,           prop: "value",         slot: null,  expr: null },
+            "g_bLivePreview": { control: enableLivePreview, prop: "checked" },
+            "g_bPBRValidation": { control: pbrValidation, prop: "validating" },
+            "g_bDebugChannel": { control: debugChannel, prop: "currentKey", expr: value => Number(value) },
+            "g_vPatternTexCoordXform0": { control: patternTransform, prop: "matrixForm0" },
+            "g_vPatternTexCoordXform1": { control: patternTransform, prop: "matrixForm1" },
+            "g_vWearTexCoordXform0": { control: wearTransform, prop: "matrixForm0" },
+            "g_vWearTexCoordXform1": { control: wearTransform, prop: "matrixForm1" },
+            "g_vGrungeTexCoordXform0": { control: grungeTransform, prop: "matrixForm0" },
+            "g_vGrungeTexCoordXform1": { control: grungeTransform, prop: "matrixForm1" },
+            "g_fWearSoftness": { control: wearSoftness, prop: "value" },
+            "g_flWearAmount": { control: wearAmount, prop: "value" },
             "g_bIgnoreWeaponSizeScale":          { control: ignoreWeaponSizeScale,prop: "checked",       slot: null,  expr: null },
-            "g_bOverrideAmbientOcclusion":       { control: useAOTex,             prop: "checked",       slot: null,  expr: null },
-            "g_bOverrideDefaultMasks":           { control: useMatMasks,          prop: "checked",       slot: null,  expr: null },
-            "g_bUseNormalMap":                   { control: useNormalMap,         prop: "checked",       slot: null,  expr: null },
-            "g_bUseRoughness":                   { control: useRoughTex,          prop: "checked",       slot: null,  expr: null },
-            "g_bUsePearlescenceMask":            { control: usePearlMask,         prop: "checked",       slot: null,  expr: null },
-            "g_vSprayBiasBlend":                 { control: sprayBlend,           prop: "array",         slot: null,  expr: value => [0, value[0], value[1]] },
-            "g_flPaintRoughness":                { control: paintRough,           prop: "value",         slot: null,  expr: null },
-            "g_flPearlescentScale":              { control: pearlScale,           prop: "value",         slot: null,  expr: null },
-            "g_bRoughnessPerColor":              { control: useRoughByCol,        prop: "checked",       slot: null,  expr: null },
-            "g_vPaintRoughness":                 { control: paintRoughNum,        prop: "array",         slot: null,  expr: null },
-            "g_vPaintMetalness":                 { control: paintMetalNum,        prop: "array",         slot: null,  expr: null },
-            "g_vPaintDurability":                { control: paintDurabilityNum,   prop: "array",         slot: null,  expr: x => [1.0 - x[0], 1.0 - x[1], 1.0 - x[2], 1.0 - x[3]] },
+            "g_bOverrideAmbientOcclusion": { control: useAOTex, prop: "checked" },
+            "g_bOverrideDefaultMasks": { control: useMatMasks, prop: "checked" },
+            "g_bUseNormalMap": { control: useNormalMap, prop: "checked" },
+            "g_bUseRoughness": { control: useRoughTex, prop: "checked" },
+            "g_bUsePearlescenceMask": { control: usePearlMask, prop: "checked" },
+            "g_vSprayBiasBlend": { control: sprayBlend, prop: "array", expr: value => [0, value[0], value[1]] },
+            "g_flPaintRoughness": { control: paintRough, prop: "value" },
+            "g_flPearlescentScale": { control: pearlScale, prop: "value" },
+            "g_bRoughnessPerColor": { control: useRoughByCol, prop: "checked" },
+            "g_vPaintRoughness": { control: paintRoughNum, prop: "array" },
+            "g_vPaintMetalness": { control: paintMetalNum, prop: "array" },
+            "g_vPaintDurability": { control: paintDurabilityNum, prop: "array", expr: x => [1.0 - x[0], 1.0 - x[1], 1.0 - x[2], 1.0 - x[3]] },
 
             // dynamically generated components
-            "g_tColor":                          { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tMetalness":                      { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tSurface":                        { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tAmbientOcclusion":               { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tMasks":                          { control: null,                 prop: "url",           slot: null,  expr: null },
-            "g_tWear":                           { control: wearTexture,                 prop: "url",           slot: null,  expr: null },
-            "g_tGrunge":                         { control: grungeTexture,                 prop: "url",           slot: null,  expr: null },
-            "g_vColor0":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
-            "g_vColor1":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
-            "g_vColor2":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
-            "g_vColor3":                         { control: null,                 prop: "arrayColor",    slot: null,  expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] }
+            "g_tColor": { control: null, prop: "url" },
+            "g_tMetalness": { control: null, prop: "url" },
+            "g_tSurface": { control: null, prop: "url" },
+            "g_tAmbientOcclusion": { control: null, prop: "url" },
+            "g_tMasks": { control: null, prop: "url" },
+            "g_tWear": { control: wearTexture, prop: "url" },
+            "g_tGrunge": { control: grungeTexture, prop: "url" },
+            "g_vColor0": { control: null, prop: "arrayColor", expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
+            "g_vColor1": { control: null, prop: "arrayColor", expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
+            "g_vColor2": { control: null, prop: "arrayColor", expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] },
+            "g_vColor3": { control: null, prop: "arrayColor", expr: x => [Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)] }
         }
 
         function updateStyle() {
@@ -781,18 +782,6 @@ Rectangle {
                         }
 
                         SPParameter {
-                            width: parent.width
-                            visible: styleBox.currentKey == "ce"
-                            
-                            SPTextureFetcher {
-                                id: useMetalMask
-                                text: "Paint Metalness Mask"
-                                Layout.fillWidth: true
-                            }
-                            onResetRequested: weaponFinish.resetParameter("g_bUseMetalness")
-                        }
-
-                        SPParameter {
                             visible: ["so", "hy", "sp"].includes(styleBox.currentKey) && !useRoughTex.checked
 
                             SPButton {
@@ -851,47 +840,6 @@ Rectangle {
 
                     SPGroup {
                         Layout.fillWidth: true
-                        text: "Overlay"
-                        visible: styleBox.currentKey == "ce"
-
-                        SPParameter {
-                            width: parent.width
-                            
-                            SPButton {
-                                id: enableOverlay
-                                checkable: true
-                                text: "Enable Overlay"
-                                Layout.fillWidth: true
-                            }
-                            onResetRequested: weaponFinish.resetParameter("g_bEnableOverlay")
-                        }
-
-                        Column {
-                            visible: enableOverlay.checked
-                            Layout.fillWidth: true
-                            
-                            TextureParameter {
-                                visible: styleBox.currentKey == "ce"
-                                paramId: "g_tOverlay"
-                                text: "Overlay Texture"
-                            }
-
-                            SPParameter {
-                                width: parent.width
-                                
-                                SPButton {
-                                    id: randomizeOverlayUVs
-                                    text: "Randomize Overlay UVs"
-                                    checkable: true
-                                    Layout.fillWidth: true
-                                }
-                                onResetRequested: weaponFinish.resetParameter("g_bRandomizeOverlayUVs")
-                            }
-                        }
-                    }
-
-                    SPGroup {
-                        Layout.fillWidth: true
                         text: "Normals"
 
                         SPParameter {
@@ -925,18 +873,6 @@ Rectangle {
 
                         SPParameter {
                             width: parent.width
-                            visible: styleBox.currentKey == "ce"
-                            
-                            SPTextureFetcher {
-                                id: useSFXMask
-                                text: "SFX Mask"
-                                Layout.fillWidth: true
-                            }
-                            onResetRequested: weaponFinish.resetParameter("g_bUseSFXMask")
-                        }
-
-                        SPParameter {
-                            width: parent.width
                             
                             SPTextureFetcher {
                                 id: usePearlMask
@@ -957,23 +893,6 @@ Rectangle {
                             onResetRequested: weaponFinish.resetParameter("g_flPearlescentScale")
                         }
 
-                        SPMultiSlider {
-                            id: glitterNum
-                            visible: styleBox.currentKey == "ce"
-                            model: ["Intensity", "Scale", "Rainbow Balance", "Rainbow Spread"]
-                            paramId: "g_vGlitter"
-                            paramName: "Glitter"
-                            width: parent.width
-                        }
-
-                        SPMultiSlider {
-                            id: iridescentNum
-                            visible: styleBox.currentKey == "ce"
-                            model: ["Strength", "Scale", "Hue Shift"]
-                            paramId: "g_vIridescent"
-                            paramName: "Iridescent"
-                            width: parent.width
-                        }
                     }
 
                     SPGroup {

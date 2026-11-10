@@ -1,20 +1,36 @@
 import json
 import copy
 import os
-import math
 import substance_painter as sp
 
-from .econ import import_parameters, STYLE_CODES
+from .econ import format_parameters, import_parameters, STYLE_CODES
 from .texture_export import export_textures
 from .shader_state import capture_main_shader, restore_shader
+from .weapons import WEAPONS
 from .painter import Log, Path, Macro, Plugin, Resource, ProjectSettings
+
+
+_TEXTURE_PARAMETERS = {
+	"g_tColor": "color", "g_tMetalness": "rough", "g_tSurface": "normal",
+	"g_tMasks": "masks", "g_tAmbientOcclusion": "cavity",
+}
+
+
+def _texture_path(folder, weapon, texture):
+	path = Path.join(folder, f"{weapon}_{texture}.png")
+	# Keep the legacy filename as a fallback without moving user files.
+	if texture == "normal" and not os.path.isfile(path):
+		return Path.join(folder, f"{weapon}_surface.png")
+	return path
 
 
 class WeaponFinish:
 	_pending_setups = {}
+	_generation = 0
 
 	@staticmethod
 	def cancel_pending_setups():
+		WeaponFinish._generation += 1
 		for callback, state in tuple(WeaponFinish._pending_setups.items()):
 			state["cancelled"] = True
 			try:
@@ -93,7 +109,13 @@ class WeaponFinish:
 					tangent_space_mode=sp.project.TangentSpace.PerVertex
 				)
 			)
-			sp.project.execute_when_not_busy(lambda: WeaponFinish.set_up(weapon_finish, callback))
+			generation = WeaponFinish._generation
+
+			def set_up_when_ready():
+				if generation == WeaponFinish._generation:
+					WeaponFinish.set_up(weapon_finish, callback)
+
+			sp.project.execute_when_not_busy(set_up_when_ready)
 		except Exception as e:
 			callback(False, f'Failed to create Weapon finish: {str(e)}')
 
@@ -283,69 +305,52 @@ class WeaponFinish:
 				raise ValueError("No Weapon Finish project is open")
 			if fs not in STYLE_CODES:
 				raise ValueError(f"Unsupported finish style: {fs}")
-			# shader files
-			shader_path = Path.asset("shader", "cs2.glsl")
-			shader_source = Path.read(shader_path)
-
-			if len(shader_source) > 0:
-				shader_dir = Path.join(Path.plugin, "shaders")
-				os.makedirs(shader_dir, exist_ok=True)
-
-				name = f'cs2_{fs}'
-				path = Path.join(shader_dir, f'{name}.glsl')
-				shader_text = Macro.process(shader_source, {
-					"PAINT_STYLE": STYLE_CODES.index(fs)
-				}, path=shader_path)
-				if not Path.write(path, shader_text):
-					raise OSError(f"Failed to write shader: {path}")
-
-				shader_resource = Resource.import_session_resource(path, Resource.Usage.SHADER, name, "CS2")
-
-				# icon
-				icon_path = Path.asset("icons", f'{name}.png')
-				if Path.exists(icon_path):
-					shader_resource.set_custom_preview(icon_path)
-
-				sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, {json.dumps(shader_resource.identifier().url())})')
-				message = f'Finish Style was set to `{fs.upper()}`'
-			else:
+			shader_source = Path.read(Path.asset("shader", "cs2.glsl"))
+			if not shader_source:
 				raise FileNotFoundError(f"Missing shader source for {fs}")
-
+			shader_dir = Path.join(Path.plugin, "shaders")
+			os.makedirs(shader_dir, exist_ok=True)
+			name = f"cs2_{fs}"
+			path = Path.join(shader_dir, f"{name}.glsl")
+			shader_text = Macro.process(shader_source, {"PAINT_STYLE": STYLE_CODES.index(fs)})
+			if not Path.write(path, shader_text):
+				raise OSError(f"Failed to write shader: {path}")
+			shader_resource = Resource.import_session_resource(path, Resource.Usage.SHADER, name, "CS2")
+			icon_path = Path.asset("icons", f"{name}.png")
+			if Path.exists(icon_path):
+				shader_resource.set_custom_preview(icon_path)
+			sp.js.evaluate(f'alg.shaders.updateShaderInstance(0, {json.dumps(shader_resource.identifier().url())})')
 		except Exception as error:
 			callback(False, f"Failed to set finish style: {error}")
 			return
-		callback(True, message)
+		callback(True, f'Finish Style was set to `{fs.upper()}`')
 
 	@staticmethod
 	def weapon_texture_path(weapon: str, texture: str):
-		if weapon not in Plugin.settings.get("weapons", {}):
+		if weapon not in WEAPONS:
 			return ""
-		folder = Path.asset("textures", "models", weapon)
-		path = Path.join(folder, f"{weapon}_{texture}.png")
-		# Accept the previously documented surface filename without moving user data.
-		if texture == "normal" and not os.path.isfile(path):
-			path = Path.join(folder, f"{weapon}_surface.png")
-		return path
+		return _texture_path(Path.asset("textures", "models", weapon), weapon, texture)
 
 	@staticmethod
 	def check_weapon_textures(weapon: str) -> bool:
-		return all(os.path.isfile(WeaponFinish.weapon_texture_path(weapon, texture))
+		if weapon not in WEAPONS:
+			return False
+		folder = Path.asset("textures", "models", weapon)
+		return all(os.path.isfile(_texture_path(folder, weapon, texture))
 			for texture in ("color", "cavity", "masks", "rough", "normal"))
 
 	@staticmethod
 	def update_weapon(weapon: str):
-		params = {
-			"g_tColor": "color",
-			"g_tMetalness": "rough",
-			"g_tSurface": "normal",
-			"g_tMasks": "masks",
-			"g_tAmbientOcclusion": "cavity"
-		}
 		resources = {}
-		if WeaponFinish.is_open():
-			WeaponFinish.set("weapon", weapon)
-			for param in params.keys():
-				tex_path = WeaponFinish.weapon_texture_path(weapon, params[param])
+		weapon_finish = WeaponFinish.current()
+		if weapon_finish is not None:
+			weapon_finish["weapon"] = weapon
+			WeaponFinish.dump(weapon_finish)
+			if weapon not in WEAPONS:
+				return resources
+			folder = Path.asset("textures", "models", weapon)
+			for param, texture in _TEXTURE_PARAMETERS.items():
+				tex_path = _texture_path(folder, weapon, texture)
 				if Path.exists(tex_path):
 					resources[param] = Resource.import_session_resource(tex_path, Resource.Usage.TEXTURE, group="CS2").identifier().url()
 		return resources
@@ -360,7 +365,7 @@ class WeaponFinish:
 				values = import_parameters(source.read(), weapon_finish,
 					Plugin.settings.get("finish_styles", {}))
 			if values.get("weapon") != weapon_finish.get("weapon"):
-				for parameter in ("g_tColor", "g_tMetalness", "g_tSurface", "g_tMasks", "g_tAmbientOcclusion"):
+				for parameter in _TEXTURE_PARAMETERS:
 					values[parameter] = ""
 			WeaponFinish.dump(values)
 		except (OSError, ValueError, TypeError) as error:
@@ -374,75 +379,20 @@ class WeaponFinish:
 		weapon_finish: dict = WeaponFinish.current()
 		if weapon_finish is None:
 			raise RuntimeError("Open or set up a Weapon Finish project first")
-		# helper functions
-		def uint8(value:float) -> int:
-			return int(math.floor(max(0.0, min(1.0, value)) * 255 + 0.5))
-
-		def get_bool(param: str) -> str:
-			return "true" if weapon_finish.get(param) else "false"
-
-		econitem: str = weapon_finish.get("econitem") or ""
-		if econitem != "":
-			style = weapon_finish.get("style", "gs")
-
-			# fetch weapon finish parameters
-			finish_name = Path.filename(econitem)
-			finish_style = Plugin.settings.get("finish_styles", {}).get(style, "Gunsmith")
-			finish_style = finish_style.replace(" ", "").replace("-", "")
-
-			wear = weapon_finish.get("wearRange", [0.0, 1.0])
-
-			# packed values: [scale, offsetX, offsetY, rotation]
-			tex_transform = weapon_finish.get("uTexTransform", [1.0, 0.0, 0.0, 0.0])
-			tex_offsetx = weapon_finish.get("texOffsetXRange", [-1.0, 1.0])
-			tex_offsety = weapon_finish.get("texOffsetYRange", [-1.0, 1.0])
-			tex_rotation = weapon_finish.get("texRotationRange", [-360.0, 360.0])
-
-			# map colors
-			colors = [
-				list(map(uint8, weapon_finish.get(f'g_vColor{i}', [1.0, 1.0, 1.0])))
-				for i in range(4)
-			]
-
-			# fetch textures folder
-			textures_folder = weapon_finish.get("texturesFolder", "")
-			if not Path.exists(textures_folder):
-				Log.info(f'Be careful: path "{textures_folder}" for textures does not exist!')
-			textures_folder = textures_folder.replace("\\", "/").split("workshop_items")[-1]
-			if len(textures_folder) > 0 and textures_folder[0] == "/":
-				textures_folder = textures_folder[1:]
-
-			econitem_content = Path.read(Path.asset("template.econitem")).format(
-				finish_name=finish_name,
-				finish_style=finish_style,
-				weapon=weapon_finish.get("weapon", "ak47"),
-				wear=[wear[0], weapon_finish.get("g_flWearAmount", 0.5), wear[1]],
-				tex_scale=tex_transform[0],
-				tex_offsetx=[tex_offsetx[0], tex_transform[1], tex_offsetx[1]],
-				tex_offsety=[tex_offsety[0], tex_transform[2], tex_offsety[1]],
-				tex_rotation=[tex_rotation[0], tex_transform[3], tex_rotation[1]],
-				ignore_weapon_size_scale=get_bool("g_bIgnoreWeaponSizeScale"),
-				color0=colors[0],
-				color1=colors[1],
-				color2=colors[2],
-				color3=colors[3],
-				pearl_scale=weapon_finish.get("g_flPearlescentScale", 0.0),
-				rough=weapon_finish.get("g_flPaintRoughness", 0.6),
-				custom_pearl_mask=get_bool("g_bUsePearlescenceMask"),
-				custom_rough_tex=get_bool("g_bUseRoughness"),
-				custom_normal_map=get_bool("g_bUseNormalMap"),
-				custom_mat_masks=get_bool("g_bOverrideDefaultMasks"),
-				custom_ao_tex=get_bool("g_bOverrideAmbientOcclusion"),
-				ao_tex_path=f'{textures_folder}/{finish_name}_ao.tga',
-				normal_tex_path=f'{textures_folder}/{finish_name}_normal.tga',
-				masks_tex_path=f'{textures_folder}/{finish_name}_masks.tga',
-				rough_tex_path=f'{textures_folder}/{finish_name}_rough.tga',
-				albedo_tex_path=f'{textures_folder}/{finish_name}_color.tga',
-				pearl_tex_path=f'{textures_folder}/{finish_name}_pearl.tga',
-			)
-			os.makedirs(os.path.dirname(os.path.abspath(econitem)), exist_ok=True)
-			if not Path.write(econitem, econitem_content) > 0:
-				raise OSError(f"Failed to export .econitem file: {econitem}")
+		econitem = weapon_finish.get("econitem") or ""
+		if not econitem:
+			return
+		textures_folder = weapon_finish.get("texturesFolder", "")
+		if not Path.exists(textures_folder):
+			Log.info(f'Be careful: path "{textures_folder}" for textures does not exist!')
+		textures_folder = textures_folder.replace("\\", "/").split("workshop_items")[-1].removeprefix("/")
+		content = format_parameters(
+			Path.read(Path.asset("template.econitem")), weapon_finish,
+			Plugin.settings.get("finish_styles", {}), Path.filename(econitem), textures_folder
+		)
+		os.makedirs(os.path.dirname(os.path.abspath(econitem)), exist_ok=True)
+		if not Path.write(econitem, content) > 0:
+			raise OSError(f"Failed to export .econitem file: {econitem}")
 
 	@staticmethod
 	def export_textures():

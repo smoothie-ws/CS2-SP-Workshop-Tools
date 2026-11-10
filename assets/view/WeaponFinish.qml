@@ -7,6 +7,7 @@ QtObject {
 
     property bool loading: false
     property var initialValues: ({})
+    property var connections: []
 
     function captureDefaults() {
         const snapshot = {};
@@ -47,6 +48,7 @@ QtObject {
         } finally {
             loading = false;
         }
+        return stored;
     }
 
     function dumpParams() {
@@ -59,27 +61,30 @@ QtObject {
         return w;
     }
 
-    // connects widgets to shader
-    function connect() {
-        const shaderParams = Object.keys(JSON.parse(Plugin.js('alg.shaders.parameters(0)')) || {});
-        const assignments = [];
-
-        // Remove handlers for the previous style, including parameters absent
-        // from the new shader. Otherwise invisible controls keep writing to it.
-        for (const component of Object.values(parameters)) {
-            if (!component.slot || !component.control) continue;
+    function disconnect() {
+        for (const component of connections) {
             try { component.control[component.prop + 'Changed'].disconnect(component.slot); } catch (e) {}
             component.slot = null;
         }
+        connections = [];
+    }
+
+    // Keep live writes synchronous; only the initial snapshot is batched.
+    function connect() {
+        disconnect();
+        const shaderParams = JSON.parse(Plugin.js('Object.keys(alg.shaders.parameters(0))')) || [];
+        const assignments = [];
+        const connected = [];
 
         for (const param of shaderParams) {
-            if (!parameters.hasOwnProperty(param)) continue;
-
-            const { prop, control, expr } = parameters[param];
+            const component = parameters[param];
+            if (!component) continue;
+            const { prop, control, expr } = component;
             if (!control) continue;
             const signalName = prop + 'Changed';
 
-            const assignment = () => `alg.shaders.parameter(0,${JSON.stringify(param)}).value = ${JSON.stringify(expr == null ? control[prop] : expr(control[prop]))}`;
+            const prefix = `alg.shaders.parameter(0,${JSON.stringify(param)}).value = `;
+            const assignment = () => prefix + JSON.stringify(expr == null ? control[prop] : expr(control[prop]));
             const fn = () => { if (!loading) Plugin.js(assignment()); };
             // Keep each write isolated so one stale/incompatible parameter
             // does not prevent the remaining controls from reaching the shader.
@@ -87,9 +92,11 @@ QtObject {
 
             if (control[signalName]) {
                 control[signalName].connect(fn);
-                parameters[param].slot = fn;
+                component.slot = fn;
+                connected.push(component);
             }
         }
+        connections = connected;
         if (assignments.length) Plugin.js(assignments.join(';'));
     }
 
@@ -98,9 +105,10 @@ QtObject {
     }
 
     function updateWeapon(weapon, preserveSelected = false) {
-        for (const [param, component] of Object.entries(parameters))
-            if (!preserveSelected && ["g_tColor", "g_tMetalness", "g_tSurface", "g_tMasks", "g_tAmbientOcclusion"].includes(param) && component.control)
-                component.control.url = "";
+        if (!preserveSelected)
+            for (const param of ["g_tColor", "g_tMetalness", "g_tSurface", "g_tMasks", "g_tAmbientOcclusion"])
+                if (parameters[param] && parameters[param].control)
+                    parameters[param].control.url = "";
         for (const [param, path] of Object.entries(JSON.parse(Plugin.updateWeapon(weapon))))
             if (parameters[param] && parameters[param].control && (!preserveSelected || !parameters[param].control.url))
                 parameters[param].control.url = path;
@@ -124,7 +132,8 @@ QtObject {
         const value = JSON.parse(Plugin.getDefaultWeaponFinishParameter(parameter));
         if (value !== undefined && value !== null) {
             const component = parameters[parameter];
-            component.control[component.prop] = value;
+            if (component && component.control)
+                component.control[component.prop] = value;
         }
     }
 
@@ -142,7 +151,8 @@ QtObject {
         for (const [param, value] of Object.entries(values)) 
             if (!exclude.includes(param) && param in parameters) {
                 const component = parameters[param];
-                component.control[component.prop] = value;
+                if (component.control)
+                    component.control[component.prop] = value;
             }
     }
 

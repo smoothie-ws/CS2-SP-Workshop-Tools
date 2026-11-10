@@ -2,6 +2,7 @@ import QtQuick 2.12
 import "./SPWidgets"
 
 SPLock {
+    id: root
     property real scale: 1.0
     property real rotation: 0.0
     property real translationX: 0.0
@@ -34,6 +35,14 @@ SPLock {
     onMatrixForm0Changed: decompose()
     onMatrixForm1Changed: decompose()
 
+    // Rounded transforms often stay identical across consecutive mouse moves.
+    // Avoid notifying the shader for arrays whose values have not changed.
+    function setVector(property, value) {
+        const previous = root[property];
+        if (previous.length !== value.length || value.some((v, i) => v !== previous[i]))
+            root[property] = value;
+    }
+
     function build() {
         update(() => {
             const s = Math.floor((baseScale * scale + 0.005) * 100) / 100;
@@ -48,9 +57,9 @@ SPLock {
             const m0 = m  *  cos - m * -sin;
             const m1 = m0 * -sin + m *  cos;
 
-            matrixForm0 = [cos * s, -sin * s, 0.0, s * cos * m0 + s * -sin * m1 + tx - 0.5];
-            matrixForm1 = [sin * s,  cos * s, 0.0, s * sin * m0 + s *  cos * m1 + ty - 0.5];
-            components = [scale, translationX, translationY, rotation];
+            setVector("matrixForm0", [cos * s, -sin * s, 0.0, s * cos * m0 + s * -sin * m1 + tx - 0.5]);
+            setVector("matrixForm1", [sin * s,  cos * s, 0.0, s * sin * m0 + s *  cos * m1 + ty - 0.5]);
+            setVector("components", [scale, translationX, translationY, rotation]);
         });
     }
 
@@ -80,7 +89,7 @@ SPLock {
             rotation = Math.floor(((t * 180) / 3.1415927 + 0.005) * 100) / 100;
             translationX = Math.floor((tx - s * cos * m0 + s * -sin * m1 + 0.5 + 0.005) * 100) / 100;
             translationY = Math.floor((ty - s * sin * m0 + s *  cos * m1 + 0.5 + 0.005) * 100) / 100;
-            components = [scale, translationX, translationY, rotation];
+            setVector("components", [scale, translationX, translationY, rotation]);
         });
     }
 }

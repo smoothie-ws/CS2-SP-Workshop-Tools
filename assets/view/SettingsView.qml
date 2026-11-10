@@ -26,63 +26,13 @@ SPDialog {
         
         property string cs2Path: ""
         property bool cs2PathIsValid: true
-        property var weapons: []
-        property bool weaponIsValid: false
 
         onCs2PathChanged: cs2PathIsValid = cs2Path == "" ? true : Plugin.valCs2Path(cs2Path)
-
-        function valWeapon() {
-            const id = weaponIdInput.text.trim();
-            const name = weaponNameInput.text.trim();
-            const uv_scale = weaponUVScaleInput.text.trim();
-            for (const [wid, w] of Object.entries(weapons))
-                if (wid == id || w.name == name) {
-                    weaponIsValid = false;
-                    return;
-                }
-            weaponIsValid = /^[a-z0-9_]+$/.test(id) && name != "" && uv_scale != ""
-                && Number.isFinite(Number(uv_scale)) && Number(uv_scale) > 0;
-        }
-
-        function addWeapon() {
-            valWeapon();
-            if (!weaponIsValid) return;
-            weapons[weaponIdInput.text.trim()] = {
-                name: weaponNameInput.text.trim(),
-                uv_scale: Number(weaponUVScaleInput.text.trim()),
-            }
-            weaponIdInput.text = "";
-            weaponNameInput.text = "";
-            weaponUVScaleInput.text = "";
-            weaponIsValid = false;
-            syncWeapons();
-        }
-
-        function remWeapon(weapon) {
-            delete weapons[weapon];
-            syncWeapons();
-        }
-
-        function syncWeapons() {
-            weaponsWidgets.widgets = [];
-
-            const weaponModel = [];
-            for (const [wid, w] of Object.entries(weapons))
-                weaponModel.push({
-                    id: wid,
-                    name: w.name,
-                    uv_scale: w.uv_scale
-                });
-            weaponsRepater.model = weaponModel;
-        }
-
-
     }
-    
+
     function getData() {
         return {
-            cs2_path: internal.cs2PathIsValid ? internal.cs2Path : "",
-            weapons: internal.weapons
+            cs2_path: internal.cs2PathIsValid ? internal.cs2Path : ""
         }
     }
 
@@ -90,9 +40,12 @@ SPDialog {
         const settings = JSON.parse(Plugin.getPluginSettings());
         if ("cs2_path" in settings)
             internal.cs2Path = settings["cs2_path"];
-        if ("weapons" in settings) 
-            internal.weapons = settings["weapons"];
-        internal.syncWeapons();
+        if (weaponsRepeater.count === 0)
+            weaponsRepeater.model = Object.entries(JSON.parse(Plugin.getWeapons())).map(([id, weapon]) => ({
+                weaponId: id, name: weapon.name, uv_scale: weapon.uv_scale
+            }));
+        else
+            weaponsWidgets.refresh();
     }
 
 
@@ -222,51 +175,6 @@ SPDialog {
 
                     SPSeparator { Layout.fillWidth: true }
 
-                    RowLayout {
-                        spacing: 10
-                        height: 50
-                        Layout.fillWidth: true
-                        
-                        SPTextInput {
-                            id: weaponIdInput
-                            Layout.preferredWidth: 75
-                            tooltip.text: "Weapon Identifier"
-
-                            onTextEdited: internal.valWeapon()
-                        }
-
-                        SPTextInput {
-                            id: weaponNameInput
-                            Layout.preferredWidth: 100
-                            tooltip.text: "Weapon Name"
-
-                            onTextEdited: internal.valWeapon()
-                        }
-
-                        SPTextInput {
-                            id: weaponUVScaleInput
-                            Layout.preferredWidth: 50
-                            tooltip.text: "Weapon UV Scale"
-                            validator: SPRegExprValidator { expr: /^-?[0-9]*\.?[0-9]*$/ }
-
-                            readonly property real value: parseFloat(text)
-                            
-                            onTextEdited: internal.valWeapon()
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        SPButton {
-                            text: "Add"
-                            tooltip.text: "Add new weapon"
-                            enabled: internal.weaponIsValid
-
-                            onClicked: internal.addWeapon()
-                        }
-                    }
-
-                    SPSeparator { Layout.fillWidth: true }
-
                     ScrollView {
                         clip: true
                         Layout.leftMargin: 5
@@ -279,15 +187,16 @@ SPDialog {
                             anchors.right: parent.right
                             anchors.rightMargin: 15
 
-                            property var widgets: []
-                            
                             function refresh() {
-                                for (const widget of widgets)
-                                    widget.refresh();
+                                for (let i = 0; i < weaponsRepeater.count; ++i) {
+                                    const item = weaponsRepeater.itemAt(i);
+                                    if (item) item.refresh();
+                                }
                             }
                             
                             Repeater {
-                                id: weaponsRepater
+                                id: weaponsRepeater
+                                model: []
                                 delegate: Item {
                                     id: weapon
                                     Layout.fillWidth: true
@@ -296,7 +205,7 @@ SPDialog {
                                     property bool missingTextures: true
 
                                     function refresh() {
-                                        missingTextures = !Plugin.checkWeaponTextures(modelData.id);
+                                        missingTextures = !Plugin.checkWeaponTextures(modelData.weaponId);
                                     }
 
                                     RowLayout {
@@ -305,7 +214,7 @@ SPDialog {
                                         
                                         Text {
                                             Layout.preferredWidth: 75
-                                            text: modelData.id
+                                            text: modelData.weaponId
                                             color: AlgStyle.text.color.normal
                                         }
 
@@ -332,26 +241,10 @@ SPDialog {
                                             horizontalAlignment: Text.AlignRight
                                             verticalAlignment: Text.AlignVCenter
                                         }
-                                        
-                                        SPButton {
-                                            padding: 5
-                                            contentAlignment: Qt.AlignCenter
-                                            implicitWidth: 20
-                                            implicitHeight: implicitWidth
-                                            icon.source: "./icons/close.png"
-                                            icon.width: implicitWidth * 0.5
-                                            icon.height: implicitHeight * 0.5
-                                            tooltip.text: "Remove"
-                                            background.color: "black"
-                                            background.opacity: hovered ? 0.5 : 0.25
-
-                                            onClicked: internal.remWeapon(modelData.id)
-                                        }
                                     }
                                 }
 
                                 onItemAdded: (i, item) => {
-                                    weaponsWidgets.widgets.push(item);
                                     item.refresh();
                                 }
                             }

@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic
+from typing import TypeVar
 import substance_painter as sp
 
 from PySide6 import QtQuickWidgets, QtWidgets, QtQuick, QtCore, QtGui, QtQml

@@ -32,6 +32,44 @@ def vector(value):
     return [number(component) for component in value]
 
 
+def format_parameters(template, finish, styles, name, textures_folder):
+    """Format the existing KV3 template without application or filesystem calls."""
+    transform = finish.get("uTexTransform", [1.0, 0.0, 0.0, 0.0])
+    wear = finish.get("wearRange", [0.0, 1.0])
+    values = {
+        "finish_name": name,
+        "finish_style": styles.get(finish.get("style", "gs"), "Gunsmith").replace(" ", "").replace("-", ""),
+        "weapon": finish.get("weapon", "ak47"),
+        "wear": [wear[0], finish.get("g_flWearAmount", 0.5), wear[1]],
+        "tex_scale": transform[0],
+        "pearl_scale": finish.get("g_flPearlescentScale", 0.0),
+        "rough": finish.get("g_flPaintRoughness", 0.6),
+    }
+    for key, parameter, index, default in (
+        ("tex_offsetx", "texOffsetXRange", 1, [-1.0, 1.0]),
+        ("tex_offsety", "texOffsetYRange", 2, [-1.0, 1.0]),
+        ("tex_rotation", "texRotationRange", 3, [-360.0, 360.0]),
+    ):
+        bounds = finish.get(parameter, default)
+        values[key] = [bounds[0], transform[index], bounds[1]]
+    for key, parameter in (
+        ("ignore_weapon_size_scale", "g_bIgnoreWeaponSizeScale"),
+        ("custom_pearl_mask", "g_bUsePearlescenceMask"),
+        ("custom_rough_tex", "g_bUseRoughness"),
+        ("custom_normal_map", "g_bUseNormalMap"),
+        ("custom_mat_masks", "g_bOverrideDefaultMasks"),
+        ("custom_ao_tex", "g_bOverrideAmbientOcclusion"),
+    ):
+        values[key] = "true" if finish.get(parameter) else "false"
+    for index in range(4):
+        values[f"color{index}"] = [int(math.floor(max(0.0, min(1.0, value)) * 255 + 0.5))
+                                   for value in finish.get(f"g_vColor{index}", [1.0, 1.0, 1.0])]
+    for key, suffix in (("ao", "ao"), ("normal", "normal"), ("masks", "masks"),
+                        ("rough", "rough"), ("albedo", "color"), ("pearl", "pearl")):
+        values[f"{key}_tex_path"] = f"{textures_folder}/{name}_{suffix}.tga"
+    return template.format(**values)
+
+
 def import_parameters(content, current, styles):
     """Apply validated first assignments; reject malformed known fields atomically.
 

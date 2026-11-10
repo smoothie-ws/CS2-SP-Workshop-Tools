@@ -3,10 +3,11 @@ import copy
 import re
 import substance_painter as sp
 
-from .painter import UI, Log, Path, Resource, Plugin, ProjectSettings
+from .painter import UI, Log, Path, Resource, Plugin
 from .painter.qml import QtWidgets, QmlDialog, QmlView, QtCore, QtGui
 
 from .weapon_finish import WeaponFinish
+from .weapons import WEAPONS_JSON
 
 
 class MainView(QmlView):
@@ -41,7 +42,7 @@ class MainView(QmlView):
         
     @QtCore.Slot(result=str)
     def getWeapons(self):
-        return json.dumps(Plugin.settings.get("weapons", {}))
+        return WEAPONS_JSON
 
     @QtCore.Slot(bool)
     def initWeaponFinish(self, is_new: bool):
@@ -138,10 +139,7 @@ class WeaponFinishInitWindow(QmlDialog):
     
     def open(self, is_new: bool):
         self.is_new = is_new
-        if is_new:
-            self.window.setWindowTitle("Create Weapon Finish")
-        else:
-            self.window.setWindowTitle("Set up Weapon Finish")
+        self.window.setWindowTitle("Create Weapon Finish" if is_new else "Set up Weapon Finish")
         self.opened.emit(is_new)
         self.show()
         
@@ -150,11 +148,7 @@ class WeaponFinishInitWindow(QmlDialog):
         mesh_file: str = d.get("mesh", "")
         # fetch default weapon finish settings
         weapon_finish: dict = copy.deepcopy(Plugin.settings.get("weapon_finish", {}))
-        weapon_finish["econitem"] = ""
-        weapon_finish["texturesFolder"] = ""
-        weapon_finish["name"] = d.get("name")
-        weapon_finish["style"] = d.get("style")
-        weapon_finish["weapon"] = d.get("weapon")
+        weapon_finish.update(econitem="", texturesFolder="", **{key: d.get(key) for key in ("name", "style", "weapon")})
         
         def callback(res: bool, msg: str):
             if res:
@@ -179,26 +173,19 @@ class WeaponFinishInitWindow(QmlDialog):
 
     @QtCore.Slot(result=str)
     def getWeapons(self):
-        return json.dumps(Plugin.settings.get("weapons"))
+        return WEAPONS_JSON
 
     @QtCore.Slot(str, result=int)
     def valWeaponFinishName(self, name: str):
         if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
             return 2
         cs2_path = Plugin.settings.get("cs2_path")
-        if cs2_path:
-            if len(name) > 0:
-                if Path.exists(Path.join(cs2_path, 
-                    "content", "csgo_addons", "workshop_items", "items", "assets", "paintkits", "workshop", 
-                    f'{name}.econitem'
-                )):
-                    return 3
-                else:
-                    return 1
-            else:
-                return 2
-        else:
+        if not cs2_path:
             return 0
+        return 3 if Path.exists(Path.join(
+            cs2_path, "content", "csgo_addons", "workshop_items", "items",
+            "assets", "paintkits", "workshop", f"{name}.econitem"
+        )) else 1
     
 
 class SettingsWindow(QmlDialog):
@@ -207,9 +194,14 @@ class SettingsWindow(QmlDialog):
         self.view.setMinimumSize(QtCore.QSize(600, 425))
         
     def on_confirmed(self, data: str) -> None:
-        for key, value in json.loads(data).items():
-            Plugin.settings[key] = value
+        settings = json.loads(data)
+        settings.pop("weapons", None)
+        Plugin.settings.update(settings)
         Plugin.save()
+
+    @QtCore.Slot(result=str)
+    def getWeapons(self):
+        return WEAPONS_JSON
             
     @QtCore.Slot(str, result=bool)
     def valCs2Path(self, path: str) -> bool:

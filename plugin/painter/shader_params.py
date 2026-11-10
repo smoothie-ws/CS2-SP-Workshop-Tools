@@ -47,8 +47,8 @@ class ShaderControl(ShaderParam):
 
 
 class ShaderParamsGroup:
-    def __init__(self, params:dict = {}, condition:bool = True):
-        self.params = params
+    def __init__(self, params:dict = None, condition:bool = True):
+        self.params = {} if params is None else params
         self.condition = condition
 
     def build(self):
@@ -75,7 +75,8 @@ class Slider(ShaderControl):
 
 
 class MultiSlider(ShaderControl):
-    def __init__(self, name:str, default:any = None, description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True, expr:str = "", min:float = 0.0, max:float = 1.0, model:list = ["X", "Y", "Z", "W"]):
+    def __init__(self, name:str, default:any = None, description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True, expr:str = "", min:float = 0.0, max:float = 1.0, model:list = None):
+        model = ["X", "Y", "Z", "W"] if model is None else model
         super().__init__(f'vec{len(model)}', name, default if default else [0.0 for _ in model], description, condition, visible, "MultiSlider", is_uniform, expr)
         self.min = min
         self.max = max
@@ -83,14 +84,16 @@ class MultiSlider(ShaderControl):
 
 
 class RangeSlider(ShaderControl):
-    def __init__(self, name:str, default:any = [0.0, 1.0], description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True, expr:str = "", min:float = 0.0, max:float = 1.0):
+    def __init__(self, name:str, default:any = None, description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True, expr:str = "", min:float = 0.0, max:float = 1.0):
+        default = [0.0, 1.0] if default is None else default
         super().__init__(ShaderParam.Type.Float, name, default, description, condition, visible, "RangeSlider", is_uniform, expr)
         self.min = min
         self.max = max
 
 
 class Color(ShaderControl):
-    def __init__(self, name:str, default:any = [1.0, 1.0, 1.0], description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True):
+    def __init__(self, name:str, default:any = None, description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True):
+        default = [1.0, 1.0, 1.0] if default is None else default
         super().__init__(ShaderParam.Type.Vec3, name, default, description, condition, visible, "ColorButton", is_uniform, "[Math.pow(x[0], 2.4), Math.pow(x[1], 2.4), Math.pow(x[2], 2.4)]")
 
 
@@ -100,9 +103,9 @@ class Checkbox(ShaderControl):
 
 
 class Combobox(ShaderControl):
-    def __init__(self, name:str, default:any = 0, description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True, expr:str = "", model:list = []):
+    def __init__(self, name:str, default:any = 0, description:str = "", condition:bool = True, visible:str = "true", is_uniform:bool = True, expr:str = "", model:list = None):
         super().__init__(ShaderParam.Type.Vec3, name, default, description, condition, visible, "ComboBox", is_uniform, expr)
-        self.model = model
+        self.model = [] if model is None else model
 
 
 class Texture(ShaderControl):

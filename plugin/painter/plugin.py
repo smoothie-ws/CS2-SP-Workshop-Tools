@@ -11,6 +11,56 @@ class Plugin:
     settings: dict = {}
     version: str = "v0.0.1a"
     connections: dict = {}
+    _running = False
+    _generation = 0
+    _events = {
+        "ProjectOpened": "on_project_opened",
+        "ProjectCreated": "on_project_created",
+        "ProjectAboutToClose": "on_project_about_to_close",
+        "ProjectAboutToSave": "on_project_about_to_save",
+        "ProjectSaved": "on_project_saved",
+        "ExportTexturesAboutToStart": "on_export_textures_about_to_start",
+        "ExportTexturesEnded": "on_export_textures_ended",
+        "ShelfCrawlingStarted": "on_shelf_crawling_started",
+        "ShelfCrawlingEnded": "on_shelf_crawling_ended",
+        "ProjectEditionEntered": "on_project_edition_entered",
+        "ProjectEditionLeft": "on_project_edition_left",
+        "BusyStatusChanged": "on_busy_status_changed",
+        "BakingProcessAboutToStart": "on_baking_process_about_to_start",
+        "BakingProcessProgress": "on_baking_process_progress",
+        "BakingProcessEnded": "on_baking_process_ended",
+        "TextureStateEvent": "on_texture_state_event",
+    }
+
+    @classmethod
+    def _connect_events(cls):
+        generation = Plugin._generation
+        for event_name, method_name in cls._events.items():
+            method = getattr(cls, method_name)
+            if getattr(method, "__func__", method) is getattr(Plugin, method_name).__func__:
+                continue
+
+            def callback(_, handler=method):
+                if generation == Plugin._generation:
+                    handler()
+
+            event = getattr(sp.event, event_name)
+            # Track the attempt too, so partial native registration is cleaned up.
+            Plugin.connections[event] = callback
+            sp.event.DISPATCHER.connect_strong(event, callback)
+
+    @staticmethod
+    def _disconnect_events():
+        Plugin._generation += 1
+        Plugin._running = False
+        connections, Plugin.connections = Plugin.connections, {}
+        errors = []
+        for event, callback in reversed(tuple(connections.items())):
+            try:
+                sp.event.DISPATCHER.disconnect(event, callback)
+            except Exception as error:
+                errors.append(f"Failed to disconnect Painter event: {error}")
+        return errors
     
     @staticmethod
     def save():
@@ -23,10 +73,10 @@ class Plugin:
     
     @classmethod
     def start(cls, path: str, name: str):
-        if Plugin.connections or UI.widgets:
+        if Plugin._running or Plugin.connections or UI.widgets:
             cls.close()
+        Plugin._generation += 1
         Log.channel = name
-        connected = []
         try:
             Path.plugin = path
             Path.settings = Path.join(Path.plugin, "plugin.json")
@@ -37,28 +87,8 @@ class Plugin:
             Plugin.settings = data.get("settings", {})
             Plugin.version = data.get("version", "v0.0.1a")
             Plugin.preprocess()
-            Plugin.connections = {
-                sp.event.ProjectOpened: lambda _: cls.on_project_opened(),
-                sp.event.ProjectCreated: lambda _: cls.on_project_created(),
-                sp.event.ProjectAboutToClose: lambda _: cls.on_project_about_to_close(),
-                sp.event.ProjectAboutToSave: lambda _: cls.on_project_about_to_save(),
-                sp.event.ProjectSaved: lambda _: cls.on_project_saved(),
-                sp.event.ExportTexturesAboutToStart: lambda _: cls.on_export_textures_about_to_start(),
-                sp.event.ExportTexturesEnded: lambda _: cls.on_export_textures_ended(),
-                sp.event.ShelfCrawlingStarted: lambda _: cls.on_shelf_crawling_started(),
-                sp.event.ShelfCrawlingEnded: lambda _: cls.on_shelf_crawling_ended(),
-                sp.event.ProjectEditionEntered: lambda _: cls.on_project_edition_entered(),
-                sp.event.ProjectEditionLeft: lambda _: cls.on_project_edition_left(),
-                sp.event.BusyStatusChanged: lambda _: cls.on_busy_status_changed(),
-                sp.event.BakingProcessAboutToStart: lambda _: cls.on_baking_process_about_to_start(),
-                sp.event.BakingProcessProgress: lambda _: cls.on_baking_process_progress(),
-                sp.event.BakingProcessEnded: lambda _: cls.on_baking_process_ended(),
-                sp.event.TextureStateEvent: lambda _: cls.on_texture_state_event()
-            }
-            for event, callback in Plugin.connections.items():
-                sp.event.DISPATCHER.connect_strong(event, callback)
-                connected.append((event, callback))
-
+            cls._connect_events()
+            Plugin._running = True
             cls.on_start()
             Log.warning(f'Plugin started (version {Plugin.version})')
 
@@ -66,12 +96,8 @@ class Plugin:
                 cls.on_project_opened()
         except Exception as startup_error:
             Log.error(f"Failed to start plugin: {startup_error}")
-            for event, callback in reversed(connected):
-                try:
-                    sp.event.DISPATCHER.disconnect(event, callback)
-                except Exception as error:
-                    Log.error(f"Failed to disconnect Painter event after startup failure: {error}")
-            Plugin.connections = {}
+            for error in Plugin._disconnect_events():
+                Log.error(error)
             try:
                 cls.on_close()
             except Exception as error:
@@ -84,13 +110,7 @@ class Plugin:
 
     @classmethod
     def close(cls):
-        errors = []
-        for event, callback in list(Plugin.connections.items()):
-            try:
-                sp.event.DISPATCHER.disconnect(event, callback)
-            except Exception as error:
-                errors.append(f"Failed to disconnect Painter event: {error}")
-        Plugin.connections = {}
+        errors = Plugin._disconnect_events()
 
         try:
             cls.on_close()
@@ -116,76 +136,25 @@ class Plugin:
     def preprocess(cls):
         sync_views(Path.asset("view"), Path.join(Path.plugin, "view"))
 
-    # to override
-    
+    # Optional hooks share a no-op until a plugin overrides them.
     @classmethod
     def on_start(cls):
         pass
-    
-    @classmethod
-    def on_close(cls):
-        pass
-        
-    @classmethod
-    def on_project_opened(cls):
-        pass
-    
-    @classmethod
-    def on_project_created(cls):
-        pass
 
-    @classmethod
-    def on_project_about_to_close(cls):
-        pass
-    
-    @classmethod
-    def on_project_about_to_save(cls):
-        pass
-
-    @classmethod
-    def on_project_saved(cls):
-        pass
-
-    @classmethod
-    def on_export_textures_about_to_start(cls):
-        pass
-
-    @classmethod
-    def on_export_textures_ended(cls):
-        pass
-
-    @classmethod
-    def on_shelf_crawling_started(cls):
-        pass
-
-    @classmethod
-    def on_shelf_crawling_ended(cls):
-        pass
-
-    @classmethod
-    def on_project_edition_entered(cls):
-        pass
-
-    @classmethod
-    def on_project_edition_left(cls):
-        pass
-
-    @classmethod
-    def on_busy_status_changed(cls):
-        pass
-
-    @classmethod
-    def on_baking_process_about_to_start(cls):
-        pass
-
-    @classmethod
-    def on_baking_process_progress(cls):
-        pass
-
-    @classmethod
-    def on_baking_process_ended(cls):
-        pass
-
-    @classmethod
-    def on_texture_state_event(cls):
-        pass
+    on_close = on_start
+    on_project_opened = on_start
+    on_project_created = on_start
+    on_project_about_to_close = on_start
+    on_project_about_to_save = on_start
+    on_project_saved = on_start
+    on_export_textures_about_to_start = on_start
+    on_export_textures_ended = on_start
+    on_shelf_crawling_started = on_start
+    on_shelf_crawling_ended = on_start
+    on_project_edition_entered = on_start
+    on_project_edition_left = on_start
+    on_busy_status_changed = on_start
+    on_baking_process_about_to_start = on_start
+    on_baking_process_progress = on_start
+    on_baking_process_ended = on_start
+    on_texture_state_event = on_start

@@ -3,8 +3,30 @@ import shutil
 import pathlib
 import subprocess
 import tempfile
+from contextlib import contextmanager
 
 from .log import Log
+
+
+@contextmanager
+def _atomic_output(destination, **options):
+    """Commit only a closed, fully flushed file; clean up failed attempts."""
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=os.path.dirname(os.path.abspath(destination)),
+                                         delete=False, **options) as output:
+            temporary = output.name
+            yield output
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, destination)
+        temporary = None
+    finally:
+        if temporary is not None:
+            try:
+                os.unlink(temporary)
+            except OSError as error:
+                Log.error(f"Failed to remove temporary file {temporary}: {error}")
 
 
 class Path:
@@ -34,7 +56,7 @@ class Path:
     
     @staticmethod
     def listdir(path: str) -> list:
-        if Path.exists(path) and Path.isdir(path):
+        if path is not None and Path.isdir(path):
             return os.listdir(path)
         return []
 
@@ -55,22 +77,8 @@ class Path:
     @staticmethod
     def copy_atomic(src: str, dst: str) -> None:
         """Publish a binary file without truncating an existing destination."""
-        temporary = None
-        try:
-            with tempfile.NamedTemporaryFile(dir=os.path.dirname(os.path.abspath(dst)), delete=False) as output:
-                temporary = output.name
-                with open(src, "rb") as source:
-                    shutil.copyfileobj(source, output)
-                output.flush()
-                os.fsync(output.fileno())
-            os.replace(temporary, dst)
-            temporary = None
-        finally:
-            if temporary is not None:
-                try:
-                    os.unlink(temporary)
-                except OSError as error:
-                    Log.error(f"Failed to remove temporary copy {temporary}: {error}")
+        with _atomic_output(dst) as output, open(src, "rb") as source:
+            shutil.copyfileobj(source, output)
     
     @staticmethod
     def replace(src: str, dst: str) -> bool:
@@ -128,7 +136,6 @@ class Path:
         
     @staticmethod
     def write(path: str, data: str) -> int:
-        temporary = None
         try:
             destination = os.path.abspath(path)
             if isinstance(data, str):
@@ -139,21 +146,9 @@ class Path:
                 except OSError:
                     # A missing or unreadable destination may still be writable.
                     pass
-            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n",
-                                             dir=os.path.dirname(destination), delete=False) as output:
-                temporary = output.name
+            with _atomic_output(destination, mode="w", encoding="utf-8", newline="\n") as output:
                 count = output.write(data)
-                output.flush()
-                os.fsync(output.fileno())
-            os.replace(temporary, destination)
-            temporary = None
             return count
         except (OSError, TypeError, UnicodeError) as error:
             Log.error(f"Failed to write {path}: {error}")
             return 0
-        finally:
-            if temporary is not None:
-                try:
-                    os.unlink(temporary)
-                except OSError as error:
-                    Log.error(f"Failed to remove temporary file {temporary}: {error}")

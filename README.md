@@ -102,7 +102,7 @@ Plugin settings are available in the **CS2 Workshop Tools** menu:
 
 ![Plugin Settings in menu](https://imgur.com/mUx2YQA.png)
 
-Here you can configure the CS2 path, list of available weapons, default weapon finish settings, and more:
+Here you can configure the CS2 path and check base textures for the built-in weapons. Weapon identifiers, names, and UV scales are fixed in the plugin and cannot be edited in settings:
 
 ![Plugin Settings](https://i.imgur.com/8uRCPDM.png)
 
@@ -256,17 +256,3 @@ You can sync your Weapon Finish with its `.econitem` file:
 Use the **Export Textures** button to export maps using the preset format compatible with CS2 Workshop Tools.
 
 ![Textures folder](https://imgur.com/SK2ULne.png)
-
-For multiple texture sets, the first set exports to the selected folder and is referenced by the single `.econitem`; subsequent sets export to `texture_set_2`, `texture_set_3`, etc. Choose a separate finish/project if each set needs its own `.econitem`. Without an econitem filename, export uses the finish name, then weapon ID, then `untitled`.
-
-When AO export is enabled, each texture set needs a baked ambient occlusion mesh map or an AO channel. All sets are checked before export starts; missing required inputs produce an error instead of a silently incomplete export.
-
-UNC destinations are supported by exporting all sets to a temporary local folder first and then publishing the finished files to the share. Each destination file is replaced atomically. A failed staged set publishes no network outputs; a later network-copy error is reported and can leave an already published subset.
-
-There are nine available styles. Custom Paint Job Extended is disabled until its shader and controls are complete; saved projects using that style open as Custom Paint Job.
-
-The active shader starts at `assets/shader/cs2.glsl` and includes `cs2_customweapon.glsl`. `cs2_weapon.glsl` is an unused Source 2 Viewer/SPIR-V reference dump retained for comparison; it is never loaded by the plugin.
-
-Texture selection uses Painter resource metadata, so an embedded image stays selected even if its original source file is gone. When Qt cannot decode a thumbnail (such as some grayscale TGA files), the resource name remains visible and the texture still works in the shader.
-
-The export preset builder, export pipeline and shader snapshot/restore are separate modules (`export_presets.py`, `texture_export.py`, `shader_state.py`). Generated QML is synchronized incrementally by `painter/preprocess.py`; unchanged files retain their timestamps. Shader controls initialize through one bridge call, and reconnecting removes previous signal handlers.

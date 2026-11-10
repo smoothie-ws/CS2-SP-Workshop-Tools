@@ -13,6 +13,7 @@ class CS2WT(Plugin):
     main_view: MainView = None
     settings_window: SettingsWindow = None
     wf_init_window: WeaponFinishInitWindow = None
+    _project_generation = 0
 
     @classmethod
     def start(cls, path):
@@ -20,6 +21,8 @@ class CS2WT(Plugin):
 
     @classmethod
     def on_start(cls):
+        # Discard the editable catalog from older installations.
+        Plugin.settings.pop("weapons", None)
         styles = Plugin.settings.get("finish_styles", {})
         Plugin.settings["finish_styles"] = {code: styles[code] for code in STYLE_CODES if code in styles}
         defaults = Plugin.settings.get("weapon_finish", {})
@@ -31,13 +34,19 @@ class CS2WT(Plugin):
     
     @classmethod
     def on_close(cls):
+        cls._project_generation += 1
         WeaponFinish.cancel_pending_setups()
-        if WeaponFinish.is_open():
+        if cls.main_view is not None and WeaponFinish.is_open():
             CS2WT.main_view.pluginAboutToClose.emit()
     
     @classmethod
     def on_project_opened(cls):
+        cls._project_generation += 1
+        generation = cls._project_generation
+
         def f():
+            if generation != cls._project_generation or not sp.project.is_open():
+                return
             if WeaponFinish.is_open():
                 WeaponFinish.import_econ()
                 CS2WT.main_view.projectKindChanged.emit(2)
@@ -56,6 +65,8 @@ class CS2WT(Plugin):
 
     @classmethod
     def on_project_about_to_close(cls):
+        cls._project_generation += 1
+        WeaponFinish.cancel_pending_setups()
         CS2WT.main_view.projectKindChanged.emit(0)
 
     @staticmethod

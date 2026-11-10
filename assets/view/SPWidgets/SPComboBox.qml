@@ -17,6 +17,7 @@ SPControl {
         id: internal
         property bool ready: false
         property bool syncing: false
+        property var keys: []
 
         function sync(f) {
             if (syncing) return;
@@ -31,11 +32,11 @@ SPControl {
     }
     onMapChanged: if (internal.ready) comboBox.syncModel()
     onCurrentIndexChanged: if (internal.ready) internal.sync(() => {
-        const keys = Object.keys(map || {});
+        const keys = internal.keys;
         currentKey = currentIndex >= 0 && currentIndex < keys.length ? keys[currentIndex] : null;
     })
     onCurrentKeyChanged: if (internal.ready) internal.sync(() => {
-        currentIndex = Object.keys(map || {}).indexOf(String(currentKey));
+        currentIndex = internal.keys.indexOf(String(currentKey));
     })
 
     onWheel: e => {
@@ -54,6 +55,7 @@ SPControl {
             internal.sync(() => {
                 const previousKey = root.currentKey;
                 const entries = Object.entries(root.map || {});
+                internal.keys = entries.map(entry => entry[0]);
                 model = entries.map(entry => ({value: entry[0], text: entry[1]}));
                 currentIndex = previousKey === null || previousKey === undefined
                     ? (entries.length > 0 ? 0 : -1)

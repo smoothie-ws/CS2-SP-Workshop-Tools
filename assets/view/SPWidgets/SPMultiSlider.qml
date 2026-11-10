@@ -17,8 +17,8 @@ ColumnLayout {
         property var sliders: []
         
         onArrayChanged: update(() => {
-            for (const slider of sliders)
-                slider.value = array[sliders.indexOf(slider)];
+            for (let i = 0; i < sliders.length; ++i)
+                if (array[i] !== undefined) sliders[i].value = array[i];
         })
     }
     

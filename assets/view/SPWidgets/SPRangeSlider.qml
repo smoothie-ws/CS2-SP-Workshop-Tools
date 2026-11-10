@@ -63,16 +63,14 @@ ColumnLayout {
         function update(f) {
             if (!updating) {
                 updating = true;
-                f();
-                updating = false;
+                try { f(); } finally { updating = false; }
             }
         }
 
         function sync(f) {
             if (!syncing) {
                 syncing = true;
-                f();
-                syncing = false;
+                try { f(); } finally { syncing = false; }
             }
         }
 

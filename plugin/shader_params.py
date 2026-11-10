@@ -1,4 +1,7 @@
-from .painter.shader_params import *
+from .painter.shader_params import (
+    Checkbox, Color, Combobox, MultiSlider, RangeSlider, ShaderParam,
+    ShaderParams, ShaderParamsGroup, Slider, Texture,
+)
 
 
 class TransformMatrixRow(ShaderParam):

@@ -22,38 +22,39 @@ class QmlView(QtCore.QObject):
         self.name = name
         self.view = QtQuickWidgets.QQuickWidget()
         self.view.setResizeMode(QtQuickWidgets.QQuickWidget.ResizeMode.SizeRootObjectToView)
+        self._on_ready = None
+        self.view.statusChanged.connect(self._on_status_changed)
+        self.view.engine().warnings.connect(self._on_warnings)
+        self.view.rootContext().setContextProperty(self.name, self)
         
         if path is not None:
             self.load(path)
     
     def load(self, path: str, callback = None):
-        def start(status: QtQuickWidgets.QQuickWidget.Status):
-            if status == QtQuickWidgets.QQuickWidget.Status.Ready:
-                if callback is not None:
-                    callback(self.view)
-            elif status == QtQuickWidgets.QQuickWidget.Status.Error:
-                Log.error(f'{status}: {[e.toString() for e in self.view.errors()]}')
-            
-        def on_warnings(warnings):
-            for w in warnings:
-                Log.error(w.toString())
-                
         if Path.exists(path):
-            engine = self.view.engine()
-            engine.warnings.connect(on_warnings)
-            engine.rootContext().setContextProperty(self.name, self)
-            self.view.statusChanged.connect(start)
+            self._on_ready = callback
             self.view.setSource(QtCore.QUrl.fromLocalFile(path))
         else:
             Log.error(f'File {path} does not exist')
+
+    def _on_status_changed(self, status):
+        if status == QtQuickWidgets.QQuickWidget.Status.Ready:
+            if self._on_ready is not None:
+                self._on_ready(self.view)
+        elif status == QtQuickWidgets.QQuickWidget.Status.Error:
+            Log.error(f'{status}: {[e.toString() for e in self.view.errors()]}')
+
+    @staticmethod
+    def _on_warnings(warnings):
+        for warning in warnings:
+            Log.error(warning.toString())
 
     # common slots
     @QtCore.Slot(str, result=str)
     def js(self, code: str):
         try:
             res = sp.js.evaluate(code)
-        except Exception as e:
-            # Log.error(str(e))
+        except Exception:
             res = None
         return json.dumps(res)
     
