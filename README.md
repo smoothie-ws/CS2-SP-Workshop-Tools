@@ -10,6 +10,7 @@
     -   [How It Works](#how-it-works)
 -   **[Getting Started](#getting-started)**
     -   [Installation](#installation)
+    -   [Updating](#updating)
     -   [Launching](#launching)
     -   [Next Steps](#next-steps)
         -   [Plugin Settings](#plugin-settings)
@@ -40,9 +41,9 @@ If you encounter any, please [report them](https://github.com/smoothie-ws/CS2-SP
 
 The **CS2 Workshop Tools** are distributed as a plugin for [Adobe Substance 3D Painter](https://www.adobe.com/products/substance3d/apps/painter.html).
 
-It manages projects, resources, and handles texture exporting via the [Substance 3D Painter Python API](https://helpx.adobe.com/substance-3d-painter-python.html).
+It helps you set up weapon finish projects, preview finishes, manage resources, and export textures for CS2.
 
-It also provides 9 [GLSL](https://helpx.adobe.com/substance-3d-painter/scripting-and-development/api-reference/shader-api.html) shaders corresponding to each of the Weapon Finish styles:
+It also provides shaders for all 9 Weapon Finish styles:
 
 -   [Solid Color](https://www.counter-strike.net/workshop/workshopfinishes#solidcolorstyle)
 -   [Hydrographic](https://www.counter-strike.net/workshop/workshopfinishes#hydrographic)
@@ -68,21 +69,23 @@ Base weapon textures must be supplied manually.
 
 2. **[Download the plugin](https://github.com/smoothie-ws/CS2-SP-Workshop-Tools/releases/latest)**
 
-3. **Unpack the plugin:**
+3. **Close Substance 3D Painter and run the `CS2-Workshop-Tools-YY.MM.DD-Setup.exe` installer from the release assets.**
 
-    - Place the plugin in the folder used by Substance 3D Painter to load Python plugins.
+    - The default destination is `C:\Users\<user>\Documents\Adobe\Adobe Substance 3D Painter\python\plugins\CS2 Workshop Tools` (using your Windows Documents folder, including redirection if configured).
+    - You can change the destination in the installation wizard. Select the final plugin directory: `__init__.py` will be placed directly inside it.
+    - Restart Substance 3D Painter after installation.
 
-        > **Example** (Windows): `C:/Users/<user>/Documents/Adobe/Adobe Substance 3D Painter/python/plugins`
+    If you need to find the plugins folder used by your Painter installation, open the **Python** menu and select **Plugins Folder**:
 
-    - You can find this folder via the Python menu in Substance 3D Painter by selecting "Plugins Folder":
+    ![image](https://github.com/user-attachments/assets/ec17bc3b-a734-4f29-aec2-6cf40fa55695)
 
-        ![image](https://github.com/user-attachments/assets/ec17bc3b-a734-4f29-aec2-6cf40fa55695)
+    Select the `CS2 Workshop Tools` subfolder as the installer's destination.
 
-    - Unpack the plugin so the path becomes: `.../python/plugins/CS2 Workshop Tools`
+## Updating
 
-### Installing from source
+Close Substance 3D Painter, download the latest installer, and install it into the same `CS2 Workshop Tools` folder. Then restart Painter.
 
-A source checkout can be placed directly in the Python plugins folder: the plugin directory must contain `__init__.py`, `plugin.json`, `plugin/` and `assets/`. There is no installer or built-in updater. Restart the plugin after replacing files.
+The installer replaces the plugin's settings file (`plugin.json`). Before updating, save a backup of this file if you want to keep a record of your settings, and reapply them through the plugin settings after installation.
 
 ## Launching
 
@@ -127,7 +130,7 @@ To manually provide the textures:
 > `<weapon id>/<weapon id>_[cavity|color|masks|rough|normal].png`
 > e.g. `ak47/ak47_cavity.png`, `taser/taser_normal.png`, etc.
 
-The former `_surface.png` name is accepted as a fallback when `_normal.png` is absent. If both are present, `_normal.png` takes precedence. The maps connect as color → `g_tColor`, rough → `g_tMetalness`, normal → `g_tSurface`, masks → `g_tMasks`, cavity → `g_tAmbientOcclusion`.
+The former `_surface.png` name is accepted as a fallback when `_normal.png` is absent. If both are present, `_normal.png` takes precedence.
 
 2. Click **Refresh** to reload and validate textures:
 

@@ -1,0 +1,124 @@
+name: Release Windows installer
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.ref == 'dev' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-2022
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out merged commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Prepare plugin payload and date version
+        id: prepare
+        env:
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
+        run: ./.github/installer/prepare.ps1 -MergedAt $env:MERGED_AT
+
+      - name: Install Inno Setup if needed
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path -LiteralPath $compiler)) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE -ne 0) { throw 'Inno Setup installation failed' }
+            $compiler = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup*\ISCC.exe" |
+              Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (!$compiler -or !(Test-Path -LiteralPath $compiler)) { throw 'Inno Setup compiler missing' }
+          "ISCC=$compiler" >> $env:GITHUB_ENV
+
+      - name: Compile installer
+        env:
+          RELEASE_VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          & $env:ISCC "/DAppVersion=$env:RELEASE_VERSION" ./.github/installer/setup.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compilation failed' }
+
+      - name: Verify installation into a custom directory
+        env:
+          RELEASE_VERSION: ${{ steps.prepare.outputs.version }}
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP 'Installer smoke test\CS2 Workshop Tools'
+          $exe = Resolve-Path "dist/CS2-Workshop-Tools-$env:RELEASE_VERSION-Setup.exe"
+          $process = Start-Process -FilePath $exe -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-',
+            "/DIR=`"$target`""
+          ) -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer exited with $($process.ExitCode)" }
+          foreach ($source in Get-ChildItem build/payload -File -Recurse) {
+            $relative = [IO.Path]::GetRelativePath((Resolve-Path build/payload), $source.FullName)
+            $installed = Join-Path $target $relative
+            if (!(Test-Path -LiteralPath $installed -PathType Leaf)) {
+              throw "Missing installed file: $relative"
+            }
+            if ((Get-FileHash -LiteralPath $source.FullName).Hash -ne
+                (Get-FileHash -LiteralPath $installed).Hash) {
+              throw "Installed file differs: $relative"
+            }
+          }
+          if (!(Test-Path -LiteralPath "$target\__init__.py")) {
+            throw '__init__.py must be directly inside the selected directory'
+          }
+
+      - name: Publish dated GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ steps.prepare.outputs.version }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          $tag = $env:RELEASE_VERSION
+          $asset = "dist/CS2-Workshop-Tools-$tag-Setup.exe"
+          git fetch origin --tags --force
+          if ($LASTEXITCODE -ne 0) { throw 'Could not fetch release tags' }
+          git show-ref --verify --quiet "refs/tags/$tag"
+          if ($LASTEXITCODE -eq 0) {
+            # An older rerun must never replace a more recent build from the same day.
+            git merge-base --is-ancestor "refs/tags/$tag" $env:MERGE_SHA
+            if ($LASTEXITCODE -eq 1) {
+              Write-Host 'A newer release already exists for this date; skipping publication.'
+              exit 0
+            }
+            if ($LASTEXITCODE -ne 0) { throw 'Could not compare release commits' }
+            gh api --method PATCH "repos/$env:GH_REPO/git/refs/tags/$tag" -f "sha=$env:MERGE_SHA" -F force=true
+            if ($LASTEXITCODE -ne 0) { throw 'Could not update date tag' }
+          } else {
+            gh api --method POST "repos/$env:GH_REPO/git/refs" -f "ref=refs/tags/$tag" -f "sha=$env:MERGE_SHA"
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create date tag' }
+          }
+          @"
+          Windows installer for CS2 Workshop Tools ($tag).
+
+          Close Substance 3D Painter before installing. The destination folder can be changed in the wizard.
+          Source commit: $env:MERGE_SHA
+          "@ | Set-Content build/release-notes.md -Encoding utf8
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $asset --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Could not upload installer' }
+            gh release edit $tag --title $tag --notes-file build/release-notes.md
+          } else {
+            gh release create $tag $asset --verify-tag --title $tag --notes-file build/release-notes.md
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish release' }

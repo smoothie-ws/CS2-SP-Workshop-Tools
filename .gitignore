@@ -2,3 +2,5 @@ __pycache__
 /view/
 /shaders/
 /assets/textures/models
+/build/
+/dist/
